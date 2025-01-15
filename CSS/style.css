@@ -1,0 +1,42 @@
+td{
+    height: 80px;
+    width: 100px;
+    text-align: center;  
+}   
+h3{
+    margin: 0;
+    font-size: 23px;
+}
+h2{
+    margin: 5px
+}
+.mounth{
+    margin-left: 40px;
+}
+
+input[type="button"]{
+  background-color: #0ea0aa;
+  border: none;
+  color: rgb(255, 246, 246);
+  padding: 16px 32px;
+  text-decoration: none;
+  margin: 3px 1px;
+  cursor: pointer;
+  font-size: 27px;
+  border-radius: 30%;
+}
+input[type="button"]:hover {
+    border-radius: 20%;
+    background-color: #10bcc9;
+
+}
+.MounthInPage{
+    height: auto;
+    width: 700px;
+    margin: 40px 0px 0px 50px;
+    text-align: center;
+    font-size: 20px;
+}
+td{
+    border-left: rgb(230, 224, 224) 2px solid;
+}

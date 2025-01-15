@@ -1,0 +1,735 @@
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>workout shedule</title>
+    <link rel="stylesheet" href="CSS/style.css">
+</head>
+<body>
+    <h2>Выберите месяц:</h2>
+    <select name="mounth changed" id="monthChanged" onchange="enableMonth()">
+        <option value="none"  id="none">Не Выбрано</option>
+        <option value="January" id="January">Январь</option>
+        <option value="February" id="February">Февраль</option>
+        <option value="March" id="March">Март</option>
+        <option value="April" id="April">Апрель</option>
+        <option value="May" id="May">Май</option>
+        <option value="June" id="June">Июнь</option>
+        <option value="July" id="July">Июль</option>
+        <option value="August" id="August">Август</option>
+        <option value="September" id="September">Сентябрь</option>
+        <option value="October" id="October">Октябрь</option>
+        <option value="November" id="November">Ноябрь</option>
+        <option value="December" id="December">Декабрь</option>
+    </select>
+    <section id="months">
+        <div id="MonthJanuary" class="MounthInPage" style="display: none;">
+            <h2 class="mounth">Январь</h2>
+            <table border="0" cellspacing="0">
+                <tr>
+                    <td class="dayOfWeek"><h3>Пн</h3></td>
+                    <td class="dayOfWeek"><h3>Вт</h3></td>
+                    <td class="dayOfWeek"><h3>Ср</h3></td>
+                    <td class="dayOfWeek"><h3>Чт</h3></td>
+                    <td class="dayOfWeek"><h3>Пт</h3></td>
+                    <td class="dayOfWeek"><h3>Сб</h3></td>
+                    <td class="dayOfWeek"><h3>Вс</h3></td>
+                </tr>
+                <tr>
+                    <td colspan="2"></td>
+                    <td><input type="button" value=" 1 "></td>
+                    <td><input type="button" value=" 2 "></td>
+                    <td><input type="button" value=" 3 "></td>
+                    <td><input type="button" value=" 4 "></td>
+                    <td><input type="button" value=" 5 "></td>
+                </tr>
+                <tr>
+                    <td><input type="button" value=" 6 " onclick="goToTren1()"></td>
+                    <td><input type="button" value=" 7 "></td>
+                    <td><input type="button" value=" 8 "></td>
+                    <td><input type="button" value=" 9 "></td>
+                    <td><input type="button" value="10"></td>
+                    <td><input type="button" value="11"></td>
+                    <td><input type="button" value="12"></td>
+                </tr>
+                <tr>
+                    <td><input type="button" value="13" onclick="goToTrenKard1()"></td>
+                    <td><input type="button" value="14"></td>
+                    <td><input type="button" value="15"></td>
+                    <td><input type="button" value="16"></td>
+                    <td><input type="button" value="17"></td>
+                    <td><input type="button" value="18"></td>
+                    <td><input type="button" value="19"></td>
+                </tr>
+                <tr>
+                    <td><input type="button" value="20" onclick="goToTren2()"></td>
+                    <td><input type="button" value="21"></td>
+                    <td><input type="button" value="22"></td>
+                    <td><input type="button" value="23"></td>
+                    <td><input type="button" value="24"></td>
+                    <td><input type="button" value="25"></td>
+                    <td><input type="button" value="26"></td>
+                </tr>
+                <tr>
+                    <td><input type="button" value="27" onclick="goToTrenKard1()"></td>
+                    <td><input type="button" value="28"></td>
+                    <td><input type="button" value="29"></td>
+                    <td><input type="button" value="30"></td>
+                    <td><input type="button" value="31"></td>
+                    <td colspan="2"></td>
+                </tr>
+            </table>
+        </div>
+        <div id="MonthFebruary" class="MounthInPage" style="display: none;">
+            <h2 class="mounth">Февраль</h2>
+            <table border="0" cellspacing="0">
+                <tr>
+                    <td class="dayOfWeek"><h3>Пн</h3></td>
+                    <td class="dayOfWeek"><h3>Вт</h3></td>
+                    <td class="dayOfWeek"><h3>Ср</h3></td>
+                    <td class="dayOfWeek"><h3>Чт</h3></td>
+                    <td class="dayOfWeek"><h3>Пт</h3></td>
+                    <td class="dayOfWeek"><h3>Сб</h3></td>
+                    <td class="dayOfWeek"><h3>Вс</h3></td>
+                </tr>
+                <tr>
+                    <td colspan="5"></td>
+                    <td><input type="button" value=" 1 "></td>
+                    <td><input type="button" value=" 2 "></td>
+                </tr>
+                <tr>
+                    <td><input type="button" value=" 3 " onclick="goToTren1()"></td>
+                    <td><input type="button" value=" 4 "></td>
+                    <td><input type="button" value=" 5 "></td>
+                    <td><input type="button" value=" 6 "></td>
+                    <td><input type="button" value=" 7 "></td>
+                    <td><input type="button" value=" 8 "></td>
+                    <td><input type="button" value=" 9 "></td>
+                    
+                </tr>
+                <tr>
+                    <td><input type="button" value="10" onclick="goToTrenKard1()"></td>
+                    <td><input type="button" value="11"></td>
+                    <td><input type="button" value="12"></td>
+                    <td><input type="button" value="13"></td>
+                    <td><input type="button" value="14"></td>
+                    <td><input type="button" value="15"></td>
+                    <td><input type="button" value="16"></td>
+                </tr>
+                <tr>
+                    <td><input type="button" value="17" onclick="goToTren2()"></td>
+                    <td><input type="button" value="18"></td>
+                    <td><input type="button" value="19"></td>
+                    <td><input type="button" value="20"></td>
+                    <td><input type="button" value="21"></td>
+                    <td><input type="button" value="22"></td>
+                    <td><input type="button" value="23"></td>
+                </tr>
+                <tr>
+                    <td><input type="button" value="24" onclick="goToTrenKard1()"></td>
+                    <td><input type="button" value="25"></td>
+                    <td><input type="button" value="26"></td>
+                    <td><input type="button" value="27"></td>
+                    <td><input type="button" value="28"></td>
+                    <td colspan="2"></td>
+                </tr>
+            </table>
+        </div>
+        <div id="MonthMarch" class="MounthInPage" style="display: none;">
+            <h2 class="mounth">Март</h2>
+            <table border="0" cellspacing="0">
+                <tr>
+                    <td class="dayOfWeek"><h3>Пн</h3></td>
+                    <td class="dayOfWeek"><h3>Вт</h3></td>
+                    <td class="dayOfWeek"><h3>Ср</h3></td>
+                    <td class="dayOfWeek"><h3>Чт</h3></td>
+                    <td class="dayOfWeek"><h3>Пт</h3></td>
+                    <td class="dayOfWeek"><h3>Сб</h3></td>
+                    <td class="dayOfWeek"><h3>Вс</h3></td>
+                </tr>
+                <tr>
+                    <td colspan="5"></td>
+                    <td><input type="button" value=" 1 "></td>
+                    <td><input type="button" value=" 2 "></td>
+                </tr>
+                <tr>
+                    <td><input type="button" value=" 3 "></td>
+                    <td><input type="button" value=" 4 "></td>
+                    <td><input type="button" value=" 5 "></td>
+                    <td><input type="button" value=" 6 "></td>
+                    <td><input type="button" value=" 7 "></td>
+                    <td><input type="button" value=" 8 "></td>
+                    <td><input type="button" value=" 9 "></td>
+                    
+                </tr>
+                <tr>
+                    <td><input type="button" value="10"></td>
+                    <td><input type="button" value="11"></td>
+                    <td><input type="button" value="12"></td>
+                    <td><input type="button" value="13"></td>
+                    <td><input type="button" value="14"></td>
+                    <td><input type="button" value="15"></td>
+                    <td><input type="button" value="16"></td>
+                </tr>
+                <tr>
+                    <td><input type="button" value="17"></td>
+                    <td><input type="button" value="18"></td>
+                    <td><input type="button" value="19"></td>
+                    <td><input type="button" value="20"></td>
+                    <td><input type="button" value="21"></td>
+                    <td><input type="button" value="22"></td>
+                    <td><input type="button" value="23"></td>
+                </tr>
+                <tr>
+                    <td><input type="button" value="24"></td>
+                    <td><input type="button" value="25"></td>
+                    <td><input type="button" value="26"></td>
+                    <td><input type="button" value="27"></td>
+                    <td><input type="button" value="28"></td>
+                    <td><input type="button" value="29"></td>
+                    <td><input type="button" value="30"></td>                   
+                </tr>
+                <tr>
+                    <td><input type="button" value="31"></td>
+                    <td colspan="6"></td>
+                </tr>
+            </table>
+        </div>
+        <div id="MonthApril" class="MounthInPage" style="display: none;">
+            <h2 class="mounth">Апрель</h2>
+            <table border="0" cellspacing="0">
+                <tr>
+                    <td class="dayOfWeek"><h3>Пн</h3></td>
+                    <td class="dayOfWeek"><h3>Вт</h3></td>
+                    <td class="dayOfWeek"><h3>Ср</h3></td>
+                    <td class="dayOfWeek"><h3>Чт</h3></td>
+                    <td class="dayOfWeek"><h3>Пт</h3></td>
+                    <td class="dayOfWeek"><h3>Сб</h3></td>
+                    <td class="dayOfWeek"><h3>Вс</h3></td>
+                </tr>
+                <tr>
+                    <td colspan="5"></td>
+                    <td><input type="button" value=" 1 "></td>
+                    <td><input type="button" value=" 2 "></td>
+                </tr>
+                <tr>
+                    <td><input type="button" value=" 3 "></td>
+                    <td><input type="button" value=" 4 "></td>
+                    <td><input type="button" value=" 5 "></td>
+                    <td><input type="button" value=" 6 "></td>
+                    <td><input type="button" value=" 7 "></td>
+                    <td><input type="button" value=" 8 "></td>
+                    <td><input type="button" value=" 9 "></td>
+                    
+                </tr>
+                <tr>
+                    <td><input type="button" value="10"></td>
+                    <td><input type="button" value="11"></td>
+                    <td><input type="button" value="12"></td>
+                    <td><input type="button" value="13"></td>
+                    <td><input type="button" value="14"></td>
+                    <td><input type="button" value="15"></td>
+                    <td><input type="button" value="16"></td>
+                </tr>
+                <tr>
+                    <td><input type="button" value="17"></td>
+                    <td><input type="button" value="18"></td>
+                    <td><input type="button" value="19"></td>
+                    <td><input type="button" value="20"></td>
+                    <td><input type="button" value="21"></td>
+                    <td><input type="button" value="22"></td>
+                    <td><input type="button" value="23"></td>
+                </tr>
+                <tr>
+                    <td><input type="button" value="24"></td>
+                    <td><input type="button" value="25"></td>
+                    <td><input type="button" value="26"></td>
+                    <td><input type="button" value="27"></td>
+                    <td><input type="button" value="28"></td>
+                    <td><input type="button" value="29"></td>
+                    <td><input type="button" value="30"></td>
+                </tr>
+                <tr>
+                    <td><input type="button" value="31"></td>
+                    <td colspan="6"></td>
+                </tr>
+            </table>
+        </div> 
+        <div id="MonthMay" class="MounthInPage" style="display: none;">
+            <h2 class="mounth">Май</h2>
+            <table border="0" cellspacing="0">
+                <tr>
+                    <td class="dayOfWeek"><h3>Пн</h3></td>
+                    <td class="dayOfWeek"><h3>Вт</h3></td>
+                    <td class="dayOfWeek"><h3>Ср</h3></td>
+                    <td class="dayOfWeek"><h3>Чт</h3></td>
+                    <td class="dayOfWeek"><h3>Пт</h3></td>
+                    <td class="dayOfWeek"><h3>Сб</h3></td>
+                    <td class="dayOfWeek"><h3>Вс</h3></td>
+                </tr>
+                <tr>
+                    <td colspan="3"></td>
+                    <td><input type="button" value=" 1 "></td>
+                    <td><input type="button" value=" 2 "></td>
+                    <td><input type="button" value=" 3 "></td>
+                    <td><input type="button" value=" 4 "></td>
+                </tr>
+                <tr>
+                    <td><input type="button" value=" 5 "></td>
+                    <td><input type="button" value=" 6 "></td>
+                    <td><input type="button" value=" 7 "></td>
+                    <td><input type="button" value=" 8 "></td>
+                    <td><input type="button" value=" 9 "></td>
+                    <td><input type="button" value="10"></td>
+                    <td><input type="button" value="11"></td>
+                </tr>
+                <tr>
+                    <td><input type="button" value="12"></td>
+                    <td><input type="button" value="13"></td>
+                    <td><input type="button" value="14"></td>
+                    <td><input type="button" value="15"></td>
+                    <td><input type="button" value="16"></td>
+                    <td><input type="button" value="17"></td>
+                    <td><input type="button" value="18"></td>
+                </tr>
+                <tr>
+
+                    <td><input type="button" value="19"></td>
+                    <td><input type="button" value="20"></td>
+                    <td><input type="button" value="21"></td>
+                    <td><input type="button" value="22"></td>
+                    <td><input type="button" value="23"></td>
+                    <td><input type="button" value="24"></td>
+                    <td><input type="button" value="25"></td>
+                </tr>
+                <tr>
+                    <td><input type="button" value="26"></td>
+                    <td><input type="button" value="27"></td>
+                    <td><input type="button" value="28"></td>
+                    <td><input type="button" value="29"></td>
+                    <td><input type="button" value="30"></td>
+                    <td><input type="button" value="31"></td>
+                    <td colspan="1"></td>
+                </tr>
+            </table>
+        </div>     
+        <div id="MonthJune" class="MounthInPage" style="display: none;">
+            <h2 class="mounth">Июнь</h2>
+            <table border="0" cellspacing="0">
+                <tr>
+                    <td class="dayOfWeek"><h3>Пн</h3></td>
+                    <td class="dayOfWeek"><h3>Вт</h3></td>
+                    <td class="dayOfWeek"><h3>Ср</h3></td>
+                    <td class="dayOfWeek"><h3>Чт</h3></td>
+                    <td class="dayOfWeek"><h3>Пт</h3></td>
+                    <td class="dayOfWeek"><h3>Сб</h3></td>
+                    <td class="dayOfWeek"><h3>Вс</h3></td>
+                </tr>
+                <tr>
+                    <td colspan="6"></td>
+                    <td><input type="button" value=" 1 "></td>
+                </tr>
+                <tr>
+                    <td><input type="button" value=" 2 "></td>
+                    <td><input type="button" value=" 3 "></td>
+                    <td><input type="button" value=" 4 "></td>
+                    <td><input type="button" value=" 5 "></td>
+                    <td><input type="button" value=" 6 "></td>
+                    <td><input type="button" value=" 7 "></td>
+                    <td><input type="button" value=" 8 "></td>
+                    
+                    
+                </tr>
+                <tr>
+                    <td><input type="button" value=" 9 "></td>
+                    <td><input type="button" value="10"></td>
+                    <td><input type="button" value="11"></td>
+                    <td><input type="button" value="12"></td>
+                    <td><input type="button" value="13"></td>
+                    <td><input type="button" value="14"></td>
+                    <td><input type="button" value="15"></td>
+                    
+                </tr>
+                <tr>
+                    <td><input type="button" value="16"></td>
+                    <td><input type="button" value="17"></td>
+                    <td><input type="button" value="18"></td>
+                    <td><input type="button" value="19"></td>
+                    <td><input type="button" value="20"></td>
+                    <td><input type="button" value="21"></td>
+                    <td><input type="button" value="22"></td>
+                    
+                </tr>
+                <tr>
+                    <td><input type="button" value="23"></td>
+                    <td><input type="button" value="24"></td>
+                    <td><input type="button" value="25"></td>
+                    <td><input type="button" value="26"></td>
+                    <td><input type="button" value="27"></td>
+                    <td><input type="button" value="28"></td>
+                    <td><input type="button" value="29"></td>
+                    
+                </tr>
+                <tr>
+                    <td><input type="button" value="30"></td>
+                    <td colspan="6"></td>
+                </tr>
+            </table>
+        </div>   
+        <div id="MonthJuly" class="MounthInPage" style="display: none;">
+            <h2 class="mounth">Июль</h2>
+            <table border="0" cellspacing="0">
+                <tr>
+                    <td class="dayOfWeek"><h3>Пн</h3></td>
+                    <td class="dayOfWeek"><h3>Вт</h3></td>
+                    <td class="dayOfWeek"><h3>Ср</h3></td>
+                    <td class="dayOfWeek"><h3>Чт</h3></td>
+                    <td class="dayOfWeek"><h3>Пт</h3></td>
+                    <td class="dayOfWeek"><h3>Сб</h3></td>
+                    <td class="dayOfWeek"><h3>Вс</h3></td>
+                </tr>
+                <tr>
+                    <td colspan="1"></td>
+                    <td><input type="button" value=" 1 "></td>
+                    <td><input type="button" value=" 2 "></td>
+                    <td><input type="button" value=" 3 "></td>
+                    <td><input type="button" value=" 4 "></td>
+                    <td><input type="button" value=" 5 "></td>
+                    <td><input type="button" value=" 6 "></td>
+                </tr>
+                <tr>
+                    
+                    <td><input type="button" value=" 7 "></td>
+                    <td><input type="button" value=" 8 "></td>
+                    <td><input type="button" value=" 9 "></td>
+                    <td><input type="button" value="10"></td>
+                    <td><input type="button" value="11"></td>
+                    <td><input type="button" value="12"></td>
+                    <td><input type="button" value="13"></td>   
+                </tr>
+                <tr>
+                    
+                    <td><input type="button" value="14"></td>
+                    <td><input type="button" value="15"></td>
+                    <td><input type="button" value="16"></td>
+                    <td><input type="button" value="17"></td>
+                    <td><input type="button" value="18"></td>
+                    <td><input type="button" value="19"></td>
+                    <td><input type="button" value="20"></td>
+                </tr>
+                <tr>
+                    
+                    <td><input type="button" value="21"></td>
+                    <td><input type="button" value="22"></td>
+                    <td><input type="button" value="23"></td>
+                    <td><input type="button" value="24"></td>
+                    <td><input type="button" value="25"></td>
+                    <td><input type="button" value="26"></td>
+                    <td><input type="button" value="27"></td>
+                </tr>
+                <tr>
+                    
+                    <td><input type="button" value="28"></td>
+                    <td><input type="button" value="29"></td>
+                    <td><input type="button" value="30"></td>
+                    <td><input type="button" value="31"></td>
+                    <td colspan="3"></td>
+                </tr>                
+            </table>
+        </div> 
+        <div id="MonthAugust" class="MounthInPage" style="display: none;">
+            <h2 class="mounth">Август</h2>
+            <table border="0" cellspacing="0">
+                <tr>
+                    <td class="dayOfWeek"><h3>Пн</h3></td>
+                    <td class="dayOfWeek"><h3>Вт</h3></td>
+                    <td class="dayOfWeek"><h3>Ср</h3></td>
+                    <td class="dayOfWeek"><h3>Чт</h3></td>
+                    <td class="dayOfWeek"><h3>Пт</h3></td>
+                    <td class="dayOfWeek"><h3>Сб</h3></td>
+                    <td class="dayOfWeek"><h3>Вс</h3></td>
+                </tr>
+                <tr>
+                    <td colspan="4"></td>
+                    <td><input type="button" value=" 1 "></td>
+                    <td><input type="button" value=" 2 "></td>
+                    <td><input type="button" value=" 3 "></td>
+                </tr>
+                <tr>
+                    <td><input type="button" value=" 4 "></td>
+                    <td><input type="button" value=" 5 "></td>
+                    <td><input type="button" value=" 6 "></td>
+                    <td><input type="button" value=" 7 "></td>
+                    <td><input type="button" value=" 8 "></td>
+                    <td><input type="button" value=" 9 "></td>
+                    <td><input type="button" value="10"></td>
+                </tr>
+                <tr>
+                    
+                    <td><input type="button" value="11"></td>
+                    <td><input type="button" value="12"></td>
+                    <td><input type="button" value="13"></td>   
+                    <td><input type="button" value="14"></td>
+                    <td><input type="button" value="15"></td>
+                    <td><input type="button" value="16"></td>
+                    <td><input type="button" value="17"></td>
+                </tr>
+                <tr>
+                    
+                    <td><input type="button" value="18"></td>
+                    <td><input type="button" value="19"></td>
+                    <td><input type="button" value="20"></td>
+                    <td><input type="button" value="21"></td>
+                    <td><input type="button" value="22"></td>
+                    <td><input type="button" value="23"></td>
+                    <td><input type="button" value="24"></td>
+                    
+                </tr>
+                <tr>
+                    <td><input type="button" value="25"></td>
+                    <td><input type="button" value="26"></td>
+                    <td><input type="button" value="27"></td>
+                    <td><input type="button" value="28"></td>
+                    <td><input type="button" value="29"></td>
+                    <td><input type="button" value="30"></td>
+                    <td><input type="button" value="31"></td>
+                </tr>                
+            </table>
+        </div> 
+        <div id="MonthSeptember" class="MounthInPage" style="display: none;">
+            <h2 class="mounth">Сентябрь</h2>
+            <table border="0" cellspacing="0">
+                <tr>
+                    <td class="dayOfWeek"><h3>Пн</h3></td>
+                    <td class="dayOfWeek"><h3>Вт</h3></td>
+                    <td class="dayOfWeek"><h3>Ср</h3></td>
+                    <td class="dayOfWeek"><h3>Чт</h3></td>
+                    <td class="dayOfWeek"><h3>Пт</h3></td>
+                    <td class="dayOfWeek"><h3>Сб</h3></td>
+                    <td class="dayOfWeek"><h3>Вс</h3></td>
+                </tr>
+                <tr>
+                    
+                    <td><input type="button" value=" 1 "></td>
+                    <td><input type="button" value=" 2 "></td>
+                    <td><input type="button" value=" 3 "></td>
+                    <td><input type="button" value=" 4 "></td>
+                    <td><input type="button" value=" 5 "></td>
+                    <td><input type="button" value=" 6 "></td>
+                    <td><input type="button" value=" 7 "></td>
+                </tr>
+                <tr>
+                    <td><input type="button" value=" 8 "></td>
+                    <td><input type="button" value=" 9 "></td>
+                    <td><input type="button" value="10"></td>
+                    <td><input type="button" value="11"></td>
+                    <td><input type="button" value="12"></td>
+                    <td><input type="button" value="13"></td>   
+                    <td><input type="button" value="14"></td>
+                </tr>
+                <tr>
+                    
+                    <td><input type="button" value="15"></td>
+                    <td><input type="button" value="16"></td>
+                    <td><input type="button" value="17"></td>
+                    <td><input type="button" value="18"></td>
+                    <td><input type="button" value="19"></td>
+                    <td><input type="button" value="20"></td>
+                    <td><input type="button" value="21"></td>
+                </tr>
+                <tr>
+                    
+                    <td><input type="button" value="22"></td>
+                    <td><input type="button" value="23"></td>
+                    <td><input type="button" value="24"></td>
+                    <td><input type="button" value="25"></td>
+                    <td><input type="button" value="26"></td>
+                    <td><input type="button" value="27"></td>
+                    <td><input type="button" value="28"></td>
+                </tr>
+                <tr>
+                    <td><input type="button" value="29"></td>
+                    <td><input type="button" value="30"></td>
+                    <td colspan="6"></td>
+                </tr>                
+            </table>
+        </div>
+        <div id="MonthOctober" class="MounthInPage" style="display: none;">
+            <h2 class="mounth">Октябрь</h2>
+            <table border="0" cellspacing="0">
+                <tr>
+                    <td class="dayOfWeek"><h3>Пн</h3></td>
+                    <td class="dayOfWeek"><h3>Вт</h3></td>
+                    <td class="dayOfWeek"><h3>Ср</h3></td>
+                    <td class="dayOfWeek"><h3>Чт</h3></td>
+                    <td class="dayOfWeek"><h3>Пт</h3></td>
+                    <td class="dayOfWeek"><h3>Сб</h3></td>
+                    <td class="dayOfWeek"><h3>Вс</h3></td>
+                </tr>
+                <tr>
+                    <td colspan="2"></td>
+                    <td><input type="button" value=" 1 "></td>
+                    <td><input type="button" value=" 2 "></td>
+                    <td><input type="button" value=" 3 "></td>
+                    <td><input type="button" value=" 4 "></td>
+                    <td><input type="button" value=" 5 "></td>
+                </tr>
+                <tr>
+                    <td><input type="button" value=" 6 "></td>
+                    <td><input type="button" value=" 7 "></td>
+                    <td><input type="button" value=" 8 "></td>
+                    <td><input type="button" value=" 9 "></td>
+                    <td><input type="button" value="10"></td>
+                    <td><input type="button" value="11"></td>
+                    <td><input type="button" value="12"></td>
+                </tr>
+                <tr>
+                    
+                    <td><input type="button" value="13"></td>   
+                    <td><input type="button" value="14"></td>
+                    <td><input type="button" value="15"></td>
+                    <td><input type="button" value="16"></td>
+                    <td><input type="button" value="17"></td>
+                    <td><input type="button" value="18"></td>
+                    <td><input type="button" value="19"></td>
+                </tr>
+                <tr>
+                    
+                    <td><input type="button" value="20"></td>
+                    <td><input type="button" value="21"></td>
+                    <td><input type="button" value="22"></td>
+                    <td><input type="button" value="23"></td>
+                    <td><input type="button" value="24"></td>
+                    <td><input type="button" value="25"></td>
+                    <td><input type="button" value="26"></td>
+                </tr>
+                <tr>
+                    <td><input type="button" value="27"></td>
+                    <td><input type="button" value="28"></td>
+                    <td><input type="button" value="29"></td>
+                    <td><input type="button" value="30"></td>
+                    <td><input type="button" value="31"></td>
+                    <td colspan="2"></td>
+                </tr>                
+            </table>
+        </div>
+        <div id="MonthNovember" class="MounthInPage" style="display: none;">
+            <h2 class="mounth">Ноябрь</h2>
+            <table border="0" cellspacing="0">
+                <tr>
+                    <td class="dayOfWeek"><h3>Пн</h3></td>
+                    <td class="dayOfWeek"><h3>Вт</h3></td>
+                    <td class="dayOfWeek"><h3>Ср</h3></td>
+                    <td class="dayOfWeek"><h3>Чт</h3></td>
+                    <td class="dayOfWeek"><h3>Пт</h3></td>
+                    <td class="dayOfWeek"><h3>Сб</h3></td>
+                    <td class="dayOfWeek"><h3>Вс</h3></td>
+                </tr>
+                <tr>
+                    <td colspan="5"></td>
+                    <td><input type="button" value=" 1 "></td>
+                    <td><input type="button" value=" 2 "></td>
+                </tr>
+                <tr>
+                    <td><input type="button" value=" 3 "></td>
+                    <td><input type="button" value=" 4 "></td>
+                    <td><input type="button" value=" 5 "></td>
+                    <td><input type="button" value=" 6 "></td>
+                    <td><input type="button" value=" 7 "></td>
+                    <td><input type="button" value=" 8 "></td>
+                    <td><input type="button" value=" 9 "></td>
+                </tr>
+                <tr>
+                    
+                    <td><input type="button" value="10"></td>
+                    <td><input type="button" value="11"></td>
+                    <td><input type="button" value="12"></td>
+                    <td><input type="button" value="13"></td>   
+                    <td><input type="button" value="14"></td>
+                    <td><input type="button" value="15"></td>
+                    <td><input type="button" value="16"></td>
+                </tr>
+                <tr>
+                    
+                    <td><input type="button" value="17"></td>
+                    <td><input type="button" value="18"></td>
+                    <td><input type="button" value="19"></td>
+                    <td><input type="button" value="20"></td>
+                    <td><input type="button" value="21"></td>
+                    <td><input type="button" value="22"></td>
+                    <td><input type="button" value="23"></td>
+                </tr>
+                <tr>
+                    <td><input type="button" value="24"></td>
+                    <td><input type="button" value="25"></td>
+                    <td><input type="button" value="26"></td>
+                    <td><input type="button" value="27"></td>
+                    <td><input type="button" value="28"></td>
+                    <td><input type="button" value="29"></td>
+                    <td><input type="button" value="30"></td>
+                    
+                </tr>                
+            </table>
+        </div>
+        <div id="MonthDecember" class="MounthInPage" style="display: none;">
+            <h2 class="mounth">Декабрь</h2>
+            <table border="0" cellspacing="0">
+                <tr>
+                    <td class="dayOfWeek"><h3>Пн</h3></td>
+                    <td class="dayOfWeek"><h3>Вт</h3></td>
+                    <td class="dayOfWeek"><h3>Ср</h3></td>
+                    <td class="dayOfWeek"><h3>Чт</h3></td>
+                    <td class="dayOfWeek"><h3>Пт</h3></td>
+                    <td class="dayOfWeek"><h3>Сб</h3></td>
+                    <td class="dayOfWeek"><h3>Вс</h3></td>
+                </tr>
+                <tr>
+                    
+                    <td><input type="button" value=" 1 "></td>
+                    <td><input type="button" value=" 2 "></td>
+                    <td><input type="button" value=" 3 "></td>
+                    <td><input type="button" value=" 4 "></td>
+                    <td><input type="button" value=" 5 "></td>
+                    <td><input type="button" value=" 6 "></td>
+                    <td><input type="button" value=" 7 "></td>
+                </tr>
+                <tr>
+                    <td><input type="button" value=" 8 "></td>
+                    <td><input type="button" value=" 9 "></td>
+                    <td><input type="button" value="10"></td>
+                    <td><input type="button" value="11"></td>
+                    <td><input type="button" value="12"></td>
+                    <td><input type="button" value="13"></td>   
+                    <td><input type="button" value="14"></td>
+                </tr>
+                <tr>
+                    
+                    <td><input type="button" value="15"></td>
+                    <td><input type="button" value="16"></td>
+                    <td><input type="button" value="17"></td>
+                    <td><input type="button" value="18"></td>
+                    <td><input type="button" value="19"></td>
+                    <td><input type="button" value="20"></td>
+                    <td><input type="button" value="21"></td>
+                </tr>
+                <tr>
+                    
+                    <td><input type="button" value="22"></td>
+                    <td><input type="button" value="23"></td>
+                    <td><input type="button" value="24"></td>
+                    <td><input type="button" value="25"></td>
+                    <td><input type="button" value="26"></td>
+                    <td><input type="button" value="27"></td>
+                    <td><input type="button" value="28"></td>
+                </tr>
+                <tr>
+                    <td><input type="button" value="29"></td>
+                    <td><input type="button" value="30"></td>
+                    <td><input type="button" value="31"></td>
+                </tr>                
+            </table>
+        </div>
+    </section>
+    
+    <script src="SCRIPTS/script.js"></script>
+</body>
+</html>
