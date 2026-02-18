@@ -44,10 +44,10 @@ const MainPage = () => {
           
           <Link 
             to="/start-training" 
-            className="bg-blue-600 text-white px-6 py-3 rounded-xl font-medium flex items-center gap-2 hover:bg-blue-700 transition-colors"
+            className="bg-blue-600 text-xs text-white px-4 py-2 rounded-xl font-medium flex items-center gap-1 hover:bg-blue-700 transition-colors"
           >
             Приступить
-            <ArrowRight className="w-5 h-5" />
+            {/* <ArrowRight className="w-5 h-5" /> */}
           </Link>
         </div>
       </div>
@@ -77,8 +77,7 @@ const MainPage = () => {
         </Link>
       </div>
 
-      {/* Рекомендации */}
-      <div className="bg-gradient-to-r from-blue-500 to-blue-600 rounded-2xl p-6 text-white">
+      <div className="bg-linear-to-r from-blue-500 to-blue-600 rounded-2xl p-6 text-white">
         <h3 className="text-lg font-semibold mb-2">Персональная подборка</h3>
         <p className="text-blue-100 text-sm mb-4">
           Тренировка под ваш уровень и предпочтения уже готова
