@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { Play, Pause, SkipForward, ChevronLeft, ChevronRight, Clock, CheckCircle } from 'lucide-react';
 
-const TrainingPage = () => {
+export default function TrainingPage() {
   const [currentExercise, setCurrentExercise] = useState(0);
   const [isRunning, setIsRunning] = useState(false);
   const [exerciseTime, setExerciseTime] = useState(0);
@@ -179,5 +179,3 @@ const TrainingPage = () => {
     </div>
   );
 };
-
-export default TrainingPage;

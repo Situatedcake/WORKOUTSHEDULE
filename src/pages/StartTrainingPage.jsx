@@ -3,7 +3,7 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { Clock, Award, ChevronRight, Dumbbell, Zap } from 'lucide-react';
 
-const StartTrainingPage = () => {
+export default function StartTrainingPage() {
   // Моковые данные тренировки
   const trainingPlan = {
     name: 'Силовая тренировка',
@@ -143,5 +143,3 @@ const StartTrainingPage = () => {
     </div>
   );
 };
-
-export default StartTrainingPage;
