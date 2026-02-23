@@ -1,7 +1,7 @@
 // components/Layout.jsx
-import React from 'react';
-import { Outlet } from 'react-router-dom';
-import Menu from './Menu';
+import React from "react";
+import { Outlet } from "react-router-dom";
+import Menu from "./Menu";
 
 export default function Layout() {
   return (
@@ -12,4 +12,4 @@ export default function Layout() {
       <Menu />
     </div>
   );
-};
+}
