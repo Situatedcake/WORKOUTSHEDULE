@@ -1,6 +1,6 @@
 import Fire from "../images/fire.svg"
 import NotationTest from "../components/NotationTest"
-
+import { Link } from "react-router-dom";
 export default function MainPage() {
   return (
     <>
@@ -11,7 +11,7 @@ export default function MainPage() {
           <p className="max-w-40 text-xl">Грудь, Трицепс, пресс</p>
 
           <button className="px-6 py-1 m-3 bg-amber-600 rounded-md text-3xl">
-            Начать{" "}
+            <Link to="StartTraning">Начать</Link> 
           </button>
         </div>
         <img src={Fire} alt="" className="w-30" />
