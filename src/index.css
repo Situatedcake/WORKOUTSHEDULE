@@ -1,25 +1,11 @@
-@import "tailwindcss";
-
-@font-face {
-  font-family: "Roboto";
-  src: url("./fonts/Roboto.ttf") format("truetype");
-  font-weight: normal;
-  font-style: normal;
-  font-display: swap;
-}
-
-:root {
-  font-family: "Roboto", sans-serif;
-  line-height: 1.5;
-  font-weight: 400;
-  background-color: #FDFDFD;
-
+#root {
+  width: 1126px;
+  max-width: 100%;
+  margin: 0 auto;
+  text-align: center;
+  border-inline: 1px solid var(--border);
+  min-height: 100svh;
+  display: flex;
+  flex-direction: column;
   box-sizing: border-box;
-
-
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
 }
-
