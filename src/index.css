@@ -1,11 +1,16 @@
-#root {
-  width: 1126px;
-  max-width: 100%;
-  margin: 0 auto;
-  text-align: center;
-  border-inline: 1px solid var(--border);
-  min-height: 100svh;
-  display: flex;
-  flex-direction: column;
-  box-sizing: border-box;
+@import "tailwindcss";
+@font-face {
+  font-family: Roboto;
+  src: url("/assets/font/Roboto.ttf");
+}
+
+* {
+  font-family: Roboto;
+}
+
+body {
+  background-color: #000214;
+  margin: 0;
+  padding-top: 50px;
+  color: white;
 }
