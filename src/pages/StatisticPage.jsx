@@ -1,11 +1,10 @@
-import React from "react";
-import NavMenu from "../components/NavMenu";
+import PlaceholderPage from "../components/PlaceholderPage";
 
 export default function StatisticPage() {
   return (
-    <>
-      <div>StatisticPage</div>
-      <NavMenu />
-    </>
+    <PlaceholderPage
+      title="Статистика"
+      description="Здесь позже появятся прогресс по тренировкам, графики и история активности."
+    />
   );
 }

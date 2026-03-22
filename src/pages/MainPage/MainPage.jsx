@@ -1,102 +1,72 @@
 import { Link } from "react-router";
 import "./MainPage.css";
-import MenuBTN from "/menu.svg";
+import MenuButton from "/menu.svg";
+import libraryIcon from "/icons/library.svg";
+import questionIcon from "/icons/quastion.svg";
+import trainingIcon from "/icons/addTraning.svg";
+import triangleIcon from "/icons/triangle.svg";
+import arrowIcon from "/icons/arrowRight.svg";
 import NavMenu from "../../components/NavMenu";
+import { ROUTES } from "../../constants/routes";
 
-import library from "/icons/library.svg";
-import quastion from "/icons/quastion.svg";
-import addtraning from "/icons/addTraning.svg";
-
-import Triangle from "/icons/triangle.svg";
-import arrow from "/icons/arrowRight.svg";
-
-const buttonText = [
-  { text: "Библиотека упражнений", img: library, url: "/library" },
-  { text: "Составить тренеровку", img: addtraning, url: "/create-training" },
-  { text: "Пройти тест", img: quastion, url: "/start-tasting" },
+const mainActions = [
+  {
+    text: "Библиотека упражнений",
+    img: libraryIcon,
+    alt: "Библиотека упражнений",
+    url: ROUTES.LIBRARY,
+  },
+  {
+    text: "Составить тренировку",
+    img: trainingIcon,
+    alt: "Составить тренировку",
+    url: ROUTES.CREATE_TRAINING,
+  },
+  {
+    text: "Пройти тест",
+    img: questionIcon,
+    alt: "Пройти тест",
+    url: ROUTES.START_TASTING,
+  },
 ];
 
-const MainButton = ({ text, img, url }) => {
-  return (
-    <Link
-      to={url}
-      className="
-    bg-[#12151C]
-    border border-[#383838]
-    p-4
-    rounded-3xl
-    text-xl
-    font-light
-    mt-3
-    w-full
-    flex
-    items-center
-    gap-5
-
-  "
-    >
-      <img src={img} alt="" />
-      {text}
-      <img src={arrow} className="ml-auto" />
-    </Link>
-  );
-};
-
-export default function mainPage() {
+export default function MainPage() {
   return (
     <>
       <header className="flex flex-wrap justify-evenly">
-        <button>
-          <img src={MenuBTN} />
+        <button type="button" aria-label="Меню">
+          <img src={MenuButton} alt="" aria-hidden="true" />
         </button>
         <span className="text-2xl">Привет, Данил!</span>
         <div className="p-5 rounded-3xl bg-white" id="userCard"></div>
       </header>
 
-      <section id="TraningCart" className="">
-        <h1
-          className="
-            text-3xl
-            font-medium
-            max-w-5
-            leading-10
-        "
-        >
-          Тренеровка сегодня
+      <section id="TraningCart">
+        <h1 className="max-w-5 text-3xl font-medium leading-10">
+          Тренировка сегодня
         </h1>
-        <h3
-          className="
-          text-2xl
-          font-light
-        "
-        >
-          19:00
-        </h3>
+        <h3 className="text-2xl font-light">19:00</h3>
+
         <Link
-          to="/Start-traning"
-          className="
-            
-            bg-[#3CFFB9]
-            text-black
-            text-2xl
-            font-medium
-            rounded-4xl
-            py-4
-            px-10
-            mt-8
-            flex
-            nowrap
-            items-center
-          "
+          to={ROUTES.START_TRAINING}
+          className="mt-8 flex items-center rounded-4xl bg-[#3CFFB9] px-10 py-4 text-2xl font-medium text-black active:bg-[#3CFFB9]/80"
         >
-          <img src={Triangle} className="mx-4" />
+          <img src={triangleIcon} alt="" aria-hidden="true" className="mx-4" />
           Приступить
         </Link>
       </section>
 
       <section className="flex flex-wrap px-5">
-        {buttonText.map((item) => (
-          <MainButton text={item.text} img={item.img} url={item.url} />
+        {mainActions.map((item) => (
+          <Link
+            key={item.url}
+            to={item.url}
+            className="mt-3 flex w-full items-center gap-5 rounded-3xl border border-[#383838] bg-[#12151C] p-4 text-xl font-light"
+          >
+            <img src={item.img} alt={item.alt} />
+            {item.text}
+            <img src={arrowIcon} alt="" aria-hidden="true" className="ml-auto" />
+          </Link>
         ))}
       </section>
 

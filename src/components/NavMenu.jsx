@@ -9,14 +9,24 @@ import UserActive from "/icons/navIcons/userActive.svg";
 import HomeActive from "/icons/navIcons/homeActive.svg";
 import CalendareActive from "/icons/navIcons/calendareActive.svg";
 import StatisticActive from "/icons/navIcons/statsActive.svg";
+import { ROUTES } from "../constants/routes";
 
-const NavComponent = ({ icon, iconActive, to }) => {
-  return (
-    <NavLink to={to}>
-      {({ isActive }) => <img src={isActive ? iconActive : icon} alt={icon} />}
-    </NavLink>
-  );
-};
+const navItems = [
+  { to: ROUTES.HOME, icon: Home, iconActive: HomeActive, label: "Главная" },
+  {
+    to: ROUTES.STATS,
+    icon: Statistic,
+    iconActive: StatisticActive,
+    label: "Статистика",
+  },
+  {
+    to: ROUTES.CALENDAR,
+    icon: Calendare,
+    iconActive: CalendareActive,
+    label: "Календарь",
+  },
+  { to: ROUTES.USER, icon: User, iconActive: UserActive, label: "Профиль" },
+];
 
 export default function NavMenu() {
   return (
@@ -36,17 +46,15 @@ export default function NavMenu() {
             border-[#383838]
             w-[calc(100%-3rem)]
             box-border
-            
         "
     >
-      <NavComponent to="/" icon={Home} iconActive={HomeActive} />
-      <NavComponent to="/stats" icon={Statistic} iconActive={StatisticActive} />
-      <NavComponent
-        to="/calendare"
-        icon={Calendare}
-        iconActive={CalendareActive}
-      />
-      <NavComponent to="/user" icon={User} iconActive={UserActive} />
+      {navItems.map(({ to, icon, iconActive, label }) => (
+        <NavLink key={to} to={to} aria-label={label} className="rounded-2xl">
+          {({ isActive }) => (
+            <img src={isActive ? iconActive : icon} alt="" aria-hidden="true" />
+          )}
+        </NavLink>
+      ))}
     </nav>
   );
 }

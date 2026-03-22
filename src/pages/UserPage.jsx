@@ -1,11 +1,10 @@
-import React from "react";
-import NavMenu from "../components/NavMenu";
+import PlaceholderPage from "../components/PlaceholderPage";
 
 export default function UserPage() {
   return (
-    <>
-      <div>UserPage</div>
-      <NavMenu />
-    </>
+    <PlaceholderPage
+      title="Профиль"
+      description="Здесь позже можно будет редактировать данные пользователя и смотреть персональные настройки."
+    />
   );
 }

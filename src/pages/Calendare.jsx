@@ -1,11 +1,10 @@
-import React from "react";
-import NavMenu from "../components/NavMenu";
+import PlaceholderPage from "../components/PlaceholderPage";
 
 export default function Calendare() {
   return (
-    <>
-      <div>Calendare</div>
-      <NavMenu />
-    </>
+    <PlaceholderPage
+      title="Календарь"
+      description="Здесь позже можно будет смотреть расписание тренировок и план на неделю."
+    />
   );
 }
