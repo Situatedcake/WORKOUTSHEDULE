@@ -1,9 +1,46 @@
 import { Link } from "react-router";
 import "./MainPage.css";
 import MenuBTN from "/menu.svg";
-import NavMenu from "./NavMenu";
+import NavMenu from "../../components/NavMenu";
+
+import library from "/icons/library.svg";
+import quastion from "/icons/quastion.svg";
+import addtraning from "/icons/addTraning.svg";
 
 import Triangle from "/icons/triangle.svg";
+import arrow from "/icons/arrowRight.svg";
+
+const buttonText = [
+  { text: "Библиотека упражнений", img: library, url: "/library" },
+  { text: "Составить тренеровку", img: addtraning, url: "/create-training" },
+  { text: "Пройти тест", img: quastion, url: "/start-tasting" },
+];
+
+const MainButton = ({ text, img, url }) => {
+  return (
+    <Link
+      to={url}
+      className="
+    bg-[#12151C]
+    border border-[#383838]
+    p-4
+    rounded-3xl
+    text-xl
+    font-light
+    mt-3
+    w-full
+    flex
+    items-center
+    gap-5
+
+  "
+    >
+      <img src={img} alt="" />
+      {text}
+      <img src={arrow} className="ml-auto" />
+    </Link>
+  );
+};
 
 export default function mainPage() {
   return (
@@ -36,7 +73,7 @@ export default function mainPage() {
           19:00
         </h3>
         <Link
-          to="/StartTraningPage"
+          to="/Start-traning"
           className="
             
             bg-[#3CFFB9]
@@ -57,10 +94,10 @@ export default function mainPage() {
         </Link>
       </section>
 
-      <section className="">
-        <button>Библиотека упражнений</button>
-        <button>Составить тренеровку</button>
-        <button>Пройти тест</button>
+      <section className="flex flex-wrap px-5">
+        {buttonText.map((item) => (
+          <MainButton text={item.text} img={item.img} url={item.url} />
+        ))}
       </section>
 
       <NavMenu />

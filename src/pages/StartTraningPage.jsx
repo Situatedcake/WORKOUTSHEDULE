@@ -1,5 +1,5 @@
 import { Link } from "react-router";
-import NavMenu from "./MainPage/NavMenu";
+import NavMenu from "../components/NavMenu";
 
 export default function StartTraningPage() {
   return (
