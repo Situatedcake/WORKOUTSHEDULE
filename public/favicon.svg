@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-label="WorkoutShedule">
+  <rect width="128" height="128" rx="32" fill="#000214" />
+  <rect x="18" y="18" width="92" height="92" rx="28" fill="#12151c" stroke="#2a3140" stroke-width="4" />
+  <path d="M40 80L52 48L64 72L76 40L88 80" fill="none" stroke="#01bb96" stroke-width="10" stroke-linecap="round" stroke-linejoin="round" />
+</svg>

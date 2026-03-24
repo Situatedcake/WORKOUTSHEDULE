@@ -5,11 +5,15 @@ export default function PageShell({
   className = "",
   showNavMenu = true,
 }) {
-  const bottomSpacingClassName = showNavMenu ? "pb-28" : "pb-6";
+  const bottomSpacingClassName = showNavMenu
+    ? "pb-[calc(7rem+env(safe-area-inset-bottom))]"
+    : "pb-[calc(1.5rem+env(safe-area-inset-bottom))]";
 
   return (
     <>
-      <main className={`min-h-screen px-5 ${bottomSpacingClassName} ${className}`}>
+      <main
+        className={`min-h-[100dvh] px-5 ${bottomSpacingClassName} ${className}`}
+      >
         {children}
       </main>
       {showNavMenu ? <NavMenu /> : null}

@@ -30,31 +30,16 @@ const navItems = [
 
 export default function NavMenu() {
   return (
-    <nav
-      className="
-            absolute 
-            bottom-0 
-            flex
-            justify-evenly
-            items-center
-            py-0.5
-            mx-6
-            mb-5
-            rounded-4xl
-            bg-[#12151C]
-            border
-            border-[#383838]
-            w-[calc(100%-3rem)]
-            box-border
-        "
-    >
-      {navItems.map(({ to, icon, iconActive, label }) => (
-        <NavLink key={to} to={to} aria-label={label} className="rounded-2xl">
-          {({ isActive }) => (
-            <img src={isActive ? iconActive : icon} alt="" aria-hidden="true" />
-          )}
-        </NavLink>
-      ))}
+    <nav className="fixed inset-x-0 bottom-0 z-50 flex justify-center px-4 pb-[calc(1rem+env(safe-area-inset-bottom))]">
+      <div className="flex w-full max-w-md items-center justify-evenly rounded-4xl border border-[#383838] bg-[#12151C] py-0.5">
+        {navItems.map(({ to, icon, iconActive, label }) => (
+          <NavLink key={to} to={to} aria-label={label} className="rounded-2xl p-3">
+            {({ isActive }) => (
+              <img src={isActive ? iconActive : icon} alt="" aria-hidden="true" />
+            )}
+          </NavLink>
+        ))}
+      </div>
     </nav>
   );
 }
