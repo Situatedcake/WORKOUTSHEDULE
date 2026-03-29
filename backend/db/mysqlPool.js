@@ -27,6 +27,76 @@ async function ensureSchema() {
   await pool.query(schemaSql);
 }
 
+async function hasUsersColumn(columnName) {
+  const [rows] = await pool.execute(
+    `
+      SELECT 1
+      FROM information_schema.COLUMNS
+      WHERE TABLE_SCHEMA = ?
+        AND TABLE_NAME = 'users'
+        AND COLUMN_NAME = ?
+      LIMIT 1
+    `,
+    [serverConfig.mysql.database, columnName],
+  );
+
+  return rows.length > 0;
+}
+
+async function hasUsersIndex(indexName) {
+  const [rows] = await pool.execute(
+    `
+      SELECT 1
+      FROM information_schema.STATISTICS
+      WHERE TABLE_SCHEMA = ?
+        AND TABLE_NAME = 'users'
+        AND INDEX_NAME = ?
+      LIMIT 1
+    `,
+    [serverConfig.mysql.database, indexName],
+  );
+
+  return rows.length > 0;
+}
+
+async function ensureUsersTableCompatibility() {
+  const hasLoginColumn = await hasUsersColumn("login");
+
+  if (!hasLoginColumn) {
+    await pool.query(
+      "ALTER TABLE users ADD COLUMN login VARCHAR(100) NULL AFTER id",
+    );
+  }
+
+  await pool.query(`
+    UPDATE users
+    SET login = name
+    WHERE login IS NULL OR login = ''
+  `);
+
+  await pool.query(
+    "ALTER TABLE users MODIFY COLUMN login VARCHAR(100) NOT NULL",
+  );
+
+  const hasLoginIndex = await hasUsersIndex("users_login_unique");
+
+  if (!hasLoginIndex) {
+    await pool.query(
+      "ALTER TABLE users ADD UNIQUE INDEX users_login_unique (login)",
+    );
+  }
+
+  const hasTrainingPlanAdaptationHistoryColumn = await hasUsersColumn(
+    "training_plan_adaptation_history_json",
+  );
+
+  if (!hasTrainingPlanAdaptationHistoryColumn) {
+    await pool.query(
+      "ALTER TABLE users ADD COLUMN training_plan_adaptation_history_json LONGTEXT NULL AFTER training_plan_json",
+    );
+  }
+}
+
 export async function initializeMySqlPool() {
   if (pool) {
     return pool;
@@ -47,6 +117,7 @@ export async function initializeMySqlPool() {
   });
 
   await ensureSchema();
+  await ensureUsersTableCompatibility();
 
   return pool;
 }

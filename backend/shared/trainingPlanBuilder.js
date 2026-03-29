@@ -44,6 +44,70 @@ const LEVEL_CONFIGS = {
   },
 };
 
+const [
+  UNDEFINED_TRAINING_LEVEL,
+  BEGINNER_TRAINING_LEVEL,
+  INTERMEDIATE_TRAINING_LEVEL,
+  ADVANCED_TRAINING_LEVEL,
+] = Object.keys(LEVEL_CONFIGS);
+
+const LEVEL_PRESCRIPTION_DETAILS = {
+  [UNDEFINED_TRAINING_LEVEL]: {
+    compound: { sets: 3, repRange: "8-10", restSeconds: 120 },
+    isolation: { sets: 3, repRange: "10-12", restSeconds: 75 },
+    cardio: { sets: 1, repRange: "15-20 мин", restSeconds: 30 },
+    core: { sets: 3, repRange: "30-40 сек", restSeconds: 45 },
+  },
+  [BEGINNER_TRAINING_LEVEL]: {
+    compound: { sets: 3, repRange: "10-12", restSeconds: 120 },
+    isolation: { sets: 2, repRange: "12-15", restSeconds: 60 },
+    cardio: { sets: 1, repRange: "12-18 мин", restSeconds: 30 },
+    core: { sets: 3, repRange: "30 сек", restSeconds: 45 },
+  },
+  [INTERMEDIATE_TRAINING_LEVEL]: {
+    compound: { sets: 4, repRange: "8-12", restSeconds: 150 },
+    isolation: { sets: 3, repRange: "10-15", restSeconds: 75 },
+    cardio: { sets: 1, repRange: "18-25 мин", restSeconds: 30 },
+    core: { sets: 4, repRange: "40-50 сек", restSeconds: 45 },
+  },
+  [ADVANCED_TRAINING_LEVEL]: {
+    compound: { sets: 5, repRange: "6-10", restSeconds: 180 },
+    isolation: { sets: 4, repRange: "10-15", restSeconds: 90 },
+    cardio: { sets: 1, repRange: "22-30 мин", restSeconds: 30 },
+    core: { sets: 4, repRange: "45-60 сек", restSeconds: 60 },
+  },
+};
+
+function formatRestDuration(restSeconds) {
+  const normalizedRestSeconds = Math.max(Number(restSeconds) || 0, 0);
+
+  if (normalizedRestSeconds >= 60) {
+    const restMinutes = Math.floor(normalizedRestSeconds / 60);
+    const restRemainderSeconds = normalizedRestSeconds % 60;
+
+    if (!restRemainderSeconds) {
+      return `${restMinutes} мин`;
+    }
+
+    return `${restMinutes} мин ${restRemainderSeconds} сек`;
+  }
+
+  return `${normalizedRestSeconds} сек`;
+}
+
+export function formatExercisePrescription({
+  exerciseType,
+  sets,
+  repRange,
+  restSeconds,
+}) {
+  if (exerciseType === "cardio") {
+    return `${sets} блок • ${repRange} • отдых ${formatRestDuration(restSeconds)}`;
+  }
+
+  return `${sets} подход. • ${repRange} • отдых ${formatRestDuration(restSeconds)}`;
+}
+
 const FOCUS_LIBRARY = [
   {
     key: "upper-torso",
@@ -499,13 +563,26 @@ export function getLevelConfig(trainingLevel) {
   return LEVEL_CONFIGS[trainingLevel] ?? LEVEL_CONFIGS["Не определен"];
 }
 
-export function getExercisePrescription(trainingLevel, exerciseType) {
-  const levelConfig = getLevelConfig(trainingLevel);
+export function getExercisePrescriptionDetails(trainingLevel, exerciseType) {
+  const levelDetails =
+    LEVEL_PRESCRIPTION_DETAILS[trainingLevel] ??
+    LEVEL_PRESCRIPTION_DETAILS[UNDEFINED_TRAINING_LEVEL];
+  const resolvedType = typeof exerciseType === "string" ? exerciseType : "compound";
+  const baseDetails = levelDetails[resolvedType] ?? levelDetails.compound;
 
-  return (
-    levelConfig.prescriptions[exerciseType] ??
-    levelConfig.prescriptions.compound
-  );
+  return {
+    ...baseDetails,
+    prescription: formatExercisePrescription({
+      exerciseType: resolvedType,
+      sets: baseDetails.sets,
+      repRange: baseDetails.repRange,
+      restSeconds: baseDetails.restSeconds,
+    }),
+  };
+}
+
+export function getExercisePrescription(trainingLevel, exerciseType) {
+  return getExercisePrescriptionDetails(trainingLevel, exerciseType).prescription;
 }
 
 function getFocusDefinition(focusKey) {
@@ -631,10 +708,21 @@ export function buildTrainingPlan({
       completed: false,
       exercises: selectedExerciseNames.map((exerciseName) => {
         const exercise = exerciseMap.get(exerciseName);
+        const prescriptionDetails = getExercisePrescriptionDetails(
+          normalizedTrainingLevel,
+          exercise.type,
+        );
+
         return {
           name: exercise.name,
           type: exercise.type,
-          prescription: getExercisePrescription(normalizedTrainingLevel, exercise.type),
+          sets: prescriptionDetails.sets,
+          repRange: prescriptionDetails.repRange,
+          restSeconds: prescriptionDetails.restSeconds,
+          prescription: prescriptionDetails.prescription,
+          volumeTrend: "base",
+          volumeReason:
+            "Базовый объём подобран по текущему уровню подготовки и типу упражнения.",
         };
       }),
     };

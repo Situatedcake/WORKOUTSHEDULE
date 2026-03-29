@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link } from "react-router";
 import PageShell from "./PageShell";
+import PageBackButton from "./PageBackButton";
 
 export default function AuthFormCard({
   title,
@@ -12,7 +13,7 @@ export default function AuthFormCard({
   footerTo,
   requirePasswordConfirmation = false,
 }) {
-  const [name, setName] = useState("");
+  const [login, setLogin] = useState("");
   const [password, setPassword] = useState("");
   const [passwordConfirmation, setPasswordConfirmation] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
@@ -31,7 +32,7 @@ export default function AuthFormCard({
 
     try {
       await onSubmit({
-        name,
+        login,
         password,
         passwordConfirmation,
       });
@@ -45,8 +46,10 @@ export default function AuthFormCard({
   };
 
   return (
-    <PageShell className="pt-5" showNavMenu={false}>
+    <PageShell className="pt-5">
       <section className="mx-auto flex w-full max-w-md flex-col gap-5 rounded-[28px] border border-[#2A3140] bg-[#12151C] p-6">
+        <PageBackButton />
+
         <div className="space-y-2">
           <h1 className="text-3xl font-medium text-white">{title}</h1>
           <p className="text-sm leading-6 text-[#8E97A8]">{subtitle}</p>
@@ -54,12 +57,12 @@ export default function AuthFormCard({
 
         <form className="flex flex-col gap-4" onSubmit={handleSubmit}>
           <label className="flex flex-col gap-2">
-            <span className="text-sm text-[#8E97A8]">Имя</span>
+            <span className="text-sm text-[#8E97A8]">Логин</span>
             <input
-              value={name}
-              onChange={(event) => setName(event.target.value)}
+              value={login}
+              onChange={(event) => setLogin(event.target.value)}
               className="rounded-2xl border border-[#2A3140] bg-[#0B0E15] px-4 py-3 text-white outline-none focus:border-[#01BB96]"
-              placeholder="Введите имя"
+              placeholder="Введите логин"
               autoComplete="username"
             />
           </label>

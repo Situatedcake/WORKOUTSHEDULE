@@ -1,10 +1,10 @@
 import { useEffect, useState } from "react";
+import imageCompression from "browser-image-compression";
 import { Link, Navigate, useNavigate } from "react-router";
 import PageShell from "../components/PageShell";
 import { ROUTES } from "../constants/routes";
 import { useAuth } from "../hooks/useAuth";
 import { startTastingSession } from "../utils/tastingSession";
-import imageCompression from "browser-image-compression";
 
 export default function UserEditPage() {
   const { currentUser, isAuthReady, updateCurrentUserProfile } = useAuth();
@@ -25,7 +25,7 @@ export default function UserEditPage() {
     }
 
     setProfileForm({
-      name: currentUser.name ?? "",
+      name: currentUser.name ?? currentUser.login ?? "",
       email: currentUser.email ?? "",
       password: "",
       profilePhoto: currentUser.profilePhoto ?? "",
@@ -55,6 +55,13 @@ export default function UserEditPage() {
     }
   }
 
+  function updatePhotoResult(photoData) {
+    setProfileForm((previousForm) => ({
+      ...previousForm,
+      profilePhoto: photoData,
+    }));
+  }
+
   function handlePhotoUpload(event) {
     const file = event.target.files?.[0];
 
@@ -62,51 +69,34 @@ export default function UserEditPage() {
       return;
     }
 
-    // Если файл больше 1MB, сжимаем
+    const readFile = (nextFile) => {
+      const reader = new FileReader();
+
+      reader.onload = () => {
+        updatePhotoResult(String(reader.result ?? ""));
+      };
+
+      reader.readAsDataURL(nextFile);
+    };
+
     if (file.size > 1024 * 1024) {
       const options = {
-        maxSizeMB: 0.5, // сжимаем до 0.5MB
-        maxWidthOrHeight: 1024, // максимальная ширина или высота
-        useWebWorker: true, // для производительности
-        fileType: "image/jpeg", // конвертируем в JPEG
+        maxSizeMB: 0.5,
+        maxWidthOrHeight: 1024,
+        useWebWorker: true,
+        fileType: "image/jpeg",
       };
 
       imageCompression(file, options)
-        .then((compressedFile) => {
-          const reader = new FileReader();
-
-          reader.onload = () => {
-            setProfileForm((previousForm) => ({
-              ...previousForm,
-              profilePhoto: String(reader.result ?? ""),
-            }));
-          };
-
-          reader.readAsDataURL(compressedFile);
-        })
-        .catch((error) => {
-          console.error("Ошибка сжатия:", error);
-          // В случае ошибки загружаем оригинал
-          const reader = new FileReader();
-          reader.onload = () => {
-            setProfileForm((previousForm) => ({
-              ...previousForm,
-              profilePhoto: String(reader.result ?? ""),
-            }));
-          };
-          reader.readAsDataURL(file);
+        .then(readFile)
+        .catch(() => {
+          readFile(file);
         });
-    } else {
-      // Если файл и так маленький, загружаем как есть
-      const reader = new FileReader();
-      reader.onload = () => {
-        setProfileForm((previousForm) => ({
-          ...previousForm,
-          profilePhoto: String(reader.result ?? ""),
-        }));
-      };
-      reader.readAsDataURL(file);
+
+      return;
     }
+
+    readFile(file);
   }
 
   function handleRetakeTest() {
@@ -137,8 +127,13 @@ export default function UserEditPage() {
           </p>
           <h1 className="text-3xl font-medium text-white">Редактирование</h1>
           <p className="text-sm leading-6 text-[#8E97A8]">
-            Здесь можно обновить имя, почту, пароль и фото профиля.
+            Логин используется для входа. Здесь можно изменить имя, почту,
+            пароль и фото профиля.
           </p>
+        </div>
+
+        <div className="rounded-2xl bg-[#0B0E15] px-4 py-3 text-sm text-[#8E97A8]">
+          Логин: <span className="text-white">{currentUser.login ?? currentUser.name}</span>
         </div>
 
         <div className="flex items-center gap-4 rounded-2xl bg-[#0B0E15] px-4 py-4">
@@ -151,7 +146,9 @@ export default function UserEditPage() {
               />
             ) : (
               <div className="flex h-full w-full items-center justify-center text-2xl font-medium text-white">
-                {currentUser.name.slice(0, 1).toUpperCase()}
+                {(currentUser.name ?? currentUser.login ?? "Г")
+                  .slice(0, 1)
+                  .toUpperCase()}
               </div>
             )}
           </div>
@@ -168,34 +165,36 @@ export default function UserEditPage() {
         </div>
 
         <form onSubmit={handleProfileSubmit} className="flex flex-col gap-4">
-          <label className="flex flex-col gap-2">
-            <span className="text-sm text-[#8E97A8]">Имя</span>
-            <input
-              value={profileForm.name}
-              onChange={(event) =>
-                setProfileForm((previousForm) => ({
-                  ...previousForm,
-                  name: event.target.value,
-                }))
-              }
-              className="rounded-2xl border border-[#2A3140] bg-[#0B0E15] px-4 py-3 text-white outline-none"
-            />
-          </label>
+          <div className="grid grid-cols-2 gap-3">
+            <label className="flex flex-col gap-2">
+              <span className="text-sm text-[#8E97A8]">Имя</span>
+              <input
+                value={profileForm.name}
+                onChange={(event) =>
+                  setProfileForm((previousForm) => ({
+                    ...previousForm,
+                    name: event.target.value,
+                  }))
+                }
+                className="rounded-2xl border border-[#2A3140] bg-[#0B0E15] px-4 py-3 text-white outline-none"
+              />
+            </label>
 
-          <label className="flex flex-col gap-2">
-            <span className="text-sm text-[#8E97A8]">Почта</span>
-            <input
-              type="email"
-              value={profileForm.email}
-              onChange={(event) =>
-                setProfileForm((previousForm) => ({
-                  ...previousForm,
-                  email: event.target.value,
-                }))
-              }
-              className="rounded-2xl border border-[#2A3140] bg-[#0B0E15] px-4 py-3 text-white outline-none"
-            />
-          </label>
+            <label className="flex flex-col gap-2">
+              <span className="text-sm text-[#8E97A8]">Почта</span>
+              <input
+                type="email"
+                value={profileForm.email}
+                onChange={(event) =>
+                  setProfileForm((previousForm) => ({
+                    ...previousForm,
+                    email: event.target.value,
+                  }))
+                }
+                className="rounded-2xl border border-[#2A3140] bg-[#0B0E15] px-4 py-3 text-white outline-none"
+              />
+            </label>
+          </div>
 
           <label className="flex flex-col gap-2">
             <span className="text-sm text-[#8E97A8]">Новый пароль</span>

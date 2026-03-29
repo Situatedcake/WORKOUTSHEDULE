@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router";
 import "./MainPage.css";
-import MenuButton from "/menu.svg";
 import libraryIcon from "/icons/library.svg";
+import menuIcon from "/menu.svg";
 import questionIcon from "/icons/quastion.svg";
 import trainingIcon from "/icons/addTraning.svg";
 import triangleIcon from "/icons/triangle.svg";
@@ -10,16 +10,54 @@ import arrowIcon from "/icons/arrowRight.svg";
 import NavMenu from "../../components/NavMenu";
 import { ROUTES } from "../../constants/routes";
 import { useAuth } from "../../hooks/useAuth";
+import { useInstallPrompt } from "../../hooks/useInstallPrompt";
 import {
   formatDateKey,
   formatWorkoutRelativeLabel,
   getNearestScheduledWorkout,
 } from "../../shared/workoutSchedule";
 
+function InstallIcon() {
+  return (
+    <svg
+      width="22"
+      height="22"
+      viewBox="0 0 24 24"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+      aria-hidden="true"
+    >
+      <path
+        d="M12 4V14"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+      />
+      <path
+        d="M8.5 10.5L12 14L15.5 10.5"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M5 16.5V17.5C5 18.6046 5.89543 19.5 7 19.5H17C18.1046 19.5 19 18.6046 19 17.5V16.5"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+      />
+    </svg>
+  );
+}
+
 export default function MainPage() {
   const navigate = useNavigate();
   const { currentUser } = useAuth();
+  const { canPrompt, isInstalled, isIosSafari, promptInstall } =
+    useInstallPrompt();
   const [startHint, setStartHint] = useState("");
+  const [installHint, setInstallHint] = useState("");
+
   const nextWorkout = getNearestScheduledWorkout(
     currentUser?.scheduledWorkouts ?? [],
   );
@@ -37,8 +75,7 @@ export default function MainPage() {
   let disabledReason = "";
 
   if (!currentUser) {
-    disabledReason =
-      "Чтобы начать тренировку, сначала войди в аккаунт.";
+    disabledReason = "Чтобы начать тренировку, сначала войди в аккаунт.";
   } else if (currentUser.lastTestScore == null) {
     disabledReason =
       "Сначала пройди тест, чтобы определить уровень подготовки.";
@@ -84,6 +121,32 @@ export default function MainPage() {
     navigate(ROUTES.WORKOUT_PLAN);
   }
 
+  async function handleInstallApp() {
+    if (isInstalled) {
+      setInstallHint("Приложение уже установлено.");
+      return;
+    }
+
+    if (canPrompt) {
+      const result = await promptInstall();
+
+      if (result.outcome !== "accepted") {
+        setInstallHint("Установку можно повторить позже.");
+      }
+
+      return;
+    }
+
+    if (isIosSafari) {
+      setInstallHint('Открой "Поделиться" и выбери "На экран Домой".');
+      return;
+    }
+
+    setInstallHint(
+      "Установка станет доступна в поддерживаемом браузере после загрузки приложения.",
+    );
+  }
+
   useEffect(() => {
     if (!startHint) {
       return undefined;
@@ -98,15 +161,48 @@ export default function MainPage() {
     };
   }, [startHint]);
 
+  useEffect(() => {
+    if (!installHint) {
+      return undefined;
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      setInstallHint("");
+    }, 8000);
+
+    return () => {
+      window.clearTimeout(timeoutId);
+    };
+  }, [installHint]);
+
   return (
     <main className="pb-[calc(7rem+env(safe-area-inset-bottom))]">
       <header className="mx-auto flex w-full max-w-md items-center justify-between gap-4 px-5 pt-5">
-        <button type="button" aria-label="Меню">
-          <img src={MenuButton} alt="" aria-hidden="true" />
-        </button>
+        <div className="relative">
+          {!isInstalled && installHint ? (
+            <div className="absolute left-0 top-full z-20 mt-3 w-52 rounded-2xl bg-[#12151C] px-3 py-2 text-xs leading-5 text-[#D8E0EE] shadow-lg">
+              {installHint}
+            </div>
+          ) : null}
+
+          <button
+            type="button"
+            onClick={isInstalled ? undefined : handleInstallApp}
+            className="flex h-12 w-12 items-center justify-center rounded-2xl border border-[#2A3140] bg-[#12151C] text-white"
+            aria-label="Установить приложение"
+          >
+            {isInstalled ? (
+              <img src={menuIcon} alt="" aria-hidden="true" className="h-5 w-5" />
+            ) : (
+              <InstallIcon />
+            )}
+          </button>
+        </div>
+
         <span className="flex-1 text-center text-2xl">
-          Привет, {currentUser?.name ?? "гость"}!
+          Привет, {currentUser?.name ?? currentUser?.login ?? "гость"}!
         </span>
+
         <div
           className="flex h-14 w-14 items-center justify-center overflow-hidden rounded-3xl bg-white"
           id="userCard"
@@ -119,7 +215,9 @@ export default function MainPage() {
             />
           ) : (
             <span className="text-lg font-medium text-black">
-              {(currentUser?.name ?? "Г").slice(0, 1).toUpperCase()}
+              {(currentUser?.name ?? currentUser?.login ?? "Г")
+                .slice(0, 1)
+                .toUpperCase()}
             </span>
           )}
         </div>
@@ -130,6 +228,7 @@ export default function MainPage() {
           <h1 className="max-w-[13rem] text-3xl font-medium leading-10 [text-shadow:0_2px_10px_rgba(0,0,0,0.45)]">
             {nextWorkoutLabel}
           </h1>
+
           {nextWorkout?.time ? (
             <h3 className="text-2xl font-light [text-shadow:0_2px_10px_rgba(0,0,0,0.45)]">
               {nextWorkout.time}
@@ -159,7 +258,12 @@ export default function MainPage() {
                   : "bg-[#5F6674] text-[#DBE0E8]"
               }`}
             >
-              <img src={triangleIcon} alt="" aria-hidden="true" className="mx-4" />
+              <img
+                src={triangleIcon}
+                alt=""
+                aria-hidden="true"
+                className="mx-4"
+              />
               Приступить
             </button>
           </div>

@@ -16,6 +16,23 @@ function cloneValue(value) {
   return JSON.parse(JSON.stringify(value));
 }
 
+function normalizeDatabaseUser(user) {
+  if (!user) {
+    return user;
+  }
+
+  return {
+    ...user,
+    login: String(user.login ?? user.name ?? "").trim(),
+    name: String(user.name ?? user.login ?? "").trim(),
+    trainingPlanAdaptationHistory: Array.isArray(
+      user.trainingPlanAdaptationHistory,
+    )
+      ? user.trainingPlanAdaptationHistory
+      : [],
+  };
+}
+
 async function ensureDatabaseFile() {
   await mkdir(path.dirname(databaseFilePath), { recursive: true });
 
@@ -38,7 +55,9 @@ export async function readDatabase() {
     const parsedDatabase = JSON.parse(rawDatabase);
 
     return {
-      users: Array.isArray(parsedDatabase.users) ? parsedDatabase.users : [],
+      users: Array.isArray(parsedDatabase.users)
+        ? parsedDatabase.users.map(normalizeDatabaseUser)
+        : [],
     };
   } catch {
     return cloneValue(defaultDatabase);
@@ -47,7 +66,9 @@ export async function readDatabase() {
 
 export async function writeDatabase(database) {
   const normalizedDatabase = {
-    users: Array.isArray(database.users) ? database.users : [],
+    users: Array.isArray(database.users)
+      ? database.users.map(normalizeDatabaseUser)
+      : [],
   };
 
   await ensureDatabaseFile();

@@ -5,15 +5,15 @@ import {
   getSessionUserId,
   setSessionUserId,
 } from "../utils/authSession";
-import { getTrainingLevelByScore } from "../utils/trainingLevel";
 import { userRepository } from "../services/database/userRepository";
+import { getTrainingLevelByScore } from "../utils/trainingLevel";
 
-function validateCredentials({ name, password }) {
-  const trimmedName = name.trim();
-  const trimmedPassword = password.trim();
+function validateCredentials({ login, password }) {
+  const trimmedLogin = String(login ?? "").trim();
+  const trimmedPassword = String(password ?? "").trim();
 
-  if (trimmedName.length < 2) {
-    throw new Error("Имя должно содержать минимум 2 символа.");
+  if (trimmedLogin.length < 2) {
+    throw new Error("Логин должен содержать минимум 2 символа.");
   }
 
   if (trimmedPassword.length < 4) {
@@ -21,7 +21,7 @@ function validateCredentials({ name, password }) {
   }
 
   return {
-    name: trimmedName,
+    login: trimmedLogin,
     password: trimmedPassword,
   };
 }
@@ -116,12 +116,12 @@ export function AuthProvider({ children }) {
     };
   }, [currentUserId]);
 
-  const login = useCallback(async ({ name, password }) => {
-    const credentials = validateCredentials({ name, password });
+  const login = useCallback(async ({ login, password }) => {
+    const credentials = validateCredentials({ login, password });
     const user = await userRepository.login(credentials);
 
     if (!user) {
-      throw new Error("Неверное имя или пароль.");
+      throw new Error("Неверный логин или пароль.");
     }
 
     setSessionUserId(user.id);
@@ -132,8 +132,8 @@ export function AuthProvider({ children }) {
     return user;
   }, []);
 
-  const register = useCallback(async ({ name, password }) => {
-    const credentials = validateCredentials({ name, password });
+  const register = useCallback(async ({ login, password }) => {
+    const credentials = validateCredentials({ login, password });
     const user = await userRepository.register(credentials);
 
     setSessionUserId(user.id);
@@ -258,16 +258,15 @@ export function AuthProvider({ children }) {
     [currentUserId],
   );
 
-  const completeCurrentUserWorkout = useCallback(
-    async (scheduledWorkoutId, completionPayload) => {
+  const skipCurrentUserWorkout = useCallback(
+    async (scheduledWorkoutId) => {
       if (!currentUserId) {
         return null;
       }
 
-      const updatedUser = await userRepository.completeWorkout(
+      const updatedUser = await userRepository.skipWorkout(
         currentUserId,
         scheduledWorkoutId,
-        completionPayload,
       );
 
       if (updatedUser) {
@@ -276,6 +275,32 @@ export function AuthProvider({ children }) {
       }
 
       return updatedUser;
+    },
+    [currentUserId],
+  );
+
+  const completeCurrentUserWorkout = useCallback(
+    async (scheduledWorkoutId, completionPayload) => {
+      if (!currentUserId) {
+        return null;
+      }
+
+      const completionResult = await userRepository.completeWorkout(
+        currentUserId,
+        scheduledWorkoutId,
+        completionPayload,
+      );
+      const updatedUser =
+        completionResult?.user && typeof completionResult === "object"
+          ? completionResult.user
+          : completionResult;
+
+      if (updatedUser) {
+        setCurrentUser(updatedUser);
+        setAuthError("");
+      }
+
+      return completionResult;
     },
     [currentUserId],
   );
@@ -296,6 +321,7 @@ export function AuthProvider({ children }) {
         saveCurrentUserTrainingPlan,
         scheduleCurrentUserWorkout,
         cancelCurrentUserWorkout,
+        skipCurrentUserWorkout,
         completeCurrentUserWorkout,
       }}
     >

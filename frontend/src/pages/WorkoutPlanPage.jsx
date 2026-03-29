@@ -1,8 +1,15 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, Navigate, useNavigate } from "react-router";
 import PageShell from "../components/PageShell";
+import VolumeTrendIcon from "../components/VolumeTrendIcon";
 import { ROUTES } from "../constants/routes";
 import { useAuth } from "../hooks/useAuth";
+import {
+  getExerciseVolumeChangeChips,
+  getExerciseVolumeReason,
+  getExerciseVolumeReasonMeta,
+  getExerciseVolumeReasonTitle,
+} from "../shared/trainingPlanBuilder";
 import {
   buildWorkoutDraft,
   formatDuration,
@@ -266,11 +273,19 @@ export default function WorkoutPlanPage() {
         </header>
 
         <div className="flex flex-col gap-3">
-          {workoutDraft.exercises.map((exercise, exerciseIndex) => (
-            <section
-              key={exercise.id}
-              className="overflow-hidden rounded-[20px] border border-[#2A3140] bg-[#12151C]"
-            >
+          {workoutDraft.exercises.map((exercise, exerciseIndex) => {
+            const volumeReasonMeta = getExerciseVolumeReasonMeta(exercise);
+            const volumeReasonTitle = getExerciseVolumeReasonTitle(exercise);
+            const volumeReasonChips = getExerciseVolumeChangeChips(
+              exercise,
+              workoutDraft.trainingLevel,
+            );
+
+            return (
+              <section
+                key={exercise.id}
+                className="overflow-hidden rounded-[20px] border border-[#2A3140] bg-[#12151C]"
+              >
               <button
                 type="button"
                 onClick={() => toggleExerciseDetails(exerciseIndex)}
@@ -296,6 +311,7 @@ export default function WorkoutPlanPage() {
                       {exercise.sets} подход.
                     </span>
                   </div>
+
                 </div>
                 <span className="shrink-0 text-[#8E97A8]">
                   <ChevronIcon isExpanded={expandedExerciseIndex === exerciseIndex} />
@@ -359,10 +375,64 @@ export default function WorkoutPlanPage() {
                       {exercise.prescription}
                     </p>
                   </div>
+                  <div
+                    className={`mt-3 rounded-2xl px-4 py-3 ${volumeReasonMeta.surfaceClassName}`}
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <p className="text-[11px] uppercase tracking-[0.16em] text-[#8E97A8]">
+                          Причина адаптации
+                        </p>
+                        <div className="mt-2 flex items-center gap-2">
+                          <VolumeTrendIcon
+                            iconType={volumeReasonMeta.iconType}
+                            className={`h-4 w-4 ${volumeReasonMeta.textClassName}`}
+                          />
+                          <p
+                            className={`text-sm font-medium ${volumeReasonMeta.textClassName}`}
+                          >
+                            {volumeReasonTitle}
+                          </p>
+                        </div>
+                      </div>
+                      <span
+                        className={`rounded-full px-2.5 py-1 text-[10px] font-medium uppercase tracking-[0.16em] ${volumeReasonMeta.badgeClassName}`}
+                      >
+                        {volumeReasonMeta.label}
+                      </span>
+                    </div>
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      {volumeReasonChips.map((chip) => (
+                        <span
+                          key={`${exercise.id}_${chip}`}
+                          className={`rounded-full px-2.5 py-1 text-[10px] font-medium uppercase tracking-[0.14em] ${volumeReasonMeta.badgeClassName}`}
+                        >
+                          {chip}
+                        </span>
+                      ))}
+                    </div>
+                    <p className="mt-3 text-sm leading-6 text-[#8E97A8]">
+                      {getExerciseVolumeReason(exercise)}
+                    </p>
+                    <div className="hidden">
+                      <p className="text-[11px] uppercase tracking-[0.16em] text-[#8E97A8]">
+                        Почему такой объём
+                      </p>
+                      <span
+                        className={`rounded-full px-2.5 py-1 text-[10px] font-medium uppercase tracking-[0.16em] ${volumeReasonMeta.badgeClassName}`}
+                      >
+                        {volumeReasonMeta.label}
+                      </span>
+                    </div>
+                    <p className="hidden">
+                      {getExerciseVolumeReason(exercise)}
+                    </p>
+                  </div>
                 </div>
               ) : null}
-            </section>
-          ))}
+              </section>
+            );
+          })}
         </div>
 
       </section>

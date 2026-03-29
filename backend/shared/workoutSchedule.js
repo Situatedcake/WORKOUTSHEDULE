@@ -107,8 +107,21 @@ export function rebalanceScheduledWorkouts({
     .map((workout) => cloneValue(workout))
     .sort(compareScheduledWorkouts);
 
-  return sortedWorkouts.map((workout, index) => {
-    const session = trainingPlan.sessions[index % trainingPlan.sessions.length];
+  let sessionCounter = 0;
+
+  return sortedWorkouts.map((workout) => {
+    const session =
+      trainingPlan.sessions[sessionCounter % trainingPlan.sessions.length];
+    sessionCounter += 1;
+
+    if (workout.status === "completed") {
+      return {
+        ...workout,
+        sessionId: workout.sessionId ?? session.id,
+        sessionIndex: workout.sessionIndex ?? session.index,
+        time: workout.time ?? DEFAULT_WORKOUT_TIME,
+      };
+    }
 
     return {
       ...workout,

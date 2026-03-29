@@ -35,19 +35,19 @@ export const apiUserStorage = {
     }
   },
 
-  async login({ name, password }) {
+  async login({ login, password }) {
     const payload = await requestJson("/auth/login", {
       method: "POST",
-      body: JSON.stringify({ name, password }),
+      body: JSON.stringify({ login, password }),
     });
 
     return payload.user ?? null;
   },
 
-  async register({ name, password }) {
+  async register({ login, password }) {
     const payload = await requestJson("/auth/register", {
       method: "POST",
-      body: JSON.stringify({ name, password }),
+      body: JSON.stringify({ login, password }),
     });
 
     return payload.user ?? null;
@@ -117,6 +117,17 @@ export const apiUserStorage = {
     return payload.user ?? null;
   },
 
+  async skipWorkout(userId, scheduledWorkoutId) {
+    const payload = await requestJson(
+      `/users/${encodeURIComponent(userId)}/scheduled-workouts/${encodeURIComponent(scheduledWorkoutId)}/skip`,
+      {
+        method: "POST",
+      },
+    );
+
+    return payload.user ?? null;
+  },
+
   async completeWorkout(userId, scheduledWorkoutId, completionPayload) {
     const payload = await requestJson(
       `/users/${encodeURIComponent(userId)}/scheduled-workouts/${encodeURIComponent(scheduledWorkoutId)}/complete`,
@@ -126,6 +137,18 @@ export const apiUserStorage = {
       },
     );
 
-    return payload.user ?? null;
+    return payload;
+  },
+
+  async getWorkoutStats(userId, options = {}) {
+    const rangeKey =
+      options.rangeKey === "7" || options.rangeKey === "30"
+        ? options.rangeKey
+        : "all";
+    const querySuffix = rangeKey === "all" ? "" : `?range=${rangeKey}`;
+    const payload = await requestJson(
+      `/users/${encodeURIComponent(userId)}/stats${querySuffix}`,
+    );
+    return payload.stats ?? null;
   },
 };

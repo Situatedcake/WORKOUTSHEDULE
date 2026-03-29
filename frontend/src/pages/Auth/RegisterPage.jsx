@@ -14,7 +14,7 @@ export default function RegisterPage() {
   return (
     <AuthFormCard
       title="Регистрация"
-      subtitle="Создайте аккаунт, чтобы привязать к профилю ваш уровень подготовки по результатам теста."
+      subtitle="Создайте аккаунт. Пока что логин станет вашим именем в профиле, а потом его можно будет изменить в настройках."
       submitText="Создать аккаунт"
       requirePasswordConfirmation
       onSubmit={async (credentials) => {

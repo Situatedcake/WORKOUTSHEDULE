@@ -14,7 +14,7 @@ export default function LoginPage() {
   return (
     <AuthFormCard
       title="Вход"
-      subtitle="Войдите в профиль, чтобы сохранять результат теста и видеть свой уровень подготовки."
+      subtitle="Войдите в профиль, чтобы сохранять результаты теста, тренировки и календарь."
       submitText="Войти"
       onSubmit={async (credentials) => {
         await login(credentials);

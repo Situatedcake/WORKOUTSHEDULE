@@ -126,7 +126,9 @@ export default function UserPage() {
                 />
               ) : (
                 <div className="flex h-full w-full items-center justify-center text-2xl font-medium text-white">
-                  {currentUser.name.slice(0, 1).toUpperCase()}
+                  {(currentUser.name ?? currentUser.login ?? "Г")
+                    .slice(0, 1)
+                    .toUpperCase()}
                 </div>
               )}
             </div>
@@ -136,7 +138,7 @@ export default function UserPage() {
                 Профиль
               </p>
               <h1 className="text-3xl font-medium text-white">
-                {currentUser.name}
+                {currentUser.name ?? currentUser.login}
               </h1>
               <p className="text-sm text-[#8E97A8]">
                 {currentUser.email || "Почта пока не добавлена"}

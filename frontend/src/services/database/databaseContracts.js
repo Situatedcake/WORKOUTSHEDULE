@@ -7,5 +7,7 @@ export const USER_STORAGE_METHODS = [
   "saveTrainingPlan",
   "scheduleWorkout",
   "cancelWorkout",
+  "skipWorkout",
   "completeWorkout",
+  "getWorkoutStats",
 ];

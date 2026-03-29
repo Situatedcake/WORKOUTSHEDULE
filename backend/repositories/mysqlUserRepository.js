@@ -5,6 +5,10 @@ import {
   rebalanceScheduledWorkouts,
   scheduleWorkout as addScheduledWorkout,
 } from "../shared/workoutSchedule.js";
+import {
+  normalizeTrainingPlanAdaptationHistory,
+} from "../services/trainingPlanAdaptationHistory.js";
+import { createWorkoutHistoryEntry } from "../services/workoutHistory.js";
 
 function parseJsonField(value) {
   if (!value) {
@@ -25,12 +29,15 @@ function mapPublicUser(row) {
 
   return {
     id: row.id,
+    login: row.login ?? row.name,
     name: row.name,
     email: row.email,
     profilePhoto: row.profile_photo,
     trainingLevel: row.training_level,
     lastTestScore: row.last_test_score,
     trainingPlan: parseJsonField(row.training_plan_json),
+    trainingPlanAdaptationHistory:
+      parseJsonField(row.training_plan_adaptation_history_json) ?? [],
     scheduledWorkouts: parseJsonField(row.scheduled_workouts_json) ?? [],
     workoutHistory: parseJsonField(row.workout_history_json) ?? [],
     createdAt: row.created_at,
@@ -52,6 +59,16 @@ async function findUserRowById(userId) {
   return rows[0] ?? null;
 }
 
+async function findUserRowByLogin(login) {
+  const pool = getMySqlPool();
+  const [rows] = await pool.execute(
+    "SELECT * FROM users WHERE LOWER(COALESCE(login, name)) = LOWER(?) LIMIT 1",
+    [login.trim()],
+  );
+
+  return rows[0] ?? null;
+}
+
 async function findUserRowByName(name) {
   const pool = getMySqlPool();
   const [rows] = await pool.execute(
@@ -68,8 +85,8 @@ export const mysqlUserRepository = {
     return mapPublicUser(userRow);
   },
 
-  async login({ name, password }) {
-    const userRow = await findUserRowByName(name);
+  async login({ login, password }) {
+    const userRow = await findUserRowByLogin(login);
 
     if (!userRow || userRow.password !== password) {
       return null;
@@ -78,11 +95,12 @@ export const mysqlUserRepository = {
     return mapPublicUser(userRow);
   },
 
-  async register({ name, password }) {
-    const existingUser = await findUserRowByName(name);
+  async register({ login, password }) {
+    const trimmedLogin = String(login).trim();
+    const existingUser = await findUserRowByLogin(trimmedLogin);
 
     if (existingUser) {
-      throw new Error("Пользователь с таким именем уже существует.");
+      throw new Error("Пользователь с таким логином уже существует.");
     }
 
     const pool = getMySqlPool();
@@ -93,6 +111,7 @@ export const mysqlUserRepository = {
       `
         INSERT INTO users (
           id,
+          login,
           name,
           password,
           email,
@@ -100,21 +119,24 @@ export const mysqlUserRepository = {
           training_level,
           last_test_score,
           training_plan_json,
+          training_plan_adaptation_history_json,
           scheduled_workouts_json,
           workout_history_json,
           created_at,
           updated_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `,
       [
         userId,
-        name.trim(),
+        trimmedLogin,
+        trimmedLogin,
         password,
         null,
         null,
         "Не определен",
         null,
         null,
+        JSON.stringify([]),
         null,
         null,
         timestamp,
@@ -134,10 +156,7 @@ export const mysqlUserRepository = {
 
     const trimmedName = String(name ?? currentUserRow.name).trim();
 
-    if (
-      trimmedName &&
-      trimmedName.toLowerCase() !== currentUserRow.name.toLowerCase()
-    ) {
+    if (trimmedName && trimmedName.toLowerCase() !== currentUserRow.name.toLowerCase()) {
       const existingUser = await findUserRowByName(trimmedName);
 
       if (existingUser && existingUser.id !== userId) {
@@ -183,7 +202,7 @@ export const mysqlUserRepository = {
     return this.getById(userId);
   },
 
-  async saveTrainingPlan(userId, trainingPlan) {
+  async saveTrainingPlan(userId, trainingPlan, adaptationEvent = null) {
     const currentUserRow = await findUserRowById(userId);
 
     if (!currentUserRow) {
@@ -192,6 +211,15 @@ export const mysqlUserRepository = {
 
     const pool = getMySqlPool();
     const timestamp = new Date().toISOString().slice(0, 19).replace("T", " ");
+    const currentAdaptationHistory = normalizeTrainingPlanAdaptationHistory(
+      parseJsonField(currentUserRow.training_plan_adaptation_history_json) ?? [],
+    );
+    const nextAdaptationHistory = adaptationEvent
+      ? normalizeTrainingPlanAdaptationHistory([
+          ...currentAdaptationHistory,
+          adaptationEvent,
+        ])
+      : currentAdaptationHistory;
     const rebalancedWorkouts = rebalanceScheduledWorkouts({
       scheduledWorkouts:
         parseJsonField(currentUserRow.scheduled_workouts_json) ?? [],
@@ -201,11 +229,12 @@ export const mysqlUserRepository = {
     await pool.execute(
       `
         UPDATE users
-        SET training_plan_json = ?, scheduled_workouts_json = ?, updated_at = ?
+        SET training_plan_json = ?, training_plan_adaptation_history_json = ?, scheduled_workouts_json = ?, updated_at = ?
         WHERE id = ?
       `,
       [
         JSON.stringify(trainingPlan),
+        JSON.stringify(nextAdaptationHistory),
         JSON.stringify(rebalancedWorkouts),
         timestamp,
         userId,
@@ -251,22 +280,112 @@ export const mysqlUserRepository = {
       return null;
     }
 
+    const currentTrainingPlan = parseJsonField(currentUserRow.training_plan_json);
+    const currentScheduledWorkouts =
+      parseJsonField(currentUserRow.scheduled_workouts_json) ?? [];
+    const scheduledWorkout = currentScheduledWorkouts.find(
+      (item) => item.id === scheduledWorkoutId,
+    );
+
+    if (!scheduledWorkout) {
+      throw new Error("РўСЂРµРЅРёСЂРѕРІРєР° РЅРµ РЅР°Р№РґРµРЅР° РІ РєР°Р»РµРЅРґР°СЂРµ.");
+    }
+
     const scheduledWorkouts = removeScheduledWorkout({
-      scheduledWorkouts:
-        parseJsonField(currentUserRow.scheduled_workouts_json) ?? [],
-      trainingPlan: parseJsonField(currentUserRow.training_plan_json),
+      scheduledWorkouts: currentScheduledWorkouts,
+      trainingPlan: currentTrainingPlan,
       scheduledWorkoutId,
     });
+    const canceledAt = new Date().toISOString();
+    const nextWorkoutHistoryEntry = createWorkoutHistoryEntry({
+      scheduledWorkout,
+      completionPayload: {
+        status: "canceled",
+        plannedDurationSeconds:
+          (scheduledWorkout.estimatedDurationMin ?? 0) * 60,
+      },
+      trainingPlan: currentTrainingPlan,
+      historyEntryId: createWorkoutHistoryId(),
+      completedAt: canceledAt,
+    });
+    const nextWorkoutHistory = [
+      ...(parseJsonField(currentUserRow.workout_history_json) ?? []),
+      nextWorkoutHistoryEntry,
+    ];
     const pool = getMySqlPool();
-    const timestamp = new Date().toISOString().slice(0, 19).replace("T", " ");
+    const timestamp = canceledAt.slice(0, 19).replace("T", " ");
 
     await pool.execute(
       `
         UPDATE users
-        SET scheduled_workouts_json = ?, updated_at = ?
+        SET scheduled_workouts_json = ?, workout_history_json = ?, updated_at = ?
         WHERE id = ?
       `,
-      [JSON.stringify(scheduledWorkouts), timestamp, userId],
+      [
+        JSON.stringify(scheduledWorkouts),
+        JSON.stringify(nextWorkoutHistory),
+        timestamp,
+        userId,
+      ],
+    );
+
+    return this.getById(userId);
+  },
+
+  async skipWorkout(userId, scheduledWorkoutId) {
+    const currentUserRow = await findUserRowById(userId);
+
+    if (!currentUserRow) {
+      return null;
+    }
+
+    const currentTrainingPlan = parseJsonField(currentUserRow.training_plan_json);
+    const currentScheduledWorkouts =
+      parseJsonField(currentUserRow.scheduled_workouts_json) ?? [];
+    const scheduledWorkout = currentScheduledWorkouts.find(
+      (item) => item.id === scheduledWorkoutId,
+    );
+
+    if (!scheduledWorkout) {
+      throw new Error("РўСЂРµРЅРёСЂРѕРІРєР° РЅРµ РЅР°Р№РґРµРЅР° РІ РєР°Р»РµРЅРґР°СЂРµ.");
+    }
+
+    const scheduledWorkouts = removeScheduledWorkout({
+      scheduledWorkouts: currentScheduledWorkouts,
+      trainingPlan: currentTrainingPlan,
+      scheduledWorkoutId,
+    });
+    const skippedAt = new Date().toISOString();
+    const nextWorkoutHistoryEntry = createWorkoutHistoryEntry({
+      scheduledWorkout,
+      completionPayload: {
+        status: "skipped",
+        plannedDurationSeconds:
+          (scheduledWorkout.estimatedDurationMin ?? 0) * 60,
+      },
+      trainingPlan: currentTrainingPlan,
+      historyEntryId: createWorkoutHistoryId(),
+      completedAt: skippedAt,
+    });
+    const nextWorkoutHistory = [
+      ...(parseJsonField(currentUserRow.workout_history_json) ?? []),
+      nextWorkoutHistoryEntry,
+    ];
+    const pool = getMySqlPool();
+    const timestamp = skippedAt.slice(0, 19).replace("T", " ");
+
+    await pool.execute(
+      `
+        UPDATE users
+        SET scheduled_workouts_json = ?, workout_history_json = ?, updated_at = ?
+        WHERE id = ?
+      `,
+      [
+        JSON.stringify(scheduledWorkouts),
+        JSON.stringify(nextWorkoutHistory),
+        timestamp,
+        userId,
+      ],
     );
 
     return this.getById(userId);
@@ -284,6 +403,7 @@ export const mysqlUserRepository = {
       durationSeconds = 0,
       completedExercisesCount = 0,
       completedSetsCount = 0,
+      exerciseSetWeights = [],
       weightKg = null,
       burnedCalories = null,
     } = completionPayload;
@@ -298,27 +418,26 @@ export const mysqlUserRepository = {
     }
 
     const completedAt = new Date().toISOString();
-    const nextWorkoutHistoryEntry = {
-      id: createWorkoutHistoryId(),
-      scheduledWorkoutId,
-      title: scheduledWorkout.title,
-      emphasis: scheduledWorkout.emphasis,
-      date: scheduledWorkout.date,
-      time: scheduledWorkout.time,
-      durationSeconds,
-      completedExercisesCount,
-      completedSetsCount,
-      metrics: {
+    const nextWorkoutHistoryEntry = createWorkoutHistoryEntry({
+      scheduledWorkout,
+      completionPayload: {
+        ...completionPayload,
+        durationSeconds,
+        completedExercisesCount,
+        completedSetsCount,
+        exerciseSetWeights,
         weightKg,
         burnedCalories,
       },
+      trainingPlan: parseJsonField(currentUserRow.training_plan_json),
+      historyEntryId: createWorkoutHistoryId(),
       completedAt,
-    };
+    });
     const nextScheduledWorkouts = scheduledWorkouts.map((item) =>
       item.id === scheduledWorkoutId
         ? {
             ...item,
-            status: "completed",
+            status: nextWorkoutHistoryEntry.status,
             completedAt,
             result: nextWorkoutHistoryEntry,
           }

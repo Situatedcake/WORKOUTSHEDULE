@@ -10,6 +10,20 @@ import {
   rebalanceScheduledWorkouts,
   scheduleWorkout as addScheduledWorkout,
 } from "../shared/workoutSchedule.js";
+import {
+  normalizeTrainingPlanAdaptationHistory,
+} from "../services/trainingPlanAdaptationHistory.js";
+import { createWorkoutHistoryEntry } from "../services/workoutHistory.js";
+
+function findUserByLogin(users, login) {
+  const normalizedLogin = normalizeUserName(login);
+
+  return (
+    users.find(
+      (item) => normalizeUserName(item.login ?? item.name) === normalizedLogin,
+    ) ?? null
+  );
+}
 
 function findUserByName(users, name) {
   const normalizedName = normalizeUserName(name);
@@ -32,9 +46,9 @@ export const jsonUserRepository = {
     return sanitizeUser(user);
   },
 
-  async login({ name, password }) {
+  async login({ login, password }) {
     const database = await readDatabase();
-    const user = findUserByName(database.users, name);
+    const user = findUserByLogin(database.users, login);
 
     if (!user || user.password !== password) {
       return null;
@@ -43,24 +57,27 @@ export const jsonUserRepository = {
     return sanitizeUser(user);
   },
 
-  async register({ name, password }) {
+  async register({ login, password }) {
     const database = await readDatabase();
-    const existingUser = findUserByName(database.users, name);
+    const trimmedLogin = String(login).trim();
+    const existingUser = findUserByLogin(database.users, trimmedLogin);
 
     if (existingUser) {
-      throw new Error("Пользователь с таким именем уже существует.");
+      throw new Error("Пользователь с таким логином уже существует.");
     }
 
     const timestamp = new Date().toISOString();
     const nextUser = {
       id: createUserId(),
-      name: name.trim(),
+      login: trimmedLogin,
+      name: trimmedLogin,
       password,
       email: null,
       profilePhoto: null,
       trainingLevel: "Не определен",
       lastTestScore: null,
       trainingPlan: null,
+      trainingPlanAdaptationHistory: [],
       scheduledWorkouts: [],
       workoutHistory: [],
       createdAt: timestamp,
@@ -86,10 +103,10 @@ export const jsonUserRepository = {
 
     if (
       trimmedName &&
-      database.users.some(
-        (item) =>
-          item.id !== userId &&
-          normalizeUserName(item.name) === normalizeUserName(trimmedName),
+      normalizeUserName(trimmedName) !== normalizeUserName(currentUser.name) &&
+      findUserByName(
+        database.users.filter((item) => item.id !== userId),
+        trimmedName,
       )
     ) {
       throw new Error("Пользователь с таким именем уже существует.");
@@ -110,7 +127,7 @@ export const jsonUserRepository = {
     return sanitizeUser(nextUser);
   },
 
-  async saveTrainingPlan(userId, trainingPlan) {
+  async saveTrainingPlan(userId, trainingPlan, adaptationEvent = null) {
     const database = await readDatabase();
     const userIndex = database.users.findIndex((item) => item.id === userId);
 
@@ -119,9 +136,18 @@ export const jsonUserRepository = {
     }
 
     const currentUser = database.users[userIndex];
+    const trainingPlanAdaptationHistory = adaptationEvent
+      ? normalizeTrainingPlanAdaptationHistory([
+          ...(currentUser.trainingPlanAdaptationHistory ?? []),
+          adaptationEvent,
+        ])
+      : normalizeTrainingPlanAdaptationHistory(
+          currentUser.trainingPlanAdaptationHistory,
+        );
     const nextUser = {
       ...currentUser,
       trainingPlan,
+      trainingPlanAdaptationHistory,
       scheduledWorkouts: rebalanceScheduledWorkouts({
         scheduledWorkouts: currentUser.scheduledWorkouts ?? [],
         trainingPlan,
@@ -170,6 +196,26 @@ export const jsonUserRepository = {
     }
 
     const currentUser = database.users[userIndex];
+    const scheduledWorkout = (currentUser.scheduledWorkouts ?? []).find(
+      (item) => item.id === scheduledWorkoutId,
+    );
+
+    if (!scheduledWorkout) {
+      throw new Error("РўСЂРµРЅРёСЂРѕРІРєР° РЅРµ РЅР°Р№РґРµРЅР° РІ РєР°Р»РµРЅРґР°СЂРµ.");
+    }
+
+    const canceledAt = new Date().toISOString();
+    const nextWorkoutHistoryEntry = createWorkoutHistoryEntry({
+      scheduledWorkout,
+      completionPayload: {
+        status: "canceled",
+        plannedDurationSeconds:
+          (scheduledWorkout.estimatedDurationMin ?? 0) * 60,
+      },
+      trainingPlan: currentUser.trainingPlan,
+      historyEntryId: createWorkoutHistoryId(),
+      completedAt: canceledAt,
+    });
     const nextUser = {
       ...currentUser,
       scheduledWorkouts: removeScheduledWorkout({
@@ -177,7 +223,60 @@ export const jsonUserRepository = {
         trainingPlan: currentUser.trainingPlan,
         scheduledWorkoutId,
       }),
-      updatedAt: new Date().toISOString(),
+      workoutHistory: [
+        ...(currentUser.workoutHistory ?? []),
+        nextWorkoutHistoryEntry,
+      ],
+      updatedAt: canceledAt,
+    };
+
+    database.users[userIndex] = nextUser;
+    await writeDatabase(database);
+
+    return sanitizeUser(nextUser);
+  },
+
+  async skipWorkout(userId, scheduledWorkoutId) {
+    const database = await readDatabase();
+    const userIndex = database.users.findIndex((item) => item.id === userId);
+
+    if (userIndex === -1) {
+      return null;
+    }
+
+    const currentUser = database.users[userIndex];
+    const scheduledWorkout = (currentUser.scheduledWorkouts ?? []).find(
+      (item) => item.id === scheduledWorkoutId,
+    );
+
+    if (!scheduledWorkout) {
+      throw new Error("РўСЂРµРЅРёСЂРѕРІРєР° РЅРµ РЅР°Р№РґРµРЅР° РІ РєР°Р»РµРЅРґР°СЂРµ.");
+    }
+
+    const skippedAt = new Date().toISOString();
+    const nextWorkoutHistoryEntry = createWorkoutHistoryEntry({
+      scheduledWorkout,
+      completionPayload: {
+        status: "skipped",
+        plannedDurationSeconds:
+          (scheduledWorkout.estimatedDurationMin ?? 0) * 60,
+      },
+      trainingPlan: currentUser.trainingPlan,
+      historyEntryId: createWorkoutHistoryId(),
+      completedAt: skippedAt,
+    });
+    const nextUser = {
+      ...currentUser,
+      scheduledWorkouts: removeScheduledWorkout({
+        scheduledWorkouts: currentUser.scheduledWorkouts ?? [],
+        trainingPlan: currentUser.trainingPlan,
+        scheduledWorkoutId,
+      }),
+      workoutHistory: [
+        ...(currentUser.workoutHistory ?? []),
+        nextWorkoutHistoryEntry,
+      ],
+      updatedAt: skippedAt,
     };
 
     database.users[userIndex] = nextUser;
@@ -199,6 +298,7 @@ export const jsonUserRepository = {
       durationSeconds = 0,
       completedExercisesCount = 0,
       completedSetsCount = 0,
+      exerciseSetWeights = [],
       weightKg = null,
       burnedCalories = null,
     } = completionPayload;
@@ -212,29 +312,28 @@ export const jsonUserRepository = {
     }
 
     const completedAt = new Date().toISOString();
-    const nextWorkoutHistoryEntry = {
-      id: createWorkoutHistoryId(),
-      scheduledWorkoutId,
-      title: scheduledWorkout.title,
-      emphasis: scheduledWorkout.emphasis,
-      date: scheduledWorkout.date,
-      time: scheduledWorkout.time,
-      durationSeconds,
-      completedExercisesCount,
-      completedSetsCount,
-      metrics: {
+    const nextWorkoutHistoryEntry = createWorkoutHistoryEntry({
+      scheduledWorkout,
+      completionPayload: {
+        ...completionPayload,
+        durationSeconds,
+        completedExercisesCount,
+        completedSetsCount,
+        exerciseSetWeights,
         weightKg,
         burnedCalories,
       },
+      trainingPlan: currentUser.trainingPlan,
+      historyEntryId: createWorkoutHistoryId(),
       completedAt,
-    };
+    });
     const nextUser = {
       ...currentUser,
       scheduledWorkouts: (currentUser.scheduledWorkouts ?? []).map((item) =>
         item.id === scheduledWorkoutId
           ? {
               ...item,
-              status: "completed",
+              status: nextWorkoutHistoryEntry.status,
               completedAt,
               result: nextWorkoutHistoryEntry,
             }

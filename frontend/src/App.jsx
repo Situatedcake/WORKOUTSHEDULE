@@ -2,7 +2,7 @@ import { BrowserRouter, Route, Routes } from "react-router";
 
 import { ROUTES } from "./constants/routes";
 import MainPage from "./pages/MainPage/MainPage";
-import StartTraningPage from "./pages/StartTraningPage";
+import StartTraningPage from "./pages/traningPage/StartTraningPage";
 import UserPage from "./pages/UserPage";
 import StatisticPage from "./pages/StatisticPage";
 import Calendare from "./pages/Calendare";
@@ -15,8 +15,8 @@ import RegisterPage from "./pages/Auth/RegisterPage";
 import LibraryPage from "./pages/LibraryPage";
 import UserEditPage from "./pages/UserEditPage";
 import WorkoutPlanPage from "./pages/WorkoutPlanPage";
-import TraningPage from "./pages/TraningPage";
-import FinishTrainingPage from "./pages/FinishTrainingPage";
+import TraningPage from "./pages/traningPage/TraningPage";
+import FinishTrainingPage from "./pages/traningPage/FinishTrainingPage";
 
 export default function App() {
   return (

@@ -28,8 +28,12 @@ function formatMonthLabel(date) {
 }
 
 export default function Calendare() {
-  const { currentUser, scheduleCurrentUserWorkout, cancelCurrentUserWorkout } =
-    useAuth();
+  const {
+    currentUser,
+    scheduleCurrentUserWorkout,
+    cancelCurrentUserWorkout,
+    skipCurrentUserWorkout,
+  } = useAuth();
   const [currentMonthDate, setCurrentMonthDate] = useState(() => new Date());
   const [selectedDate, setSelectedDate] = useState("");
   const [selectedTime, setSelectedTime] = useState(DEFAULT_WORKOUT_TIME);
@@ -125,6 +129,28 @@ export default function Calendare() {
     }
   }
 
+  async function handleSkipWorkout() {
+    if (!selectedWorkout) {
+      return;
+    }
+
+    setIsScheduling(true);
+    setScheduleError("");
+
+    try {
+      await skipCurrentUserWorkout(selectedWorkout.id);
+      setSelectedDate("");
+    } catch (error) {
+      setScheduleError(
+        error instanceof Error
+          ? error.message
+          : "РќРµ СѓРґР°Р»РѕСЃСЊ РѕС‚РјРµС‚РёС‚СЊ С‚СЂРµРЅРёСЂРѕРІРєСѓ РєР°Рє РїСЂРѕРїСѓС‰РµРЅРЅСѓСЋ.",
+      );
+    } finally {
+      setIsScheduling(false);
+    }
+  }
+
   return (
     <PageShell className="pt-5">
       <section className="mx-auto flex w-full max-w-md flex-col gap-5 rounded-[28px] border border-[#2A3140] bg-[#12151C] p-5">
@@ -198,9 +224,9 @@ export default function Calendare() {
                       : "border-transparent bg-[#11141B] opacity-30"
                   } ${
                     workout?.status === "completed"
-                      ? "border-[#1E4B74] bg-[#102338] text-[#D6E6F8]"
+                      ? "border-[#1F5B46] bg-[#103328] text-[#DDF8EA]"
                       : workout
-                        ? "bg-[#0D3A33] text-[#DFFCF0]"
+                        ? "border-[#1E4B74] bg-[#102338] text-[#D6E6F8]"
                         : ""
                   } ${
                     isActive ? "border-[#01BB96]" : ""
@@ -267,7 +293,7 @@ export default function Calendare() {
               {selectedWorkout.time} • {selectedWorkout.emphasis}
             </p>
             {selectedWorkout.status === "completed" ? (
-              <div className="mt-3 inline-flex rounded-full bg-[#102338] px-3 py-1 text-xs text-[#B7D3EE]">
+              <div className="mt-3 inline-flex rounded-full bg-[#103328] px-3 py-1 text-xs text-[#B7EED1]">
                 Выполнена
               </div>
             ) : null}
@@ -318,6 +344,19 @@ export default function Calendare() {
             На {selectedDate} тренировка пока не поставлена. Выбери время в
             всплывающем меню у дня и подтверди добавление.
           </section>
+        ) : null}
+
+        {selectedWorkout &&
+        selectedWorkout.status !== "completed" &&
+        selectedWorkout.date <= today ? (
+          <button
+            type="button"
+            onClick={() => void handleSkipWorkout()}
+            disabled={isScheduling}
+            className="text-left text-sm font-medium text-[#FFD98A] disabled:opacity-50"
+          >
+            Пропустить тренировку
+          </button>
         ) : null}
 
         {scheduleError ? (

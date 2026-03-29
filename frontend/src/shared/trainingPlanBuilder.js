@@ -495,17 +495,325 @@ export const TRAINING_GOALS = FOCUS_LIBRARY.map(
   }),
 );
 
+/*
+const TRAINING_SETUP_RECOMMENDATIONS = {
+  "РќРµ РѕРїСЂРµРґРµР»РµРЅ": {
+    workoutsPerWeek: 3,
+    focusKey: "general-strength",
+    reason:
+      "РЎР±Р°Р»Р°РЅСЃРёСЂРѕРІР°РЅРЅР°СЏ РїСЂРѕРіСЂР°РјРјР° РґР»СЏ СЃС‚Р°СЂС‚Р° Рё РїРѕРґР±РѕСЂР° РЅР°РіСЂСѓР·РєРё.",
+  },
+  РќР°С‡РёРЅР°СЋС‰РёР№: {
+    workoutsPerWeek: 3,
+    focusKey: "general-strength",
+    reason:
+      "РЈСЂРѕРІРµРЅСЊ РїРѕРґСЃРєР°Р·С‹РІР°РµС‚, С‡С‚Рѕ Р»СѓС‡С€Рµ РЅР°С‡Р°С‚СЊ СЃ Р±Р°Р·РѕРІРѕР№ Рё СѓСЃС‚РѕР№С‡РёРІРѕР№ РїСЂРѕРіСЂР°РјРјС‹.",
+  },
+  РЎСЂРµРґРЅРёР№: {
+    workoutsPerWeek: 4,
+    focusKey: "upper-torso",
+    reason:
+      "РњРѕР¶РЅРѕ РїРѕРґРЅСЏС‚СЊ С‡Р°СЃС‚РѕС‚Сѓ С‚СЂРµРЅРёСЂРѕРІРѕРє Рё РґР°С‚СЊ Р±РѕР»СЊС€Рµ РѕР±СЉРµРјР° РІРµСЂС…Сѓ С‚РµР»Р°.",
+  },
+  РџСЂРѕРґРІРёРЅСѓС‚С‹Р№: {
+    workoutsPerWeek: 5,
+    focusKey: "upper-torso",
+    reason:
+      "РЈСЂРѕРІРµРЅСЊ РїРѕР·РІРѕР»СЏРµС‚ Р·Р°Р№С‚Рё РІ Р±РѕР»РµРµ С‡Р°СЃС‚С‹Р№ СЃРїР»РёС‚ СЃ Р±РѕР»СЊС€РёРј РѕР±СЉРµРјРѕРј.",
+  },
+};
+*/
+
+const [
+  UNDEFINED_TRAINING_LEVEL,
+  BEGINNER_TRAINING_LEVEL,
+  INTERMEDIATE_TRAINING_LEVEL,
+  ADVANCED_TRAINING_LEVEL,
+] = Object.keys(LEVEL_CONFIGS);
+
+const LEVEL_PRESCRIPTION_DETAILS = {
+  [UNDEFINED_TRAINING_LEVEL]: {
+    compound: { sets: 3, repRange: "8-10", restSeconds: 120 },
+    isolation: { sets: 3, repRange: "10-12", restSeconds: 75 },
+    cardio: { sets: 1, repRange: "15-20 мин", restSeconds: 30 },
+    core: { sets: 3, repRange: "30-40 сек", restSeconds: 45 },
+  },
+  [BEGINNER_TRAINING_LEVEL]: {
+    compound: { sets: 3, repRange: "10-12", restSeconds: 120 },
+    isolation: { sets: 2, repRange: "12-15", restSeconds: 60 },
+    cardio: { sets: 1, repRange: "12-18 мин", restSeconds: 30 },
+    core: { sets: 3, repRange: "30 сек", restSeconds: 45 },
+  },
+  [INTERMEDIATE_TRAINING_LEVEL]: {
+    compound: { sets: 4, repRange: "8-12", restSeconds: 150 },
+    isolation: { sets: 3, repRange: "10-15", restSeconds: 75 },
+    cardio: { sets: 1, repRange: "18-25 мин", restSeconds: 30 },
+    core: { sets: 4, repRange: "40-50 сек", restSeconds: 45 },
+  },
+  [ADVANCED_TRAINING_LEVEL]: {
+    compound: { sets: 5, repRange: "6-10", restSeconds: 180 },
+    isolation: { sets: 4, repRange: "10-15", restSeconds: 90 },
+    cardio: { sets: 1, repRange: "22-30 мин", restSeconds: 30 },
+    core: { sets: 4, repRange: "45-60 сек", restSeconds: 60 },
+  },
+};
+
+function formatRestDuration(restSeconds) {
+  const normalizedRestSeconds = Math.max(Number(restSeconds) || 0, 0);
+
+  if (normalizedRestSeconds >= 60) {
+    const restMinutes = Math.floor(normalizedRestSeconds / 60);
+    const restRemainderSeconds = normalizedRestSeconds % 60;
+
+    if (!restRemainderSeconds) {
+      return `${restMinutes} мин`;
+    }
+
+    return `${restMinutes} мин ${restRemainderSeconds} сек`;
+  }
+
+  return `${normalizedRestSeconds} сек`;
+}
+
+export function formatExercisePrescription({
+  exerciseType,
+  sets,
+  repRange,
+  restSeconds,
+}) {
+  if (exerciseType === "cardio") {
+    return `${sets} блок • ${repRange} • отдых ${formatRestDuration(restSeconds)}`;
+  }
+
+  return `${sets} подход. • ${repRange} • отдых ${formatRestDuration(restSeconds)}`;
+}
+
+export function getExerciseVolumeReason(exercise) {
+  if (typeof exercise?.volumeReason === "string" && exercise.volumeReason.trim()) {
+    return exercise.volumeReason;
+  }
+
+  if (exercise?.volumeTrend === "progressing") {
+    return "Объём усилен, потому что по упражнению уже виден рабочий прогресс.";
+  }
+
+  if (exercise?.volumeTrend === "stalled") {
+    return "Объём смягчён и смещён в сторону более контролируемой работы из-за плато.";
+  }
+
+  if (exercise?.volumeTrend === "manual") {
+    return "Объём скорректирован вручную, поэтому система показывает уже обновлённую версию плана.";
+  }
+
+  return "Базовый объём подобран по текущему уровню подготовки и типу упражнения.";
+}
+
+function formatSetDelta(delta) {
+  const absoluteDelta = Math.abs(delta);
+  const suffix =
+    absoluteDelta === 1
+      ? "подход"
+      : absoluteDelta >= 2 && absoluteDelta <= 4
+        ? "подхода"
+        : "подходов";
+
+  return `${delta > 0 ? "+" : "-"}${absoluteDelta} ${suffix}`;
+}
+
+function formatRestDelta(delta) {
+  return `отдых ${delta > 0 ? "+" : "-"}${formatRestDuration(Math.abs(delta))}`;
+}
+
+export function getExerciseVolumeReasonTitle(exercise) {
+  if (exercise?.volumeTrend === "progressing") {
+    return "Добавили объём из-за прогресса";
+  }
+
+  if (exercise?.volumeTrend === "stalled") {
+    return "Смягчили объём из-за плато";
+  }
+
+  if (exercise?.volumeTrend === "manual") {
+    return "Объём скорректирован вручную";
+  }
+
+  return "Базовый объём под твой уровень";
+}
+
+export function getExerciseVolumeChangeChips(exercise, trainingLevel) {
+  const baseDetails = getExercisePrescriptionDetails(
+    trainingLevel,
+    exercise?.type ?? "compound",
+  );
+  const currentSets = Number(exercise?.sets) || baseDetails.sets;
+  const currentRepRange =
+    typeof exercise?.repRange === "string" && exercise.repRange.trim()
+      ? exercise.repRange
+      : baseDetails.repRange;
+  const currentRestSeconds =
+    Number(exercise?.restSeconds) || baseDetails.restSeconds;
+  const chips = [];
+  const setDelta = currentSets - baseDetails.sets;
+  const restDelta = currentRestSeconds - baseDetails.restSeconds;
+
+  if (setDelta !== 0) {
+    chips.push(formatSetDelta(setDelta));
+  }
+
+  if (currentRepRange !== baseDetails.repRange) {
+    chips.push(`повторы ${currentRepRange}`);
+  }
+
+  if (restDelta !== 0) {
+    chips.push(formatRestDelta(restDelta));
+  }
+
+  if (chips.length > 0) {
+    return chips;
+  }
+
+  if (exercise?.volumeTrend === "manual") {
+    return ["ручная правка"];
+  }
+
+  return ["базовый объём"];
+}
+
+export function getExerciseVolumeReasonMeta(exercise) {
+  if (exercise?.volumeTrend === "progressing") {
+    return {
+      label: "Прогресс",
+      iconType: "progressing",
+      surfaceClassName: "border border-[#1D5E4F] bg-[#0D2E28]",
+      badgeClassName: "bg-[#0D3A33] text-[#B5F7DF]",
+      textClassName: "text-[#C8F5E5]",
+    };
+  }
+
+  if (exercise?.volumeTrend === "stalled") {
+    return {
+      label: "Плато",
+      iconType: "stalled",
+      surfaceClassName: "border border-[#5E4B1D] bg-[#2E2510]",
+      badgeClassName: "bg-[#4B3A11] text-[#FFD98A]",
+      textClassName: "text-[#F3D9A1]",
+    };
+  }
+
+  if (exercise?.volumeTrend === "manual") {
+    return {
+      label: "Вручную",
+      iconType: "manual",
+      surfaceClassName: "border border-[#264D79] bg-[#122033]",
+      badgeClassName: "bg-[#183B63] text-[#A7D3FF]",
+      textClassName: "text-[#B8D9FF]",
+    };
+  }
+
+  return {
+    label: "База",
+    iconType: "base",
+    surfaceClassName: "border border-[#2A3140] bg-[#0B0E15]",
+    badgeClassName: "bg-[#1D222D] text-[#D7DEEA]",
+    textClassName: "text-[#B8C1D1]",
+  };
+}
+
+export function getTrainingPlanAdaptationHighlights(trainingPlan, limit = 4) {
+  if (!trainingPlan?.sessions?.length) {
+    return [];
+  }
+
+  return trainingPlan.sessions
+    .flatMap((session) =>
+      (session.exercises ?? []).map((exercise) => ({
+        sessionId: session.id,
+        sessionTitle: session.title,
+        exercise,
+        meta: getExerciseVolumeReasonMeta(exercise),
+        reasonTitle: getExerciseVolumeReasonTitle(exercise),
+        chips: getExerciseVolumeChangeChips(
+          exercise,
+          trainingPlan.trainingLevel,
+        ),
+      })),
+    )
+    .filter(
+      (item) => item.exercise?.volumeTrend && item.exercise.volumeTrend !== "base",
+    )
+    .slice(0, limit);
+}
+
+export function getTrainingPlanAdaptationBreakdown(trainingPlan) {
+  const result = {
+    progressing: 0,
+    stalled: 0,
+    manual: 0,
+    base: 0,
+  };
+
+  (trainingPlan?.sessions ?? []).forEach((session) => {
+    (session.exercises ?? []).forEach((exercise) => {
+      const trend = exercise?.volumeTrend ?? "base";
+      result[trend] = (result[trend] ?? 0) + 1;
+    });
+  });
+
+  return [
+    {
+      key: "progressing",
+      count: result.progressing,
+      meta: getExerciseVolumeReasonMeta({ volumeTrend: "progressing" }),
+    },
+    {
+      key: "stalled",
+      count: result.stalled,
+      meta: getExerciseVolumeReasonMeta({ volumeTrend: "stalled" }),
+    },
+    {
+      key: "manual",
+      count: result.manual,
+      meta: getExerciseVolumeReasonMeta({ volumeTrend: "manual" }),
+    },
+    {
+      key: "base",
+      count: result.base,
+      meta: getExerciseVolumeReasonMeta({ volumeTrend: "base" }),
+    },
+  ];
+}
+
+const DEFAULT_TRAINING_SETUP = {
+  workoutsPerWeek: 3,
+  focusKey: "general-strength",
+  reason:
+    "Сбалансированная программа для старта и подбора рабочей нагрузки.",
+};
+
 export function getLevelConfig(trainingLevel) {
   return LEVEL_CONFIGS[trainingLevel] ?? LEVEL_CONFIGS["Не определен"];
 }
 
-export function getExercisePrescription(trainingLevel, exerciseType) {
-  const levelConfig = getLevelConfig(trainingLevel);
+export function getExercisePrescriptionDetails(trainingLevel, exerciseType) {
+  const levelDetails =
+    LEVEL_PRESCRIPTION_DETAILS[trainingLevel] ??
+    LEVEL_PRESCRIPTION_DETAILS[UNDEFINED_TRAINING_LEVEL];
+  const resolvedType = typeof exerciseType === "string" ? exerciseType : "compound";
+  const baseDetails = levelDetails[resolvedType] ?? levelDetails.compound;
 
-  return (
-    levelConfig.prescriptions[exerciseType] ??
-    levelConfig.prescriptions.compound
-  );
+  return {
+    ...baseDetails,
+    prescription: formatExercisePrescription({
+      exerciseType: resolvedType,
+      sets: baseDetails.sets,
+      repRange: baseDetails.repRange,
+      restSeconds: baseDetails.restSeconds,
+    }),
+  };
+}
+
+export function getExercisePrescription(trainingLevel, exerciseType) {
+  return getExercisePrescriptionDetails(trainingLevel, exerciseType).prescription;
 }
 
 function getFocusDefinition(focusKey) {
@@ -518,6 +826,43 @@ function normalizeWorkoutsPerWeek(workoutsPerWeek) {
 
 function createPlanId(focusKey) {
   return `plan_${Date.now()}_${focusKey}`;
+}
+
+export function getRecommendedTrainingSetup(trainingLevel) {
+  if (trainingLevel === "Продвинутый") {
+    return {
+      workoutsPerWeek: 5,
+      focusKey: "upper-torso",
+      reason:
+        "Уровень позволяет зайти в более частый сплит с большим объемом работы.",
+    };
+  }
+
+  if (trainingLevel === "Средний") {
+    return {
+      workoutsPerWeek: 4,
+      focusKey: "upper-torso",
+      reason:
+        "Можно поднять частоту тренировок и дать больше объема верху тела.",
+    };
+  }
+
+  if (trainingLevel === "Начинающий") {
+    return {
+      workoutsPerWeek: 3,
+      focusKey: "general-strength",
+      reason:
+        "Лучше начать с базовой и устойчивой программы без лишнего объема.",
+    };
+  }
+
+  return DEFAULT_TRAINING_SETUP;
+/*
+  return (
+    TRAINING_SETUP_RECOMMENDATIONS[trainingLevel] ??
+    TRAINING_SETUP_RECOMMENDATIONS["РќРµ РѕРїСЂРµРґРµР»РµРЅ"]
+  );
+*/
 }
 
 function createDraftSession(planId, template, index, trainingLevel) {
@@ -631,10 +976,20 @@ export function buildTrainingPlan({
       completed: false,
       exercises: selectedExerciseNames.map((exerciseName) => {
         const exercise = exerciseMap.get(exerciseName);
+        const prescriptionDetails = getExercisePrescriptionDetails(
+          normalizedTrainingLevel,
+          exercise.type,
+        );
         return {
           name: exercise.name,
           type: exercise.type,
-          prescription: getExercisePrescription(normalizedTrainingLevel, exercise.type),
+          sets: prescriptionDetails.sets,
+          repRange: prescriptionDetails.repRange,
+          restSeconds: prescriptionDetails.restSeconds,
+          prescription: prescriptionDetails.prescription,
+          volumeTrend: "base",
+          volumeReason:
+            "Базовый объём подобран по текущему уровню подготовки и типу упражнения.",
         };
       }),
     };

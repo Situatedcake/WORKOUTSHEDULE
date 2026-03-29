@@ -1,8 +1,10 @@
 import { useEffect } from "react";
 import { Link, Navigate, useLocation } from "react-router";
+import PageBackButton from "../../components/PageBackButton";
 import PageShell from "../../components/PageShell";
 import { ROUTES } from "../../constants/routes";
 import { useAuth } from "../../hooks/useAuth";
+import { getRecommendedTrainingSetup } from "../../shared/trainingPlanBuilder";
 import { clearTastingStart, getTastingScore } from "../../utils/tastingSession";
 import { getTrainingLevelByScore } from "../../utils/trainingLevel";
 
@@ -12,6 +14,7 @@ export default function FinishTasting() {
   const totalScore = location.state?.totalScore ?? getTastingScore();
   const trainingLevel =
     totalScore === null ? "Не определен" : getTrainingLevelByScore(totalScore);
+  const suggestedSetup = getRecommendedTrainingSetup(trainingLevel);
   const currentUserId = currentUser?.id ?? null;
 
   useEffect(() => {
@@ -37,6 +40,8 @@ export default function FinishTasting() {
   return (
     <PageShell className="pt-5">
       <section className="mx-auto flex w-full max-w-md flex-col gap-5">
+        <PageBackButton fallbackTo={ROUTES.START_TASTING} />
+
         <p className="text-sm uppercase tracking-[0.24em] text-[#8E97A8]">
           Тест завершен
         </p>
@@ -46,22 +51,30 @@ export default function FinishTasting() {
         </h1>
 
         <div className="rounded-[28px] border border-[#2A3140] bg-[#12151C] px-6 py-8">
-          <p className="text-sm text-[#8E97A8]">
-            Суммарное количество баллов
-          </p>
-          <p className="mt-3 text-5xl font-medium text-[#01BB96]">
-            {totalScore}
-          </p>
+          <p className="text-sm text-[#8E97A8]">Суммарное количество баллов</p>
+          <p className="mt-3 text-5xl font-medium text-[#01BB96]">{totalScore}</p>
           <p className="mt-4 text-sm text-[#8E97A8]">
-            Уровень подготовки:{" "}
-            <span className="text-white">{trainingLevel}</span>
+            Уровень подготовки: <span className="text-white">{trainingLevel}</span>
+          </p>
+        </div>
+
+        <div className="rounded-[28px] border border-[#2A3140] bg-[#12151C] px-6 py-5">
+          <p className="text-sm uppercase tracking-[0.2em] text-[#8E97A8]">
+            Рекомендация
+          </p>
+          <h2 className="mt-2 text-xl font-medium text-white">
+            {suggestedSetup.workoutsPerWeek} тренировки в неделю
+          </h2>
+          <p className="mt-2 text-sm leading-6 text-[#8E97A8]">
+            Мы уже подготовили стартовый вариант программы под ваш уровень. На
+            следующем экране его можно будет изменить перед сохранением.
           </p>
         </div>
 
         {currentUser ? (
           <p className="text-sm leading-6 text-[#8E97A8]">
             Результат сохранен в профиль пользователя{" "}
-            <span className="text-white">{currentUser.name}</span>.
+            <span className="text-white">{currentUser.name ?? currentUser.login}</span>.
           </p>
         ) : !isAuthReady ? (
           <p className="text-sm leading-6 text-[#8E97A8]">
@@ -70,8 +83,8 @@ export default function FinishTasting() {
         ) : (
           <div className="flex flex-col gap-3">
             <p className="text-sm leading-6 text-[#8E97A8]">
-              Тест проходить можно без аккаунта, но чтобы сохранить уровень
-              подготовки в профиль, войдите или зарегистрируйтесь.
+              Тест можно пройти и без аккаунта, но чтобы сохранить уровень
+              подготовки и программу в профиль, войдите или зарегистрируйтесь.
             </p>
             <div className="flex flex-col gap-3 sm:flex-row">
               <Link
@@ -91,10 +104,16 @@ export default function FinishTasting() {
         )}
 
         <Link
-          to={ROUTES.USER}
+          to={ROUTES.CREATE_TRAINING}
+          state={{
+            suggestedFromTest: true,
+            suggestedTrainingLevel: trainingLevel,
+            suggestedSetup,
+            totalScore,
+          }}
           className="rounded-3xl bg-[#01BB96] px-5 py-4 text-center text-base font-medium text-[#000214]"
         >
-          Перейти в профиль
+          Составить тренировку
         </Link>
       </section>
     </PageShell>

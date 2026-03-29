@@ -1,17 +1,17 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Navigate, useNavigate } from "react-router";
-import PageShell from "../components/PageShell";
-import { ROUTES } from "../constants/routes";
-import { useAuth } from "../hooks/useAuth";
+import PageShell from "../../components/PageShell";
+import { ROUTES } from "../../constants/routes";
+import { useAuth } from "../../hooks/useAuth";
 import {
   REST_DURATION_SECONDS,
   formatDuration,
-} from "../shared/activeWorkout";
+} from "../../shared/activeWorkout";
 import {
   clearActiveWorkoutDraft,
   getActiveWorkoutDraft,
   saveActiveWorkoutResultDraft,
-} from "../utils/activeWorkoutSession";
+} from "../../utils/activeWorkoutSession";
 
 const clampTwoLinesStyle = {
   display: "-webkit-box",
@@ -30,11 +30,13 @@ function PreviousIcon() {
       xmlns="http://www.w3.org/2000/svg"
       aria-hidden="true"
     >
+      <path d="M18 6L10 12L18 18V6Z" fill="currentColor" />
       <path
-        d="M18 6L10 12L18 18V6Z"
-        fill="currentColor"
+        d="M7 6V18"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
       />
-      <path d="M7 6V18" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
     </svg>
   );
 }
@@ -70,11 +72,13 @@ function NextIcon() {
       xmlns="http://www.w3.org/2000/svg"
       aria-hidden="true"
     >
+      <path d="M6 6L14 12L6 18V6Z" fill="currentColor" />
       <path
-        d="M6 6L14 12L6 18V6Z"
-        fill="currentColor"
+        d="M17 6V18"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
       />
-      <path d="M17 6V18" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
     </svg>
   );
 }
@@ -121,10 +125,30 @@ function sumValues(values = []) {
   return values.reduce((total, value) => total + value, 0);
 }
 
+function createExerciseSetWeights(exercises = []) {
+  return exercises.map((exercise) =>
+    Array.from({ length: Math.max(exercise.sets ?? 0, 1) }, () => ""),
+  );
+}
+
+function normalizeWeightValue(value) {
+  const normalizedValue = String(value ?? "")
+    .trim()
+    .replace(",", ".");
+
+  if (!normalizedValue) {
+    return null;
+  }
+
+  const parsedValue = Number(normalizedValue);
+  return Number.isFinite(parsedValue) ? parsedValue : null;
+}
+
 export default function TraningPage() {
   const navigate = useNavigate();
   const { currentUser } = useAuth();
   const workoutDraft = useMemo(() => getActiveWorkoutDraft(), []);
+  const [startedAt] = useState(() => new Date().toISOString());
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
   const [currentExerciseIndex, setCurrentExerciseIndex] = useState(0);
   const [completedSetsByExercise, setCompletedSetsByExercise] = useState(
@@ -133,13 +157,22 @@ export default function TraningPage() {
   const [exerciseElapsedSeconds, setExerciseElapsedSeconds] = useState(
     () => workoutDraft?.exercises?.map(() => 0) ?? [],
   );
+  const [setWeightsByExercise, setSetWeightsByExercise] = useState(() =>
+    createExerciseSetWeights(workoutDraft?.exercises ?? []),
+  );
   const [phase, setPhase] = useState("exercise");
-  const [restRemainingSeconds, setRestRemainingSeconds] = useState(REST_DURATION_SECONDS);
+  const [restRemainingSeconds, setRestRemainingSeconds] = useState(
+    workoutDraft?.exercises?.[0]?.restSeconds ?? REST_DURATION_SECONDS,
+  );
   const [pendingTransition, setPendingTransition] = useState(null);
   const [restContinuePressCount, setRestContinuePressCount] = useState(0);
-  const [hasUnlockedForceContinue, setHasUnlockedForceContinue] = useState(false);
+  const [hasUnlockedForceContinue, setHasUnlockedForceContinue] =
+    useState(false);
 
-  const currentExercise = workoutDraft?.exercises?.[currentExerciseIndex] ?? null;
+  const currentExercise =
+    workoutDraft?.exercises?.[currentExerciseIndex] ?? null;
+  const currentExerciseRestSeconds =
+    currentExercise?.restSeconds ?? REST_DURATION_SECONDS;
   const totalSets = workoutDraft?.totalSets ?? 0;
   const completedSetsCount = sumValues(completedSetsByExercise);
   const progressPercent = totalSets
@@ -160,7 +193,12 @@ export default function TraningPage() {
     ? Math.max(currentExercise.sets - currentExerciseCompletedSets, 0)
     : 0;
   const canForceContinueRest =
-    phase === "rest" && (hasUnlockedForceContinue || restContinuePressCount >= 5);
+    phase === "rest" &&
+    (hasUnlockedForceContinue || restContinuePressCount >= 5);
+  const currentSetWeight =
+    setWeightsByExercise[currentExerciseIndex]?.[
+      Math.max(currentSetNumber - 1, 0)
+    ] ?? "";
 
   const finishWorkout = useCallback(
     (completedSetsOverride = completedSetsByExercise) => {
@@ -170,25 +208,54 @@ export default function TraningPage() {
 
       saveActiveWorkoutResultDraft({
         scheduledWorkoutId: workoutDraft.scheduledWorkoutId,
+        trainingPlanId: currentUser?.trainingPlan?.id ?? null,
+        sessionId: workoutDraft.sessionId,
         title: workoutDraft.title,
         emphasis: workoutDraft.emphasis,
         date: workoutDraft.scheduledDate,
         time: workoutDraft.scheduledTime,
+        startedAt,
+        plannedDurationSeconds: workoutDraft.totalEstimatedSeconds ?? 0,
         durationSeconds: elapsedSeconds,
+        totalExercisesCount: workoutDraft.exercises?.length ?? 0,
         completedExercisesCount: completedSetsOverride.filter(
           (setsCount, index) =>
             setsCount >= (workoutDraft.exercises[index]?.sets ?? 0),
         ).length,
+        totalSets: workoutDraft.totalSets ?? 0,
         completedSetsCount: sumValues(
           completedSetsOverride.map((setsCount, index) =>
-            Math.min(setsCount, workoutDraft.exercises[index]?.sets ?? setsCount),
+            Math.min(
+              setsCount,
+              workoutDraft.exercises[index]?.sets ?? setsCount,
+            ),
           ),
+        ),
+        exerciseSetWeights: (workoutDraft.exercises ?? []).map(
+          (exercise, index) => ({
+            exerciseId: exercise.sourceExerciseId ?? exercise.id,
+            exerciseName: exercise.name,
+            sets: exercise.sets,
+            repRange: exercise.repRange,
+            restSeconds: exercise.restSeconds,
+            weightsKg: (setWeightsByExercise[index] ?? [])
+              .slice(0, exercise.sets)
+              .map(normalizeWeightValue),
+          }),
         ),
       });
       clearActiveWorkoutDraft();
       navigate(ROUTES.WORKOUT_FINISH);
     },
-    [completedSetsByExercise, elapsedSeconds, navigate, workoutDraft],
+    [
+      completedSetsByExercise,
+      currentUser?.trainingPlan?.id,
+      elapsedSeconds,
+      navigate,
+      setWeightsByExercise,
+      startedAt,
+      workoutDraft,
+    ],
   );
 
   const applyPendingTransition = useCallback(
@@ -205,12 +272,18 @@ export default function TraningPage() {
         );
       }
 
-      setRestRemainingSeconds(REST_DURATION_SECONDS);
+      setRestRemainingSeconds(
+        workoutDraft.exercises[
+          nextTransition.type === "nextExercise"
+            ? Math.min(currentExerciseIndex + 1, workoutDraft.exercises.length - 1)
+            : currentExerciseIndex
+        ]?.restSeconds ?? REST_DURATION_SECONDS,
+      );
       setRestContinuePressCount(0);
       setPendingTransition(null);
       setPhase("exercise");
     },
-    [workoutDraft],
+    [currentExerciseIndex, workoutDraft],
   );
 
   useEffect(() => {
@@ -270,10 +343,33 @@ export default function TraningPage() {
   }
 
   function handleFinishSet() {
-    const nextCompletedSetsByExercise = completedSetsByExercise.map((value, index) =>
-      index === currentExerciseIndex
-        ? Math.min(value + 1, currentExercise.sets)
-        : value,
+    setSetWeightsByExercise((previousValue) =>
+      previousValue.map((weights, index) => {
+        if (index !== currentExerciseIndex) {
+          return weights;
+        }
+
+        const nextWeights = [...weights];
+        const currentWeightIndex = Math.max(currentSetNumber - 1, 0);
+        const nextWeightIndex = currentWeightIndex + 1;
+
+        if (
+          nextWeightIndex < nextWeights.length &&
+          !nextWeights[nextWeightIndex] &&
+          nextWeights[currentWeightIndex]
+        ) {
+          nextWeights[nextWeightIndex] = nextWeights[currentWeightIndex];
+        }
+
+        return nextWeights;
+      }),
+    );
+
+    const nextCompletedSetsByExercise = completedSetsByExercise.map(
+      (value, index) =>
+        index === currentExerciseIndex
+          ? Math.min(value + 1, currentExercise.sets)
+          : value,
     );
     const isExerciseCompleted =
       nextCompletedSetsByExercise[currentExerciseIndex] >= currentExercise.sets;
@@ -288,7 +384,7 @@ export default function TraningPage() {
     }
 
     setPhase("rest");
-    setRestRemainingSeconds(REST_DURATION_SECONDS);
+    setRestRemainingSeconds(currentExerciseRestSeconds);
     setPendingTransition({
       type: isExerciseCompleted ? "nextExercise" : "nextSet",
     });
@@ -307,17 +403,30 @@ export default function TraningPage() {
     setExerciseElapsedSeconds((previousValue) =>
       previousValue.map((value, index) => (index >= previousIndex ? 0 : value)),
     );
+    setSetWeightsByExercise((previousValue) =>
+      previousValue.map((weights, index) =>
+        index >= previousIndex
+          ? Array.from(
+              { length: Math.max(workoutDraft.exercises[index]?.sets ?? 0, 1) },
+              () => "",
+            )
+          : weights,
+      ),
+    );
     setCurrentExerciseIndex(previousIndex);
     setPhase("exercise");
     setRestContinuePressCount(0);
     setPendingTransition(null);
-    setRestRemainingSeconds(REST_DURATION_SECONDS);
+    setRestRemainingSeconds(
+      workoutDraft.exercises[previousIndex]?.restSeconds ?? REST_DURATION_SECONDS,
+    );
   }
 
   function handleNextExercise() {
     if (currentExerciseIndex >= workoutDraft.exercises.length - 1) {
-      const nextCompletedSetsByExercise = completedSetsByExercise.map((value, index) =>
-        index === currentExerciseIndex ? currentExercise.sets : value,
+      const nextCompletedSetsByExercise = completedSetsByExercise.map(
+        (value, index) =>
+          index === currentExerciseIndex ? currentExercise.sets : value,
       );
       finishWorkout(nextCompletedSetsByExercise);
       return;
@@ -332,7 +441,10 @@ export default function TraningPage() {
     setPhase("exercise");
     setRestContinuePressCount(0);
     setPendingTransition(null);
-    setRestRemainingSeconds(REST_DURATION_SECONDS);
+    setRestRemainingSeconds(
+      workoutDraft.exercises[currentExerciseIndex + 1]?.restSeconds ??
+        REST_DURATION_SECONDS,
+    );
   }
 
   function handlePrimaryAction() {
@@ -350,6 +462,20 @@ export default function TraningPage() {
     }
 
     handleFinishSet();
+  }
+
+  function handleCurrentSetWeightChange(value) {
+    setSetWeightsByExercise((previousValue) =>
+      previousValue.map((weights, index) => {
+        if (index !== currentExerciseIndex) {
+          return weights;
+        }
+
+        const nextWeights = [...weights];
+        nextWeights[Math.max(currentSetNumber - 1, 0)] = value;
+        return nextWeights;
+      }),
+    );
   }
 
   function handleForceContinue() {
@@ -466,9 +592,36 @@ export default function TraningPage() {
                 На упражнении
               </p>
               <p className="mt-1 overflow-hidden text-xl font-medium text-white text-center whitespace-nowrap text-ellipsis">
-                {formatDuration(exerciseElapsedSeconds[currentExerciseIndex] ?? 0)}
+                {formatDuration(
+                  exerciseElapsedSeconds[currentExerciseIndex] ?? 0,
+                )}
               </p>
             </div>
+          </div>
+
+          <div className="mt-4 rounded-2xl bg-[#0B0E15] px-3 py-3">
+            <div className="flex items-center justify-between gap-3">
+              <p
+                className="text-[10px] uppercase tracking-[0.14em] text-[#8E97A8]"
+                style={{ lineHeight: "15px" }}
+              >
+                Вес текущего подхода
+              </p>
+              <span className="text-sm font-medium text-white">
+                {currentSetNumber}
+              </span>
+            </div>
+
+            <input
+              value={currentSetWeight}
+              onChange={(event) =>
+                handleCurrentSetWeightChange(event.target.value)
+              }
+              inputMode="decimal"
+              placeholder="Например, 25"
+              disabled={phase === "rest"}
+              className="mt-3 w-full rounded-2xl border border-[#2A3140] bg-[#12151C] px-4 py-3 text-sm text-white outline-none placeholder:text-[#5D6677] disabled:opacity-60"
+            />
           </div>
 
           <div className="mt-5 flex items-center justify-between gap-3">
@@ -490,7 +643,9 @@ export default function TraningPage() {
                   ? "bg-[#4F5B63] text-[#D8E0EE] opacity-70"
                   : "bg-[#01BB96] text-[#000214]"
               }`}
-              aria-label={phase === "rest" ? "Пропустить отдых" : "Закончить подход"}
+              aria-label={
+                phase === "rest" ? "Пропустить отдых" : "Закончить подход"
+              }
             >
               <FinishSetIcon />
             </button>
@@ -507,7 +662,9 @@ export default function TraningPage() {
           </div>
         </section>
 
-        <p className="px-1 text-lg font-medium text-white">Следующее упражнение</p>
+        <p className="px-1 text-lg font-medium text-white">
+          Следующее упражнение
+        </p>
 
         <section className="rounded-[22px] border border-[#2A3140] bg-[#12151C] px-4 py-3">
           <p
