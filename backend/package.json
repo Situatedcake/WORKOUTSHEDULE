@@ -1,0 +1,20 @@
+{
+  "name": "workoutschedule-server",
+  "version": "1.0.0",
+  "description": "Workout schedule server application",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "nodemon index.js"
+  },
+  "dependencies": {
+    "body-parser": "^2.2.2",
+    "dotenv": "^17.3.1",
+    "express": "^5.2.1",
+    "mysql2": "^3.20.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.0"
+  }
+}
