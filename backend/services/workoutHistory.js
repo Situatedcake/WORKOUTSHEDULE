@@ -141,6 +141,7 @@ export function normalizeWorkoutHistoryEntry(entry = {}) {
       burnedCalories: normalizeNullableNumber(entry.metrics?.burnedCalories),
       energyLevel: normalizeNullableNumber(entry.metrics?.energyLevel),
       effortLevel: normalizeNullableNumber(entry.metrics?.effortLevel),
+      sleepQuality: normalizeNullableNumber(entry.metrics?.sleepQuality),
     },
   };
 }
@@ -218,6 +219,7 @@ export function createWorkoutHistoryEntry({
       burnedCalories: completionPayload.burnedCalories ?? null,
       energyLevel: completionPayload.energyLevel ?? null,
       effortLevel: completionPayload.effortLevel ?? null,
+      sleepQuality: completionPayload.sleepQuality ?? null,
     },
   });
 }

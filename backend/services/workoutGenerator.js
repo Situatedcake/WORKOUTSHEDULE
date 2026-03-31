@@ -1,4 +1,4 @@
-import { buildAdaptiveSignals } from "./adaptiveSignals.js";
+import { buildTrainingFeatures } from "./trainingFeatureBuilder.js";
 import {
   hasTagIntersection,
   normalizeArray,
@@ -134,6 +134,41 @@ function scoreEquipment(exercise, user, adaptiveSignals) {
   return equipmentUsage > 0 ? 1 : -8;
 }
 
+function scoreGenderContext(exercise, user, slot = {}) {
+  const normalizedBodyPart = normalizeTag(exercise.bodyPart);
+  const normalizedGoalTags = normalizeTagArray(exercise.goalTags);
+  let score = 0;
+
+  if (user.gender === "female") {
+    if (
+      user.focusKey === "women-cardio" &&
+      ["cardio", "legs", "full-body", "core", "shoulders"].includes(
+        normalizedBodyPart,
+      )
+    ) {
+      score += 6;
+    }
+
+    if (
+      user.goal === "weight_loss" &&
+      (normalizeTag(exercise.type) === "weight-loss" ||
+        normalizedGoalTags.includes("weight-loss") ||
+        normalizedGoalTags.includes("cardio"))
+    ) {
+      score += 3;
+    }
+
+    if (
+      slot.sessionKey === "women-cardio-burn" &&
+      ["cardio", "legs", "full-body"].includes(normalizedBodyPart)
+    ) {
+      score += 4;
+    }
+  }
+
+  return score;
+}
+
 function scoreContraindications(exercise, user) {
   if (hasTagIntersection(exercise.contraindications, user.injuries)) {
     return -25;
@@ -195,6 +230,49 @@ function scoreSlotTraits(exercise, slot = {}) {
   return score;
 }
 
+function scoreReadinessAndFeedback(exercise, trainingFeatures) {
+  const { history, recovery, feedback, readiness } = trainingFeatures;
+  let score = 0;
+
+  if (history.skipRate >= 0.3 && exercise.difficulty >= 3) {
+    score -= 4;
+  }
+
+  if (history.partialRate >= 0.25 && exercise.compound) {
+    score -= 2;
+  }
+
+  if (
+    recovery.averageSleepQuality != null &&
+    recovery.averageSleepQuality <= 2.5 &&
+    exercise.difficulty >= 3
+  ) {
+    score -= 5;
+  }
+
+  if (
+    recovery.averageEnergyLevel != null &&
+    recovery.averageEnergyLevel <= 2.5 &&
+    exercise.compound
+  ) {
+    score -= 4;
+  }
+
+  if (readiness.readinessScore <= 35 && exercise.difficulty >= 3) {
+    score -= 4;
+  }
+
+  if (
+    feedback.countsByType.exercise_replaced >= 3 &&
+    normalizeTag(exercise.id) &&
+    feedback.recentExerciseEditRate > 0.3
+  ) {
+    score += exercise.compound ? -1 : 1;
+  }
+
+  return score;
+}
+
 function matchesHardFilters(exercise, slot = {}) {
   if (slot.compound === true && !exercise.compound) {
     return false;
@@ -230,11 +308,13 @@ function scoreExercise(
   exercise,
   user,
   {
-    adaptiveSignals,
+    trainingFeatures,
     slot = {},
     selectedExercises = [],
   } = {},
 ) {
+  const adaptiveSignals = trainingFeatures.adaptiveSignals;
+
   if (!matchesHardFilters(exercise, slot)) {
     return Number.NEGATIVE_INFINITY;
   }
@@ -247,9 +327,11 @@ function scoreExercise(
   score += scoreTargetBodyParts(exercise, user, slot, adaptiveSignals);
   score += scoreMovementPattern(exercise, slot, selectedExercises);
   score += scoreEquipment(exercise, user, adaptiveSignals);
+  score += scoreGenderContext(exercise, user, slot);
   score += scoreContraindications(exercise, user);
   score += scoreExerciseHistory(exercise, adaptiveSignals);
   score += scoreSlotTraits(exercise, slot);
+  score += scoreReadinessAndFeedback(exercise, trainingFeatures);
 
   if (user.workoutsPerWeek >= 4 && exercise.difficulty >= 2) {
     score += 2;
@@ -273,15 +355,22 @@ export function generateWorkoutAdvanced(
     slot = {},
     selectedExercises = [],
     workoutHistory = [],
+    trainingFeatures = null,
   } = {},
 ) {
-  const adaptiveSignals = buildAdaptiveSignals(exercises, workoutHistory);
+  const resolvedTrainingFeatures =
+    trainingFeatures ??
+    buildTrainingFeatures({
+      exercises,
+      user,
+      workoutHistory,
+    });
 
   return normalizeArray(exercises)
     .map((exercise) => ({
       ...exercise,
       score: scoreExercise(exercise, user, {
-        adaptiveSignals,
+        trainingFeatures: resolvedTrainingFeatures,
         slot,
         selectedExercises,
       }),

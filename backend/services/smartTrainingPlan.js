@@ -1,7 +1,8 @@
 import { randomUUID } from "node:crypto";
-import { buildAdaptiveSignals, buildAdaptationSummary } from "./adaptiveSignals.js";
+import { buildAdaptationSummary } from "./adaptiveSignals.js";
 import { buildAdaptiveExerciseVolume } from "./adaptiveVolume.js";
 import { hasTagIntersection, normalizeTag, normalizeTagArray } from "./exerciseCatalogUtils.js";
+import { buildTrainingFeatures } from "./trainingFeatureBuilder.js";
 import { generateWorkoutAdvanced } from "./workoutGenerator.js";
 import {
   EXERCISES_PER_SESSION,
@@ -609,7 +610,11 @@ function orderBlueprintSessions(blueprintSessions, adaptiveSignals) {
   });
 }
 
-function buildSessionAdaptationHints(sessionBlueprint, adaptiveSignals) {
+function buildSessionAdaptationHints(
+  sessionBlueprint,
+  adaptiveSignals,
+  trainingFeatures,
+) {
   const hints = [];
   const bodyPartUsage = normalizeTagArray(sessionBlueprint.sessionBodyParts).map(
     (bodyPart) => getSignalCount(adaptiveSignals.bodyPartFrequency, bodyPart),
@@ -628,6 +633,24 @@ function buildSessionAdaptationHints(sessionBlueprint, adaptiveSignals) {
 
   if (adaptiveSignals.stalledExerciseNames.size > 0) {
     hints.push("Добавляем ротацию, чтобы не упираться в одно и то же плато.");
+  }
+
+  if (
+    trainingFeatures.history.skipRate >= 0.25 ||
+    trainingFeatures.history.partialRate >= 0.25
+  ) {
+    hints.push(
+      "СѓРјРµРЅСЊС€Р°РµРј СЂРёСЃРє РїРµСЂРµРіСЂСѓР·РєРё: РѕР±СЉС‘Рј РґРµСЂР¶РёРј Р±Р»РёР¶Рµ Рє СЃС‚Р°Р±РёР»СЊРЅРѕРјСѓ СЂРµР¶РёРјСѓ.",
+    );
+  }
+
+  if (
+    trainingFeatures.recovery.averageSleepQuality != null &&
+    trainingFeatures.recovery.averageSleepQuality <= 2.5
+  ) {
+    hints.push(
+      "СѓС‡РёС‚С‹РІР°РµРј РЅРёР·РєРѕРµ РІРѕСЃСЃС‚Р°РЅРѕРІР»РµРЅРёРµ РїРѕ СЃРЅСѓ Рё РѕСЃС‚Р°РІР»СЏРµРј РїР»Р°РЅ Р±РѕР»РµРµ СѓРїСЂР°РІР»СЏРµРјС‹Рј.",
+    );
   }
 
   return hints;
@@ -661,11 +684,19 @@ function mergeAvailableExercises(primaryExercises, fallbackExercises) {
   return merged;
 }
 
-function selectExerciseForSlot(exercises, user, workoutHistory, slot, selectedExercises) {
+function selectExerciseForSlot(
+  exercises,
+  user,
+  workoutHistory,
+  trainingFeatures,
+  slot,
+  selectedExercises,
+) {
   const rankedExercises = generateWorkoutAdvanced(exercises, user, {
     slot,
     selectedExercises,
     workoutHistory,
+    trainingFeatures,
   });
 
   return (
@@ -675,7 +706,13 @@ function selectExerciseForSlot(exercises, user, workoutHistory, slot, selectedEx
   );
 }
 
-function buildSessionExercises(exercises, user, workoutHistory, sessionBlueprint) {
+function buildSessionExercises(
+  exercises,
+  user,
+  workoutHistory,
+  trainingFeatures,
+  sessionBlueprint,
+) {
   const selectedExercises = [];
 
   sessionBlueprint.slots.forEach((slot) => {
@@ -683,6 +720,7 @@ function buildSessionExercises(exercises, user, workoutHistory, sessionBlueprint
       exercises,
       user,
       workoutHistory,
+      trainingFeatures,
       {
         ...slot,
         goalTags: [...normalizeArray(slot.goalTags), ...normalizeArray(sessionBlueprint.sessionGoalTags)],
@@ -704,6 +742,7 @@ function buildSessionExercises(exercises, user, workoutHistory, sessionBlueprint
       },
       selectedExercises,
       workoutHistory,
+      trainingFeatures,
     });
 
     fallbackExercises.forEach((exercise) => {
@@ -720,7 +759,14 @@ function buildSessionExercises(exercises, user, workoutHistory, sessionBlueprint
   return selectedExercises.slice(0, EXERCISES_PER_SESSION);
 }
 
-function buildSessionCandidatePool(exercises, user, workoutHistory, sessionBlueprint, selectedExercises) {
+function buildSessionCandidatePool(
+  exercises,
+  user,
+  workoutHistory,
+  trainingFeatures,
+  sessionBlueprint,
+  selectedExercises,
+) {
   const poolExercises = generateWorkoutAdvanced(exercises, user, {
     slot: {
       bodyParts: sessionBlueprint.sessionBodyParts,
@@ -731,6 +777,7 @@ function buildSessionCandidatePool(exercises, user, workoutHistory, sessionBluep
     },
     selectedExercises: [],
     workoutHistory,
+    trainingFeatures,
   }).slice(0, 16);
 
   return mergeAvailableExercises(selectedExercises, poolExercises);
@@ -740,11 +787,21 @@ export function generateSmartTrainingPlan({
   exercises = [],
   user,
   workoutHistory = [],
+  trainingMlFeedbackHistory = [],
+  trainingFeatures: prebuiltTrainingFeatures = null,
   focusKey,
   workoutsPerWeek,
 }) {
   const normalizedWorkoutsPerWeek = Math.min(Math.max(Number(workoutsPerWeek) || 3, 2), 5);
-  const adaptiveSignals = buildAdaptiveSignals(exercises, workoutHistory);
+  const trainingFeatures =
+    prebuiltTrainingFeatures ??
+    buildTrainingFeatures({
+      exercises,
+      user,
+      workoutHistory,
+      trainingMlFeedbackHistory,
+    });
+  const adaptiveSignals = trainingFeatures.adaptiveSignals;
   const focusMeta = getFocusMeta(focusKey);
   const planId = createPlanId(focusMeta.key);
   const levelConfig = getLevelConfig(user.trainingLevel);
@@ -758,12 +815,14 @@ export function generateSmartTrainingPlan({
       exercises,
       user,
       workoutHistory,
+      trainingFeatures,
       sessionBlueprint,
     );
     const candidatePool = buildSessionCandidatePool(
       exercises,
       user,
       workoutHistory,
+      trainingFeatures,
       sessionBlueprint,
       selectedExercises,
     );
@@ -782,6 +841,7 @@ export function generateSmartTrainingPlan({
       adaptationHints: buildSessionAdaptationHints(
         sessionBlueprint,
         adaptiveSignals,
+        trainingFeatures,
       ),
       estimatedDurationMin,
       warmup: levelConfig.warmup,

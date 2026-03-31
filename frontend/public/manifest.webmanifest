@@ -1,6 +1,6 @@
 {
   "name": "WorkoutShedule",
-  "short_name": "Workout",
+  "short_name": "Workout - твой тренер в кармане",
   "description": "Тест уровня, программа тренировок и активные занятия в мобильном формате.",
   "start_url": "/",
   "scope": "/",

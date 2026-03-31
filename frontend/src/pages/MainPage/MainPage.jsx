@@ -7,6 +7,7 @@ import questionIcon from "/icons/quastion.svg";
 import trainingIcon from "/icons/addTraning.svg";
 import triangleIcon from "/icons/triangle.svg";
 import arrowIcon from "/icons/arrowRight.svg";
+import trainingHero from "/images/Traning.png";
 import NavMenu from "../../components/NavMenu";
 import { ROUTES } from "../../constants/routes";
 import { useAuth } from "../../hooks/useAuth";
@@ -16,6 +17,8 @@ import {
   formatWorkoutRelativeLabel,
   getNearestScheduledWorkout,
 } from "../../shared/workoutSchedule";
+
+const APP_VERSION = import.meta.env.VITE_APP_VERSION ?? "0.0.0";
 
 function InstallIcon() {
   return (
@@ -57,6 +60,7 @@ export default function MainPage() {
     useInstallPrompt();
   const [startHint, setStartHint] = useState("");
   const [installHint, setInstallHint] = useState("");
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   const nextWorkout = getNearestScheduledWorkout(
     currentUser?.scheduledWorkouts ?? [],
@@ -88,6 +92,16 @@ export default function MainPage() {
   if (!disabledReason && !isWorkoutToday) {
     disabledReason =
       "Запустить можно только тренировку, которая запланирована на сегодня.";
+  }
+
+  if (
+    currentUser &&
+    currentUser.lastTestScore != null &&
+    currentUser.trainingPlan &&
+    nextWorkout &&
+    !isWorkoutToday
+  ) {
+    disabledReason = `На сегодня тренировки нет. Ближайшая: ${nextWorkoutLabel.toLowerCase()}${nextWorkout.time ? ` в ${nextWorkout.time}` : ""}.`;
   }
 
   const mainActions = [
@@ -147,6 +161,15 @@ export default function MainPage() {
     );
   }
 
+  function handleMenuButtonClick() {
+    if (isInstalled) {
+      setIsMenuOpen((previousValue) => !previousValue);
+      return;
+    }
+
+    void handleInstallApp();
+  }
+
   useEffect(() => {
     if (!startHint) {
       return undefined;
@@ -154,7 +177,7 @@ export default function MainPage() {
 
     const timeoutId = window.setTimeout(() => {
       setStartHint("");
-    }, 15000);
+    }, 5000);
 
     return () => {
       window.clearTimeout(timeoutId);
@@ -177,7 +200,16 @@ export default function MainPage() {
 
   return (
     <main className="pb-[calc(7rem+env(safe-area-inset-bottom))]">
-      <header className="mx-auto flex w-full max-w-md items-center justify-between gap-4 px-5 pt-5">
+      {isInstalled && isMenuOpen ? (
+        <button
+          type="button"
+          onClick={() => setIsMenuOpen(false)}
+          className="fixed inset-0 z-10 cursor-default"
+          aria-label="Закрыть меню приложения"
+        />
+      ) : null}
+
+      <header className="relative z-20 mx-auto flex w-full max-w-md items-center justify-between gap-4 px-5 pt-5">
         <div className="relative">
           {!isInstalled && installHint ? (
             <div className="absolute left-0 top-full z-20 mt-3 w-52 rounded-2xl bg-[#12151C] px-3 py-2 text-xs leading-5 text-[#D8E0EE] shadow-lg">
@@ -185,10 +217,30 @@ export default function MainPage() {
             </div>
           ) : null}
 
+          {isInstalled && isMenuOpen ? (
+            <div className="absolute left-0 top-full z-20 mt-3 w-56 rounded-3xl border border-[#2A3140] bg-[#12151C] p-3 shadow-lg">
+              <p className="text-[11px] uppercase tracking-[0.18em] text-[#8E97A8]">
+                Приложение
+              </p>
+              <div className="mt-3 rounded-2xl bg-[#0B0E15] px-3 py-3">
+                <p className="text-xs text-[#8E97A8]">Текущая версия</p>
+                <p className="mt-1 text-base font-medium text-white">
+                  v{APP_VERSION}
+                </p>
+              </div>
+              <div className="mt-2 rounded-2xl bg-[#0B0E15] px-3 py-3">
+                <p className="text-xs text-[#8E97A8]">Режим</p>
+                <p className="mt-1 text-sm text-white">
+                  Установлено как приложение
+                </p>
+              </div>
+            </div>
+          ) : null}
+
           <button
             type="button"
-            onClick={isInstalled ? undefined : handleInstallApp}
-            className="flex h-12 w-12 items-center justify-center rounded-2xl border border-[#2A3140] bg-[#12151C] text-white"
+            onClick={handleMenuButtonClick}
+            className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-[#2A3140] bg-[#12151C] text-white"
             aria-label="Установить приложение"
           >
             {isInstalled ? (
@@ -199,12 +251,12 @@ export default function MainPage() {
           </button>
         </div>
 
-        <span className="flex-1 text-center text-2xl">
+        <span className="min-w-0 flex-1 truncate px-2 text-center text-2xl">
           Привет, {currentUser?.name ?? currentUser?.login ?? "гость"}!
         </span>
 
         <div
-          className="flex h-14 w-14 items-center justify-center overflow-hidden rounded-3xl bg-white"
+          className="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-3xl bg-white"
           id="userCard"
         >
           {currentUser?.profilePhoto ? (
@@ -225,23 +277,33 @@ export default function MainPage() {
 
       <section className="px-5">
         <section id="TraningCart">
-          <h1 className="max-w-[13rem] text-3xl font-medium leading-10 [text-shadow:0_2px_10px_rgba(0,0,0,0.45)]">
-            {nextWorkoutLabel}
-          </h1>
+          <img
+            src={trainingHero}
+            alt=""
+            aria-hidden="true"
+            className="training-card-image"
+          />
 
-          {nextWorkout?.time ? (
-            <h3 className="text-2xl font-light [text-shadow:0_2px_10px_rgba(0,0,0,0.45)]">
-              {nextWorkout.time}
-            </h3>
-          ) : null}
+          <div className="training-card-content">
+            <div className="training-card-copy">
+              <h1 className="max-w-[13rem] text-3xl font-medium leading-10 [text-shadow:0_2px_10px_rgba(0,0,0,0.45)]">
+                {nextWorkoutLabel}
+              </h1>
 
-          {nextWorkout ? (
-            <p className="mt-3 text-sm leading-6 text-[#A2ACBD] [text-shadow:0_2px_10px_rgba(0,0,0,0.45)]">
-              {nextWorkout.title}. {nextWorkout.emphasis}.
-            </p>
-          ) : null}
+              {nextWorkout?.time ? (
+                <h3 className="text-2xl font-light [text-shadow:0_2px_10px_rgba(0,0,0,0.45)]">
+                  {nextWorkout.time}
+                </h3>
+              ) : null}
 
-          <div className="relative mx-auto mt-6 w-fit">
+              {nextWorkout ? (
+                <p className="training-card-description text-sm leading-6 text-[#A2ACBD] [text-shadow:0_2px_10px_rgba(0,0,0,0.45)]">
+                  {nextWorkout.title}. {nextWorkout.emphasis}.
+                </p>
+              ) : null}
+            </div>
+
+            <div className="training-card-action">
             {startHint ? (
               <div className="absolute bottom-full left-1/2 z-10 mb-3 w-56 -translate-x-1/2 rounded-2xl bg-[#12151C] px-3 py-2 text-xs leading-5 text-[#D8E0EE] shadow-lg">
                 {startHint}
@@ -266,6 +328,7 @@ export default function MainPage() {
               />
               Приступить
             </button>
+          </div>
           </div>
         </section>
       </section>

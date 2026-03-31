@@ -152,7 +152,7 @@ export function AuthProvider({ children }) {
   }, []);
 
   const updateCurrentUserProfile = useCallback(
-    async ({ name, email, password, profilePhoto }) => {
+    async ({ name, email, gender, password, profilePhoto }) => {
       if (!currentUserId) {
         return null;
       }
@@ -160,6 +160,7 @@ export function AuthProvider({ children }) {
       const updatedUser = await userRepository.updateProfile(currentUserId, {
         name,
         email,
+        gender,
         password,
         profilePhoto,
       });
@@ -204,6 +205,27 @@ export function AuthProvider({ children }) {
       const updatedUser = await userRepository.saveTrainingPlan(
         currentUserId,
         trainingPlanPayload,
+      );
+
+      if (updatedUser) {
+        setCurrentUser(updatedUser);
+        setAuthError("");
+      }
+
+      return updatedUser;
+    },
+    [currentUserId],
+  );
+
+  const saveCurrentUserTrainingFeedback = useCallback(
+    async (feedbackEvents) => {
+      if (!currentUserId) {
+        return null;
+      }
+
+      const updatedUser = await userRepository.saveTrainingFeedback(
+        currentUserId,
+        feedbackEvents,
       );
 
       if (updatedUser) {
@@ -319,6 +341,7 @@ export function AuthProvider({ children }) {
         updateCurrentUserProfile,
         updateCurrentUserTrainingResult,
         saveCurrentUserTrainingPlan,
+        saveCurrentUserTrainingFeedback,
         scheduleCurrentUserWorkout,
         cancelCurrentUserWorkout,
         skipCurrentUserWorkout,

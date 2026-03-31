@@ -20,8 +20,11 @@ import {
 import { getNearestScheduledWorkout } from "../shared/workoutSchedule";
 import {
   clearActiveWorkoutResultDraft,
+  clearActiveWorkoutRuntime,
+  getActiveWorkoutRuntime,
   saveActiveWorkoutDraft,
 } from "../utils/activeWorkoutSession";
+import { createTrainingFeedbackEvent } from "../shared/trainingMlFeedback";
 
 function BackIcon() {
   return (
@@ -144,9 +147,55 @@ function ChevronIcon({ isExpanded }) {
   );
 }
 
+function getLastTrackedWeight(exerciseWeights = []) {
+  for (let index = exerciseWeights.length - 1; index >= 0; index -= 1) {
+    const value = Number(exerciseWeights[index]);
+
+    if (Number.isFinite(value) && value > 0) {
+      return value;
+    }
+  }
+
+  return null;
+}
+
+function formatTrackedWeight(value) {
+  if (!Number.isFinite(value)) {
+    return "";
+  }
+
+  return Number.isInteger(value) ? `${value} кг` : `${value.toFixed(1)} кг`;
+}
+
+function buildLatestExerciseWeightMap(workoutHistory = []) {
+  const exerciseWeightMap = new Map();
+
+  for (let workoutIndex = workoutHistory.length - 1; workoutIndex >= 0; workoutIndex -= 1) {
+    const workout = workoutHistory[workoutIndex];
+
+    for (const exercise of workout?.exerciseSetWeights ?? []) {
+      const latestWeight = getLastTrackedWeight(exercise?.weightsKg ?? []);
+
+      if (!Number.isFinite(latestWeight)) {
+        continue;
+      }
+
+      [exercise?.sourceExerciseId, exercise?.exerciseId, exercise?.exerciseName]
+        .filter(Boolean)
+        .forEach((key) => {
+          if (!exerciseWeightMap.has(key)) {
+            exerciseWeightMap.set(key, latestWeight);
+          }
+        });
+    }
+  }
+
+  return exerciseWeightMap;
+}
+
 export default function WorkoutPlanPage() {
   const navigate = useNavigate();
-  const { currentUser } = useAuth();
+  const { currentUser, saveCurrentUserTrainingFeedback } = useAuth();
   const nearestWorkout = useMemo(
     () => getNearestScheduledWorkout(currentUser?.scheduledWorkouts ?? []),
     [currentUser?.scheduledWorkouts],
@@ -161,9 +210,26 @@ export default function WorkoutPlanPage() {
   );
   const [workoutDraft, setWorkoutDraft] = useState(initialDraft);
   const [expandedExerciseIndex, setExpandedExerciseIndex] = useState(null);
+  const [pendingFeedbackEvents, setPendingFeedbackEvents] = useState([]);
+  const activeWorkoutRuntime = useMemo(() => getActiveWorkoutRuntime(), []);
+  const latestExerciseWeightMap = useMemo(
+    () => buildLatestExerciseWeightMap(currentUser?.workoutHistory ?? []),
+    [currentUser?.workoutHistory],
+  );
+  const hasRuntimeForCurrentWorkout = Boolean(
+    workoutDraft?.scheduledWorkoutId &&
+      activeWorkoutRuntime?.scheduledWorkoutId === workoutDraft.scheduledWorkoutId,
+  );
 
   useEffect(() => {
-    setWorkoutDraft(initialDraft);
+    const resetTimeoutId = window.setTimeout(() => {
+      setWorkoutDraft(initialDraft);
+      setPendingFeedbackEvents([]);
+    }, 0);
+
+    return () => {
+      window.clearTimeout(resetTimeoutId);
+    };
   }, [initialDraft]);
 
   if (!currentUser) {
@@ -183,7 +249,7 @@ export default function WorkoutPlanPage() {
             </h1>
             <p className="text-sm leading-6 text-[#8E97A8]">
               Сначала поставь тренировку в календарь, и после этого кнопка
-              "Приступить" откроет план занятия.
+              &quot;Приступить&quot; откроет план занятия.
             </p>
           </div>
 
@@ -199,6 +265,31 @@ export default function WorkoutPlanPage() {
   }
 
   function handleExerciseReplace(exerciseIndex, nextExerciseName) {
+    const previousExercise = workoutDraft?.exercises?.[exerciseIndex];
+    const nextExercise =
+      workoutDraft?.exerciseOptions?.find(
+        (option) => option.name === nextExerciseName,
+      ) ?? null;
+
+    if (
+      previousExercise &&
+      nextExercise &&
+      previousExercise.name !== nextExercise.name
+    ) {
+      setPendingFeedbackEvents((previousEvents) => [
+        ...previousEvents,
+        createTrainingFeedbackEvent({
+          type: "exercise_replaced",
+          source: "workout_plan",
+          trainingPlanId: currentUser?.trainingPlan?.id ?? null,
+          scheduledWorkoutId: workoutDraft?.scheduledWorkoutId ?? null,
+          sessionId: workoutDraft?.sessionId ?? null,
+          exercise: previousExercise,
+          nextExercise,
+        }),
+      ]);
+    }
+
     setWorkoutDraft((previousDraft) =>
       replaceWorkoutExercise({
         workoutDraft: previousDraft,
@@ -209,12 +300,31 @@ export default function WorkoutPlanPage() {
   }
 
   function handleDecreaseSets(exerciseIndex) {
+    const previousExercise = workoutDraft?.exercises?.[exerciseIndex];
+    const currentSets = previousExercise?.sets ?? 1;
+    const nextSets = Math.max(currentSets - 1, 1);
+
+    if (previousExercise && nextSets < currentSets) {
+      setPendingFeedbackEvents((previousEvents) => [
+        ...previousEvents,
+        createTrainingFeedbackEvent({
+          type: "sets_decreased",
+          source: "workout_plan",
+          trainingPlanId: currentUser?.trainingPlan?.id ?? null,
+          scheduledWorkoutId: workoutDraft?.scheduledWorkoutId ?? null,
+          sessionId: workoutDraft?.sessionId ?? null,
+          exercise: previousExercise,
+          previousSets: currentSets,
+          nextSets,
+        }),
+      ]);
+    }
+
     setWorkoutDraft((previousDraft) => {
-      const currentSets = previousDraft.exercises[exerciseIndex]?.sets ?? 1;
       return updateWorkoutExerciseSets(
         previousDraft,
         exerciseIndex,
-        Math.max(currentSets - 1, 1),
+        nextSets,
       );
     });
   }
@@ -231,13 +341,44 @@ export default function WorkoutPlanPage() {
   }
 
   function handleRemoveExercise(exerciseIndex) {
+    const previousExercise = workoutDraft?.exercises?.[exerciseIndex];
+
+    if (previousExercise && (workoutDraft?.exercises?.length ?? 0) > 1) {
+      setPendingFeedbackEvents((previousEvents) => [
+        ...previousEvents,
+        createTrainingFeedbackEvent({
+          type: "exercise_removed",
+          source: "workout_plan",
+          trainingPlanId: currentUser?.trainingPlan?.id ?? null,
+          scheduledWorkoutId: workoutDraft?.scheduledWorkoutId ?? null,
+          sessionId: workoutDraft?.sessionId ?? null,
+          exercise: previousExercise,
+        }),
+      ]);
+    }
+
     setWorkoutDraft((previousDraft) =>
       removeWorkoutExercise(previousDraft, exerciseIndex),
     );
   }
 
-  function handleStartWorkout() {
+  async function handleStartWorkout() {
+    if (pendingFeedbackEvents.length > 0) {
+      try {
+        await saveCurrentUserTrainingFeedback(pendingFeedbackEvents);
+        setPendingFeedbackEvents([]);
+      } catch {
+        // don't block workout start if analytics/feedback saving fails
+      }
+    }
+
+    if (hasRuntimeForCurrentWorkout) {
+      navigate(ROUTES.WORKOUT_ACTIVE);
+      return;
+    }
+
     clearActiveWorkoutResultDraft();
+    clearActiveWorkoutRuntime();
     saveActiveWorkoutDraft(workoutDraft);
     navigate(ROUTES.WORKOUT_ACTIVE);
   }
@@ -260,17 +401,29 @@ export default function WorkoutPlanPage() {
             <BackIcon />
           </Link>
 
-          <div className="text-center">
+          <div className="min-w-0 flex-1 text-center">
             <p className="text-sm uppercase tracking-[0.2em] text-[#8E97A8]">
               План тренировки
             </p>
-            <h1 className="mt-1 text-xl font-medium text-white">
+            <h1 className="mt-1 break-words text-xl font-medium leading-7 text-white">
               {workoutDraft.title}
             </h1>
           </div>
 
           <div className="w-12" aria-hidden="true" />
         </header>
+
+        {hasRuntimeForCurrentWorkout ? (
+          <div className="rounded-[20px] border border-[#27455C] bg-[#102338] px-4 py-4">
+            <p className="text-[11px] uppercase tracking-[0.16em] text-[#8E97A8]">
+              Активная сессия
+            </p>
+            <p className="mt-2 text-sm leading-6 text-[#D6E6F8]">
+              Эта тренировка уже была начата. Можно сразу вернуться к ней с
+              сохранённым прогрессом.
+            </p>
+          </div>
+        ) : null}
 
         <div className="flex flex-col gap-3">
           {workoutDraft.exercises.map((exercise, exerciseIndex) => {
@@ -280,161 +433,171 @@ export default function WorkoutPlanPage() {
               exercise,
               workoutDraft.trainingLevel,
             );
+            const latestExerciseWeight =
+              latestExerciseWeightMap.get(exercise.sourceExerciseId) ??
+              latestExerciseWeightMap.get(exercise.id) ??
+              latestExerciseWeightMap.get(exercise.name) ??
+              null;
 
             return (
               <section
-                key={exercise.id}
+                key={`${exercise.id}_${exerciseIndex}`}
                 className="overflow-hidden rounded-[20px] border border-[#2A3140] bg-[#12151C]"
               >
-              <button
-                type="button"
-                onClick={() => toggleExerciseDetails(exerciseIndex)}
-                className="flex w-full items-center gap-3 px-4 py-3 text-left"
-                aria-expanded={expandedExerciseIndex === exerciseIndex}
-              >
-                <div className="min-w-0 flex-1">
-                  <h2
-                    className="overflow-hidden text-sm font-medium leading-5 text-white"
-                    style={{
-                      display: "-webkit-box",
-                      WebkitBoxOrient: "vertical",
-                      WebkitLineClamp: 2,
-                    }}
-                  >
-                    {exercise.name}
-                  </h2>
-                  <div className="mt-2 flex flex-wrap items-center gap-2">
-                    <span className="inline-flex rounded-full bg-[#0D3A33] px-3 py-1 text-[10px] text-[#B5F7DF]">
-                      {exercise.difficultyLabel}
-                    </span>
-                    <span className="inline-flex rounded-full bg-[#0B0E15] px-3 py-1 text-[10px] text-white">
-                      {exercise.sets} подход.
-                    </span>
-                  </div>
-
-                </div>
-                <span className="shrink-0 text-[#8E97A8]">
-                  <ChevronIcon isExpanded={expandedExerciseIndex === exerciseIndex} />
-                </span>
-              </button>
-
-              {expandedExerciseIndex === exerciseIndex ? (
-                <div className="border-t border-[#2A3140] px-4 py-4">
-                  <div className="flex items-center gap-2">
-                    <button
-                      type="button"
-                      onClick={() => handleDecreaseSets(exerciseIndex)}
-                      className="rounded-2xl border border-[#2A3140] p-2 text-[#D9E1EE]"
-                      aria-label="Уменьшить количество подходов"
+                <button
+                  type="button"
+                  onClick={() => toggleExerciseDetails(exerciseIndex)}
+                  className="flex w-full items-center gap-3 px-4 py-3 text-left"
+                  aria-expanded={expandedExerciseIndex === exerciseIndex}
+                >
+                  <div className="min-w-0 flex-1">
+                    <h2
+                      className="overflow-hidden text-sm font-medium leading-5 text-white"
+                      style={{
+                        display: "-webkit-box",
+                        WebkitBoxOrient: "vertical",
+                        WebkitLineClamp: 2,
+                      }}
                     >
-                      <MinusIcon />
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => handleIncreaseSets(exerciseIndex)}
-                      className="rounded-2xl border border-[#2A3140] p-2 text-[#D9E1EE]"
-                      aria-label="Увеличить количество подходов"
-                    >
-                      <PlusIcon />
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => handleRemoveExercise(exerciseIndex)}
-                      disabled={workoutDraft.exercises.length === 1}
-                      className="ml-auto rounded-2xl border border-[#2A3140] p-2 text-[#FF9B9B] disabled:opacity-40"
-                      aria-label="Убрать упражнение"
-                    >
-                      <TrashIcon />
-                    </button>
-                  </div>
-
-                  <label className="mt-4 flex flex-col gap-2">
-                    <span className="text-[11px] uppercase tracking-[0.16em] text-[#8E97A8]">
-                      Замена
-                    </span>
-                    <select
-                      value={exercise.name}
-                      onChange={(event) =>
-                        handleExerciseReplace(exerciseIndex, event.target.value)
-                      }
-                      className="rounded-2xl border border-[#2A3140] bg-[#0B0E15] px-4 py-3 text-sm text-white outline-none"
-                    >
-                      {workoutDraft.exerciseOptions.map((option) => (
-                        <option key={option.name} value={option.name}>
-                          {option.name}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-
-                  <div className="mt-4 rounded-2xl bg-[#0B0E15] px-4 py-3">
-                    <p className="text-[11px] uppercase tracking-[0.16em] text-[#8E97A8]">
-                      Рекомендация
-                    </p>
-                    <p className="mt-2 text-sm leading-6 text-white">
-                      {exercise.prescription}
-                    </p>
-                  </div>
-                  <div
-                    className={`mt-3 rounded-2xl px-4 py-3 ${volumeReasonMeta.surfaceClassName}`}
-                  >
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="min-w-0">
-                        <p className="text-[11px] uppercase tracking-[0.16em] text-[#8E97A8]">
-                          Причина адаптации
-                        </p>
-                        <div className="mt-2 flex items-center gap-2">
-                          <VolumeTrendIcon
-                            iconType={volumeReasonMeta.iconType}
-                            className={`h-4 w-4 ${volumeReasonMeta.textClassName}`}
-                          />
-                          <p
-                            className={`text-sm font-medium ${volumeReasonMeta.textClassName}`}
-                          >
-                            {volumeReasonTitle}
-                          </p>
-                        </div>
-                      </div>
-                      <span
-                        className={`rounded-full px-2.5 py-1 text-[10px] font-medium uppercase tracking-[0.16em] ${volumeReasonMeta.badgeClassName}`}
-                      >
-                        {volumeReasonMeta.label}
+                      {exercise.name}
+                    </h2>
+                    <div className="mt-2 flex flex-wrap items-center gap-2">
+                      <span className="inline-flex rounded-full bg-[#0D3A33] px-3 py-1 text-[10px] text-[#B5F7DF]">
+                        {exercise.difficultyLabel}
+                      </span>
+                      <span className="inline-flex rounded-full bg-[#0B0E15] px-3 py-1 text-[10px] text-white">
+                        {exercise.sets} подход.
                       </span>
                     </div>
-                    <div className="mt-3 flex flex-wrap gap-2">
-                      {volumeReasonChips.map((chip) => (
-                        <span
-                          key={`${exercise.id}_${chip}`}
-                          className={`rounded-full px-2.5 py-1 text-[10px] font-medium uppercase tracking-[0.14em] ${volumeReasonMeta.badgeClassName}`}
-                        >
-                          {chip}
-                        </span>
-                      ))}
-                    </div>
-                    <p className="mt-3 text-sm leading-6 text-[#8E97A8]">
-                      {getExerciseVolumeReason(exercise)}
-                    </p>
-                    <div className="hidden">
-                      <p className="text-[11px] uppercase tracking-[0.16em] text-[#8E97A8]">
-                        Почему такой объём
+                    {Number.isFinite(latestExerciseWeight) ? (
+                      <p className="mt-2 text-xs text-[#8E97A8]">
+                        В прошлый раз: {formatTrackedWeight(latestExerciseWeight)}
                       </p>
-                      <span
-                        className={`rounded-full px-2.5 py-1 text-[10px] font-medium uppercase tracking-[0.16em] ${volumeReasonMeta.badgeClassName}`}
-                      >
-                        {volumeReasonMeta.label}
-                      </span>
-                    </div>
-                    <p className="hidden">
-                      {getExerciseVolumeReason(exercise)}
-                    </p>
+                    ) : null}
                   </div>
-                </div>
-              ) : null}
+
+                  <span className="shrink-0 text-[#8E97A8]">
+                    <ChevronIcon
+                      isExpanded={expandedExerciseIndex === exerciseIndex}
+                    />
+                  </span>
+                </button>
+
+                {expandedExerciseIndex === exerciseIndex ? (
+                  <div className="border-t border-[#2A3140] px-4 py-4">
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => handleDecreaseSets(exerciseIndex)}
+                        className="rounded-2xl border border-[#2A3140] p-2 text-[#D9E1EE]"
+                        aria-label="Уменьшить количество подходов"
+                      >
+                        <MinusIcon />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleIncreaseSets(exerciseIndex)}
+                        className="rounded-2xl border border-[#2A3140] p-2 text-[#D9E1EE]"
+                        aria-label="Увеличить количество подходов"
+                      >
+                        <PlusIcon />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveExercise(exerciseIndex)}
+                        disabled={workoutDraft.exercises.length === 1}
+                        className="ml-auto rounded-2xl border border-[#2A3140] p-2 text-[#FF9B9B] disabled:opacity-40"
+                        aria-label="Удалить упражнение"
+                      >
+                        <TrashIcon />
+                      </button>
+                    </div>
+
+                    <label className="mt-4 flex flex-col gap-2">
+                      <span className="text-[11px] uppercase tracking-[0.16em] text-[#8E97A8]">
+                        Замена
+                      </span>
+                      <select
+                        value={exercise.name}
+                        onChange={(event) =>
+                          handleExerciseReplace(exerciseIndex, event.target.value)
+                        }
+                        className="rounded-2xl border border-[#2A3140] bg-[#0B0E15] px-4 py-3 text-sm text-white outline-none"
+                      >
+                        {workoutDraft.exerciseOptions.map((option, optionIndex) => (
+                          <option
+                            key={`${option.id ?? option.name}_${optionIndex}`}
+                            value={option.name}
+                          >
+                            {option.name}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+
+                    <div className="mt-4 rounded-2xl bg-[#0B0E15] px-4 py-3">
+                      <p className="text-[11px] uppercase tracking-[0.16em] text-[#8E97A8]">
+                        Рекомендация
+                      </p>
+                      <p className="mt-2 text-sm leading-6 text-white">
+                        {exercise.prescription}
+                      </p>
+                      {Number.isFinite(latestExerciseWeight) ? (
+                        <p className="mt-2 text-xs leading-5 text-[#8E97A8]">
+                          Последний рабочий вес: {formatTrackedWeight(latestExerciseWeight)}
+                        </p>
+                      ) : null}
+                    </div>
+
+                    <div
+                      className={`mt-3 rounded-2xl px-4 py-3 ${volumeReasonMeta.surfaceClassName}`}
+                    >
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0">
+                          <p className="text-[11px] uppercase tracking-[0.16em] text-[#8E97A8]">
+                            Причина адаптации
+                          </p>
+                          <div className="mt-2 flex items-center gap-2">
+                            <VolumeTrendIcon
+                              iconType={volumeReasonMeta.iconType}
+                              className={`h-4 w-4 ${volumeReasonMeta.textClassName}`}
+                            />
+                            <p
+                              className={`text-sm font-medium ${volumeReasonMeta.textClassName}`}
+                            >
+                              {volumeReasonTitle}
+                            </p>
+                          </div>
+                        </div>
+
+                        <span
+                          className={`rounded-full px-2.5 py-1 text-[10px] font-medium uppercase tracking-[0.16em] ${volumeReasonMeta.badgeClassName}`}
+                        >
+                          {volumeReasonMeta.label}
+                        </span>
+                      </div>
+
+                      <div className="mt-3 flex flex-wrap gap-2">
+                        {volumeReasonChips.map((chip) => (
+                          <span
+                            key={`${exercise.id}_${chip}`}
+                            className={`rounded-full px-2.5 py-1 text-[10px] font-medium uppercase tracking-[0.14em] ${volumeReasonMeta.badgeClassName}`}
+                          >
+                            {chip}
+                          </span>
+                        ))}
+                      </div>
+
+                      <p className="mt-3 text-sm leading-6 text-[#8E97A8]">
+                        {getExerciseVolumeReason(exercise)}
+                      </p>
+                    </div>
+                  </div>
+                ) : null}
               </section>
             );
           })}
         </div>
-
       </section>
 
       <div className="fixed inset-x-0 bottom-[calc(2rem+env(safe-area-inset-bottom))] z-30 flex justify-center px-5">
@@ -443,7 +606,9 @@ export default function WorkoutPlanPage() {
           onClick={handleStartWorkout}
           className="w-full max-w-md rounded-3xl bg-[#01BB96] px-5 py-4 text-base font-medium text-[#000214]"
         >
-          Начать тренировку • {formatDuration(workoutDraft.totalEstimatedSeconds)}
+          {hasRuntimeForCurrentWorkout
+            ? `Продолжить тренировку • ${formatDuration(workoutDraft.totalEstimatedSeconds)}`
+            : `Начать тренировку • ${formatDuration(workoutDraft.totalEstimatedSeconds)}`}
         </button>
       </div>
     </PageShell>

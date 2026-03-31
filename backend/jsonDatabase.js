@@ -12,6 +12,17 @@ const defaultDatabase = {
   users: [],
 };
 
+function normalizeGenderValue(gender) {
+  const normalizedGender =
+    typeof gender === "string" ? gender.trim().toLowerCase() : "";
+
+  if (normalizedGender === "male" || normalizedGender === "female") {
+    return normalizedGender;
+  }
+
+  return "not_specified";
+}
+
 function cloneValue(value) {
   return JSON.parse(JSON.stringify(value));
 }
@@ -25,10 +36,14 @@ function normalizeDatabaseUser(user) {
     ...user,
     login: String(user.login ?? user.name ?? "").trim(),
     name: String(user.name ?? user.login ?? "").trim(),
+    gender: normalizeGenderValue(user.gender),
     trainingPlanAdaptationHistory: Array.isArray(
       user.trainingPlanAdaptationHistory,
     )
       ? user.trainingPlanAdaptationHistory
+      : [],
+    trainingMlFeedbackHistory: Array.isArray(user.trainingMlFeedbackHistory)
+      ? user.trainingMlFeedbackHistory
       : [],
   };
 }

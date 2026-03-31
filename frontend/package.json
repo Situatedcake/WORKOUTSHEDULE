@@ -1,14 +1,14 @@
 {
   "name": "workoutshedule",
   "private": true,
-  "version": "1.0",
+  "version": "1.0.3",
   "type": "module",
   "scripts": {
-    "dev": "vite",
+    "dev": "vite --configLoader native",
     "server": "node index.js",
-    "build": "vite build",
+    "build": "vite build --configLoader native",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview --configLoader native"
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.2.2",

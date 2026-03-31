@@ -85,7 +85,7 @@ export function getNearestScheduledWorkout(
   now = new Date(),
 ) {
   return [...scheduledWorkouts]
-    .filter((workout) => workout.status !== "completed")
+    .filter((workout) => (workout.status ?? "planned") === "planned")
     .sort(compareScheduledWorkouts)
     .find((workout) => {
       const workoutDate = new Date(
@@ -114,7 +114,7 @@ export function rebalanceScheduledWorkouts({
       trainingPlan.sessions[sessionCounter % trainingPlan.sessions.length];
     sessionCounter += 1;
 
-    if (workout.status === "completed") {
+    if (workout.status && workout.status !== "planned") {
       return {
         ...workout,
         sessionId: workout.sessionId ?? session.id,

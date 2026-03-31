@@ -22,12 +22,29 @@ function formatWeightValue(value) {
     : `${numericValue.toFixed(1)} кг`;
 }
 
+function SummaryCard({ label, value, caption }) {
+  return (
+    <div className="rounded-2xl bg-[#0B0E15] px-4 py-4">
+      <p className="text-xs uppercase tracking-[0.18em] text-[#8E97A8]">
+        {label}
+      </p>
+      <p className="mt-2 text-2xl font-medium text-white">{value}</p>
+      {caption ? (
+        <p className="mt-1 text-sm leading-5 text-[#8E97A8]">{caption}</p>
+      ) : null}
+    </div>
+  );
+}
+
 export default function FinishTrainingPage() {
   const navigate = useNavigate();
   const { currentUser, completeCurrentUserWorkout } = useAuth();
   const resultDraft = getActiveWorkoutResultDraft();
   const [weightKg, setWeightKg] = useState("");
   const [burnedCalories, setBurnedCalories] = useState("");
+  const [energyLevel, setEnergyLevel] = useState("3");
+  const [effortLevel, setEffortLevel] = useState("3");
+  const [sleepQuality, setSleepQuality] = useState("3");
   const [isSaving, setIsSaving] = useState(false);
   const [saveError, setSaveError] = useState("");
 
@@ -44,6 +61,12 @@ export default function FinishTrainingPage() {
     [resultDraft?.exerciseSetWeights],
   );
 
+  const plannedSetsCount = Number(resultDraft?.totalSets) || 0;
+  const completedSetsCount = Number(resultDraft?.completedSetsCount) || 0;
+  const plannedExercisesCount = Number(resultDraft?.totalExercisesCount) || 0;
+  const completedExercisesCount =
+    Number(resultDraft?.completedExercisesCount) || 0;
+
   if (!currentUser) {
     return <Navigate to={ROUTES.LOGIN} replace />;
   }
@@ -57,15 +80,10 @@ export default function FinishTrainingPage() {
     setSaveError("");
 
     try {
-      const totalSets = Number(resultDraft.totalSets) || 0;
-      const completedSetsCount = Number(resultDraft.completedSetsCount) || 0;
-      const totalExercisesCount = Number(resultDraft.totalExercisesCount) || 0;
-      const completedExercisesCount =
-        Number(resultDraft.completedExercisesCount) || 0;
       const workoutStatus =
-        totalSets > 0 &&
-        completedSetsCount >= totalSets &&
-        completedExercisesCount >= totalExercisesCount
+        plannedSetsCount > 0 &&
+        completedSetsCount >= plannedSetsCount &&
+        completedExercisesCount >= plannedExercisesCount
           ? "completed"
           : "partial";
 
@@ -75,15 +93,19 @@ export default function FinishTrainingPage() {
           status: workoutStatus,
           startedAt: resultDraft.startedAt ?? null,
           plannedDurationSeconds: resultDraft.plannedDurationSeconds ?? 0,
-          plannedSetsCount: totalSets,
+          plannedSetsCount,
           durationSeconds: resultDraft.durationSeconds,
           completedExercisesCount,
           completedSetsCount,
           exerciseSetWeights: resultDraft.exerciseSetWeights ?? [],
           weightKg,
           burnedCalories,
+          energyLevel,
+          effortLevel,
+          sleepQuality,
         },
       );
+
       clearEntireActiveWorkoutSession();
       navigate(ROUTES.STATS, {
         state: {
@@ -124,23 +146,31 @@ export default function FinishTrainingPage() {
         </div>
 
         <div className="grid grid-cols-2 gap-3">
-          <div className="rounded-2xl bg-[#0B0E15] px-4 py-4">
-            <p className="text-xs uppercase tracking-[0.18em] text-[#8E97A8]">
-              Время
-            </p>
-            <p className="mt-2 text-2xl font-medium text-white">
-              {formatDuration(resultDraft.durationSeconds)}
-            </p>
-          </div>
-
-          <div className="rounded-2xl bg-[#0B0E15] px-4 py-4">
-            <p className="text-xs uppercase tracking-[0.18em] text-[#8E97A8]">
-              Подходы
-            </p>
-            <p className="mt-2 text-2xl font-medium text-white">
-              {resultDraft.completedSetsCount}
-            </p>
-          </div>
+          <SummaryCard
+            label="Время"
+            value={formatDuration(resultDraft.durationSeconds)}
+            caption="фактическая длительность"
+          />
+          <SummaryCard
+            label="Подходы"
+            value={`${completedSetsCount}/${plannedSetsCount}`}
+            caption="выполнено от плана"
+          />
+          <SummaryCard
+            label="Упражнения"
+            value={`${completedExercisesCount}/${plannedExercisesCount}`}
+            caption="закрыто за сессию"
+          />
+          <SummaryCard
+            label="Статус"
+            value={
+              completedSetsCount >= plannedSetsCount &&
+              completedExercisesCount >= plannedExercisesCount
+                ? "Полностью"
+                : "Частично"
+            }
+            caption="результат тренировки"
+          />
         </div>
 
         {exerciseStats.length > 0 ? (
@@ -155,9 +185,9 @@ export default function FinishTrainingPage() {
             </div>
 
             <div className="flex flex-col gap-3">
-              {exerciseStats.map((exercise) => (
+              {exerciseStats.map((exercise, exerciseIndex) => (
                 <article
-                  key={exercise.exerciseId ?? exercise.exerciseName}
+                  key={`${exercise.exerciseId ?? exercise.exerciseName}_${exerciseIndex}`}
                   className="rounded-2xl bg-[#0B0E15] px-4 py-4"
                 >
                   <h3 className="text-base font-medium text-white">
@@ -185,27 +215,76 @@ export default function FinishTrainingPage() {
           </section>
         ) : null}
 
-        <label className="flex flex-col gap-2">
-          <span className="text-sm text-[#8E97A8]">Вес, кг</span>
-          <input
-            value={weightKg}
-            onChange={(event) => setWeightKg(event.target.value)}
-            inputMode="decimal"
-            placeholder="Например, 72.5"
-            className="rounded-2xl border border-[#2A3140] bg-[#0B0E15] px-4 py-3 text-white outline-none"
-          />
-        </label>
+        <div className="grid grid-cols-2 gap-3">
+          <label className="flex flex-col gap-2">
+            <span className="text-sm text-[#8E97A8]">Вес, кг</span>
+            <input
+              value={weightKg}
+              onChange={(event) => setWeightKg(event.target.value)}
+              inputMode="decimal"
+              placeholder="Например, 72.5"
+              className="rounded-2xl border border-[#2A3140] bg-[#0B0E15] px-4 py-3 text-white outline-none"
+            />
+          </label>
 
-        <label className="flex flex-col gap-2">
-          <span className="text-sm text-[#8E97A8]">Сожжено калорий</span>
-          <input
-            value={burnedCalories}
-            onChange={(event) => setBurnedCalories(event.target.value)}
-            inputMode="numeric"
-            placeholder="Например, 410"
-            className="rounded-2xl border border-[#2A3140] bg-[#0B0E15] px-4 py-3 text-white outline-none"
-          />
-        </label>
+          <label className="flex flex-col gap-2">
+            <span className="text-sm text-[#8E97A8]">Сожжено калорий</span>
+            <input
+              value={burnedCalories}
+              onChange={(event) => setBurnedCalories(event.target.value)}
+              inputMode="numeric"
+              placeholder="Например, 410"
+              className="rounded-2xl border border-[#2A3140] bg-[#0B0E15] px-4 py-3 text-white outline-none"
+            />
+          </label>
+        </div>
+
+        <div className="grid grid-cols-3 gap-3">
+          <label className="flex flex-col gap-2">
+            <span className="text-sm text-[#8E97A8]">Энергия</span>
+            <select
+              value={energyLevel}
+              onChange={(event) => setEnergyLevel(event.target.value)}
+              className="rounded-2xl border border-[#2A3140] bg-[#0B0E15] px-3 py-3 text-white outline-none"
+            >
+              <option value="1">1/5</option>
+              <option value="2">2/5</option>
+              <option value="3">3/5</option>
+              <option value="4">4/5</option>
+              <option value="5">5/5</option>
+            </select>
+          </label>
+
+          <label className="flex flex-col gap-2">
+            <span className="text-sm text-[#8E97A8]">Усилие</span>
+            <select
+              value={effortLevel}
+              onChange={(event) => setEffortLevel(event.target.value)}
+              className="rounded-2xl border border-[#2A3140] bg-[#0B0E15] px-3 py-3 text-white outline-none"
+            >
+              <option value="1">1/5</option>
+              <option value="2">2/5</option>
+              <option value="3">3/5</option>
+              <option value="4">4/5</option>
+              <option value="5">5/5</option>
+            </select>
+          </label>
+
+          <label className="flex flex-col gap-2">
+            <span className="text-sm text-[#8E97A8]">Сон</span>
+            <select
+              value={sleepQuality}
+              onChange={(event) => setSleepQuality(event.target.value)}
+              className="rounded-2xl border border-[#2A3140] bg-[#0B0E15] px-3 py-3 text-white outline-none"
+            >
+              <option value="1">1/5</option>
+              <option value="2">2/5</option>
+              <option value="3">3/5</option>
+              <option value="4">4/5</option>
+              <option value="5">5/5</option>
+            </select>
+          </label>
+        </div>
 
         {saveError ? (
           <div className="rounded-2xl border border-[#603838] bg-[#2B1717] px-4 py-3 text-sm text-[#FFB3B3]">

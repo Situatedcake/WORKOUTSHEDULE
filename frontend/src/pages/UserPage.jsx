@@ -34,7 +34,7 @@ function SettingsIcon() {
 }
 
 export default function UserPage() {
-  const { currentUser, isAuthReady, authError, logout } = useAuth();
+  const { currentUser, isAuthReady, authError } = useAuth();
   const nextWorkout = useMemo(
     () => getNearestScheduledWorkout(currentUser?.scheduledWorkouts ?? []),
     [currentUser?.scheduledWorkouts],
@@ -110,7 +110,7 @@ export default function UserPage() {
         <Link
           to={ROUTES.USER_EDIT}
           aria-label="Редактировать профиль"
-          className="absolute top-2 right-2 rounded-2xl p-2"
+          className="absolute right-2 top-2 rounded-2xl border border-[#2A3140] bg-[#0B0E15] p-2.5 text-white transition active:scale-[0.97]"
         >
           <SettingsIcon />
         </Link>
@@ -133,14 +133,14 @@ export default function UserPage() {
               )}
             </div>
 
-            <div className="space-y-2">
+            <div className="min-w-0 space-y-2 pr-12">
               <p className="text-sm uppercase tracking-[0.2em] text-[#8E97A8]">
                 Профиль
               </p>
-              <h1 className="text-3xl font-medium text-white">
+              <h1 className="break-words text-3xl font-medium leading-9 text-white">
                 {currentUser.name ?? currentUser.login}
               </h1>
-              <p className="text-sm text-[#8E97A8]">
+              <p className="break-words text-sm leading-6 text-[#8E97A8]">
                 {currentUser.email || "Почта пока не добавлена"}
               </p>
             </div>
@@ -152,7 +152,7 @@ export default function UserPage() {
             <p className="text-xs leading-5 text-[#8E97A8]">
               Уровень подготовки
             </p>
-            <p className="mt-2 break-words text-lg font-medium text-white text-center">
+            <p className="mt-2 break-words text-center text-lg font-medium text-white">
               {currentUser.trainingLevel}
             </p>
           </div>
@@ -181,16 +181,16 @@ export default function UserPage() {
               <p className="text-xl font-medium text-white">
                 {currentUser.trainingPlan.focusLabel}
               </p>
-              <p className="text-sm text-[#8E97A8]">
+              <p className="break-words text-sm leading-6 text-[#8E97A8]">
                 {currentUser.trainingPlan.workoutsPerWeek} тренировки в неделю
               </p>
-              <p className="text-sm text-[#8E97A8]">
+              <p className="break-words text-sm leading-6 text-[#8E97A8]">
                 {currentUser.trainingPlan.estimatedMinutesPerWeek} минут
                 нагрузки в неделю
               </p>
             </div>
           ) : (
-            <p className="mt-2 text-sm text-[#8E97A8]">
+            <p className="mt-2 break-words text-sm leading-6 text-[#8E97A8]">
               Программа еще не составлена.
             </p>
           )}
@@ -201,20 +201,12 @@ export default function UserPage() {
           <p className="mt-2 text-xl font-medium text-white">
             {formatWorkoutRelativeLabel(nextWorkout)}
           </p>
-          <p className="mt-2 text-sm text-[#8E97A8]">
+          <p className="mt-2 break-words text-sm leading-6 text-[#8E97A8]">
             {nextWorkout
               ? `${nextWorkout.title}, ${nextWorkout.time}`
               : "Расписание пока пустое."}
           </p>
         </div>
-
-        <button
-          type="button"
-          onClick={logout}
-          className="rounded-3xl border border-[#2A3140] px-5 py-4 text-base font-medium text-white"
-        >
-          Выйти
-        </button>
       </section>
     </PageShell>
   );

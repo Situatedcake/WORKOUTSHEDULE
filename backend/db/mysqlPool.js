@@ -95,6 +95,30 @@ async function ensureUsersTableCompatibility() {
       "ALTER TABLE users ADD COLUMN training_plan_adaptation_history_json LONGTEXT NULL AFTER training_plan_json",
     );
   }
+
+  const hasTrainingMlFeedbackHistoryColumn = await hasUsersColumn(
+    "training_ml_feedback_history_json",
+  );
+
+  if (!hasTrainingMlFeedbackHistoryColumn) {
+    await pool.query(
+      "ALTER TABLE users ADD COLUMN training_ml_feedback_history_json LONGTEXT NULL AFTER training_plan_adaptation_history_json",
+    );
+  }
+
+  const hasGenderColumn = await hasUsersColumn("gender");
+
+  if (!hasGenderColumn) {
+    await pool.query(
+      "ALTER TABLE users ADD COLUMN gender VARCHAR(32) NOT NULL DEFAULT 'not_specified' AFTER email",
+    );
+  }
+
+  await pool.query(`
+    UPDATE users
+    SET gender = 'not_specified'
+    WHERE gender IS NULL OR gender = ''
+  `);
 }
 
 export async function initializeMySqlPool() {

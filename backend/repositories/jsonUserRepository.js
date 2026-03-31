@@ -13,6 +13,11 @@ import {
 import {
   normalizeTrainingPlanAdaptationHistory,
 } from "../services/trainingPlanAdaptationHistory.js";
+import { syncExpiredScheduledWorkouts } from "../services/expiredScheduledWorkouts.js";
+import {
+  buildWorkoutOutcomeFeedbackEvents,
+  normalizeTrainingMlFeedbackHistory,
+} from "../services/trainingMlFeedback.js";
 import { createWorkoutHistoryEntry } from "../services/workoutHistory.js";
 
 function findUserByLogin(users, login) {
@@ -34,14 +39,81 @@ function findUserByName(users, name) {
   );
 }
 
+function normalizeGenderValue(gender) {
+  const normalizedGender =
+    typeof gender === "string" ? gender.trim().toLowerCase() : "";
+
+  if (normalizedGender === "male" || normalizedGender === "female") {
+    return normalizedGender;
+  }
+
+  return "not_specified";
+}
+
 function createWorkoutHistoryId() {
   return `workout_history_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+}
+
+function mergeTrainingMlFeedbackHistory(existingHistory = [], nextEvents = []) {
+  return normalizeTrainingMlFeedbackHistory([
+    ...(existingHistory ?? []),
+    ...nextEvents,
+  ]);
+}
+
+function syncUserExpiredWorkouts(currentUser) {
+  const syncedWorkouts = syncExpiredScheduledWorkouts({
+    scheduledWorkouts: currentUser?.scheduledWorkouts ?? [],
+    workoutHistory: currentUser?.workoutHistory ?? [],
+    trainingPlan: currentUser?.trainingPlan ?? null,
+    historyEntryIdFactory: createWorkoutHistoryId,
+  });
+
+  if (!syncedWorkouts.didChange) {
+    return {
+      didChange: false,
+      user: currentUser,
+    };
+  }
+
+  const appendedWorkoutHistory = syncedWorkouts.workoutHistory.slice(
+    (currentUser?.workoutHistory ?? []).length,
+  );
+  const feedbackEvents = appendedWorkoutHistory.flatMap((workoutEntry) =>
+    buildWorkoutOutcomeFeedbackEvents(workoutEntry, "schedule_sync"),
+  );
+
+  return {
+    didChange: true,
+    user: {
+      ...currentUser,
+      scheduledWorkouts: syncedWorkouts.scheduledWorkouts,
+      workoutHistory: syncedWorkouts.workoutHistory,
+      trainingMlFeedbackHistory: mergeTrainingMlFeedbackHistory(
+        currentUser?.trainingMlFeedbackHistory,
+        feedbackEvents,
+      ),
+      updatedAt: syncedWorkouts.lastUpdatedAt ?? new Date().toISOString(),
+    },
+  };
 }
 
 export const jsonUserRepository = {
   async getById(userId) {
     const database = await readDatabase();
-    const user = database.users.find((item) => item.id === userId) ?? null;
+    const userIndex = database.users.findIndex((item) => item.id === userId);
+
+    if (userIndex === -1) {
+      return null;
+    }
+
+    const syncResult = syncUserExpiredWorkouts(database.users[userIndex]);
+    const user = syncResult.user;
+
+    if (syncResult.didChange) {
+      database.users[userIndex] = user;
+      await writeDatabase(database);
+    }
 
     return sanitizeUser(user);
   },
@@ -54,7 +126,7 @@ export const jsonUserRepository = {
       return null;
     }
 
-    return sanitizeUser(user);
+    return this.getById(user.id);
   },
 
   async register({ login, password }) {
@@ -73,11 +145,13 @@ export const jsonUserRepository = {
       name: trimmedLogin,
       password,
       email: null,
+      gender: "not_specified",
       profilePhoto: null,
       trainingLevel: "Не определен",
       lastTestScore: null,
       trainingPlan: null,
       trainingPlanAdaptationHistory: [],
+      trainingMlFeedbackHistory: [],
       scheduledWorkouts: [],
       workoutHistory: [],
       createdAt: timestamp,
@@ -90,7 +164,7 @@ export const jsonUserRepository = {
     return sanitizeUser(nextUser);
   },
 
-  async updateProfile(userId, { name, email, password, profilePhoto }) {
+  async updateProfile(userId, { name, email, password, profilePhoto, gender }) {
     const database = await readDatabase();
     const userIndex = database.users.findIndex((item) => item.id === userId);
 
@@ -116,6 +190,7 @@ export const jsonUserRepository = {
       ...currentUser,
       name: trimmedName || currentUser.name,
       email: String(email ?? "").trim() || null,
+      gender: normalizeGenderValue(gender ?? currentUser.gender),
       password: String(password ?? "").trim() || currentUser.password,
       profilePhoto: profilePhoto || currentUser.profilePhoto || null,
       updatedAt: new Date().toISOString(),
@@ -127,7 +202,12 @@ export const jsonUserRepository = {
     return sanitizeUser(nextUser);
   },
 
-  async saveTrainingPlan(userId, trainingPlan, adaptationEvent = null) {
+  async saveTrainingPlan(
+    userId,
+    trainingPlan,
+    adaptationEvent = null,
+    mlFeedbackEvents = [],
+  ) {
     const database = await readDatabase();
     const userIndex = database.users.findIndex((item) => item.id === userId);
 
@@ -135,7 +215,8 @@ export const jsonUserRepository = {
       return null;
     }
 
-    const currentUser = database.users[userIndex];
+    const syncResult = syncUserExpiredWorkouts(database.users[userIndex]);
+    const currentUser = syncResult.user;
     const trainingPlanAdaptationHistory = adaptationEvent
       ? normalizeTrainingPlanAdaptationHistory([
           ...(currentUser.trainingPlanAdaptationHistory ?? []),
@@ -148,6 +229,10 @@ export const jsonUserRepository = {
       ...currentUser,
       trainingPlan,
       trainingPlanAdaptationHistory,
+      trainingMlFeedbackHistory: mergeTrainingMlFeedbackHistory(
+        currentUser.trainingMlFeedbackHistory,
+        mlFeedbackEvents,
+      ),
       scheduledWorkouts: rebalanceScheduledWorkouts({
         scheduledWorkouts: currentUser.scheduledWorkouts ?? [],
         trainingPlan,
@@ -169,7 +254,8 @@ export const jsonUserRepository = {
       return null;
     }
 
-    const currentUser = database.users[userIndex];
+    const syncResult = syncUserExpiredWorkouts(database.users[userIndex]);
+    const currentUser = syncResult.user;
     const nextUser = {
       ...currentUser,
       scheduledWorkouts: addScheduledWorkout({
@@ -195,7 +281,8 @@ export const jsonUserRepository = {
       return null;
     }
 
-    const currentUser = database.users[userIndex];
+    const syncResult = syncUserExpiredWorkouts(database.users[userIndex]);
+    const currentUser = syncResult.user;
     const scheduledWorkout = (currentUser.scheduledWorkouts ?? []).find(
       (item) => item.id === scheduledWorkoutId,
     );
@@ -244,7 +331,8 @@ export const jsonUserRepository = {
       return null;
     }
 
-    const currentUser = database.users[userIndex];
+    const syncResult = syncUserExpiredWorkouts(database.users[userIndex]);
+    const currentUser = syncResult.user;
     const scheduledWorkout = (currentUser.scheduledWorkouts ?? []).find(
       (item) => item.id === scheduledWorkoutId,
     );
@@ -267,15 +355,24 @@ export const jsonUserRepository = {
     });
     const nextUser = {
       ...currentUser,
-      scheduledWorkouts: removeScheduledWorkout({
-        scheduledWorkouts: currentUser.scheduledWorkouts ?? [],
-        trainingPlan: currentUser.trainingPlan,
-        scheduledWorkoutId,
-      }),
+      scheduledWorkouts: (currentUser.scheduledWorkouts ?? []).map((item) =>
+        item.id === scheduledWorkoutId
+          ? {
+              ...item,
+              status: "skipped",
+              completedAt: skippedAt,
+              result: nextWorkoutHistoryEntry,
+            }
+          : item,
+      ),
       workoutHistory: [
         ...(currentUser.workoutHistory ?? []),
         nextWorkoutHistoryEntry,
       ],
+      trainingMlFeedbackHistory: mergeTrainingMlFeedbackHistory(
+        currentUser.trainingMlFeedbackHistory,
+        buildWorkoutOutcomeFeedbackEvents(nextWorkoutHistoryEntry),
+      ),
       updatedAt: skippedAt,
     };
 
@@ -302,7 +399,8 @@ export const jsonUserRepository = {
       weightKg = null,
       burnedCalories = null,
     } = completionPayload;
-    const currentUser = database.users[userIndex];
+    const syncResult = syncUserExpiredWorkouts(database.users[userIndex]);
+    const currentUser = syncResult.user;
     const scheduledWorkout = (currentUser.scheduledWorkouts ?? []).find(
       (item) => item.id === scheduledWorkoutId,
     );
@@ -343,6 +441,10 @@ export const jsonUserRepository = {
         ...(currentUser.workoutHistory ?? []),
         nextWorkoutHistoryEntry,
       ],
+      trainingMlFeedbackHistory: mergeTrainingMlFeedbackHistory(
+        currentUser.trainingMlFeedbackHistory,
+        buildWorkoutOutcomeFeedbackEvents(nextWorkoutHistoryEntry),
+      ),
       updatedAt: completedAt,
     };
 
@@ -364,6 +466,29 @@ export const jsonUserRepository = {
       ...database.users[userIndex],
       trainingLevel,
       lastTestScore: score,
+      updatedAt: new Date().toISOString(),
+    };
+
+    database.users[userIndex] = nextUser;
+    await writeDatabase(database);
+
+    return sanitizeUser(nextUser);
+  },
+
+  async appendTrainingMlFeedback(userId, feedbackEvents = []) {
+    const database = await readDatabase();
+    const userIndex = database.users.findIndex((item) => item.id === userId);
+
+    if (userIndex === -1) {
+      return null;
+    }
+
+    const nextUser = {
+      ...database.users[userIndex],
+      trainingMlFeedbackHistory: mergeTrainingMlFeedbackHistory(
+        database.users[userIndex].trainingMlFeedbackHistory,
+        feedbackEvents,
+      ),
       updatedAt: new Date().toISOString(),
     };
 

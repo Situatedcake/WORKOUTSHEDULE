@@ -9,7 +9,11 @@ import {
 } from "../../shared/activeWorkout";
 import {
   clearActiveWorkoutDraft,
+  clearActiveWorkoutRuntime,
+  clearEntireActiveWorkoutSession,
   getActiveWorkoutDraft,
+  getActiveWorkoutRuntime,
+  saveActiveWorkoutRuntime,
   saveActiveWorkoutResultDraft,
 } from "../../utils/activeWorkoutSession";
 
@@ -22,14 +26,7 @@ const clampTwoLinesStyle = {
 
 function PreviousIcon() {
   return (
-    <svg
-      width="24"
-      height="24"
-      viewBox="0 0 24 24"
-      fill="none"
-      xmlns="http://www.w3.org/2000/svg"
-      aria-hidden="true"
-    >
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">
       <path d="M18 6L10 12L18 18V6Z" fill="currentColor" />
       <path
         d="M7 6V18"
@@ -43,14 +40,7 @@ function PreviousIcon() {
 
 function FinishSetIcon() {
   return (
-    <svg
-      width="24"
-      height="24"
-      viewBox="0 0 24 24"
-      fill="none"
-      xmlns="http://www.w3.org/2000/svg"
-      aria-hidden="true"
-    >
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">
       <path
         d="M6 12.5L10 16.5L18 8.5"
         stroke="currentColor"
@@ -64,17 +54,46 @@ function FinishSetIcon() {
 
 function NextIcon() {
   return (
-    <svg
-      width="24"
-      height="24"
-      viewBox="0 0 24 24"
-      fill="none"
-      xmlns="http://www.w3.org/2000/svg"
-      aria-hidden="true"
-    >
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">
       <path d="M6 6L14 12L6 18V6Z" fill="currentColor" />
       <path
         d="M17 6V18"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+      />
+    </svg>
+  );
+}
+
+function PauseIcon({ paused = false }) {
+  if (paused) {
+    return (
+      <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+        <path d="M7 5.5L13.5 10L7 14.5V5.5Z" fill="currentColor" />
+      </svg>
+    );
+  }
+
+  return (
+    <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+      <rect x="5.5" y="4.5" width="3.2" height="11" rx="1.2" fill="currentColor" />
+      <rect x="11.3" y="4.5" width="3.2" height="11" rx="1.2" fill="currentColor" />
+    </svg>
+  );
+}
+
+function CloseIcon() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+      <path
+        d="M5.5 5.5L14.5 14.5"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+      />
+      <path
+        d="M14.5 5.5L5.5 14.5"
         stroke="currentColor"
         strokeWidth="1.8"
         strokeLinecap="round"
@@ -92,14 +111,7 @@ function CircularProgress({ progressPercent }) {
   return (
     <div className="relative h-28 w-28 shrink-0">
       <svg viewBox="0 0 110 110" className="h-full w-full -rotate-90">
-        <circle
-          cx="55"
-          cy="55"
-          r={radius}
-          stroke="#252B38"
-          strokeWidth="8"
-          fill="none"
-        />
+        <circle cx="55" cy="55" r={radius} stroke="#252B38" strokeWidth="8" fill="none" />
         <circle
           cx="55"
           cy="55"
@@ -112,7 +124,7 @@ function CircularProgress({ progressPercent }) {
           strokeDashoffset={dashOffset}
         />
       </svg>
-      <div className="absolute inset-0 flex flex-col items-center justify-center">
+      <div className="absolute inset-0 flex items-center justify-center">
         <span className="text-2xl font-medium text-white">
           {Math.round(normalizedPercent)}%
         </span>
@@ -132,9 +144,7 @@ function createExerciseSetWeights(exercises = []) {
 }
 
 function normalizeWeightValue(value) {
-  const normalizedValue = String(value ?? "")
-    .trim()
-    .replace(",", ".");
+  const normalizedValue = String(value ?? "").trim().replace(",", ".");
 
   if (!normalizedValue) {
     return null;
@@ -144,30 +154,134 @@ function normalizeWeightValue(value) {
   return Number.isFinite(parsedValue) ? parsedValue : null;
 }
 
+function normalizeWeightMatrix(exercises = [], savedMatrix = []) {
+  return exercises.map((exercise, exerciseIndex) => {
+    const targetLength = Math.max(exercise.sets ?? 0, 1);
+    const sourceWeights = Array.isArray(savedMatrix?.[exerciseIndex])
+      ? savedMatrix[exerciseIndex]
+      : [];
+
+    return Array.from({ length: targetLength }, (_, weightIndex) => {
+      const value = sourceWeights[weightIndex];
+      return value == null ? "" : String(value);
+    });
+  });
+}
+
+function buildInitialRuntimeState(workoutDraft, runtimeState) {
+  const exerciseCount = workoutDraft?.exercises?.length ?? 0;
+
+  if (!workoutDraft || !exerciseCount) {
+    return null;
+  }
+
+  const hasCompatibleRuntime =
+    runtimeState?.scheduledWorkoutId === workoutDraft.scheduledWorkoutId;
+
+  if (!hasCompatibleRuntime) {
+    return {
+      startedAt: new Date().toISOString(),
+      elapsedSeconds: 0,
+      currentExerciseIndex: 0,
+      completedSetsByExercise: Array.from({ length: exerciseCount }, () => 0),
+      exerciseElapsedSeconds: Array.from({ length: exerciseCount }, () => 0),
+      setWeightsByExercise: createExerciseSetWeights(workoutDraft.exercises),
+      phase: "exercise",
+      restRemainingSeconds:
+        workoutDraft.exercises[0]?.restSeconds ?? REST_DURATION_SECONDS,
+      pendingTransition: null,
+      restContinuePressCount: 0,
+      hasUnlockedForceContinue: false,
+      isPaused: false,
+    };
+  }
+
+  const safeExerciseIndex = Math.max(
+    0,
+    Math.min(Number(runtimeState.currentExerciseIndex) || 0, exerciseCount - 1),
+  );
+
+  return {
+    startedAt: runtimeState.startedAt ?? new Date().toISOString(),
+    elapsedSeconds: Math.max(Number(runtimeState.elapsedSeconds) || 0, 0),
+    currentExerciseIndex: safeExerciseIndex,
+    completedSetsByExercise: Array.from({ length: exerciseCount }, (_, index) =>
+      Math.max(Number(runtimeState.completedSetsByExercise?.[index]) || 0, 0),
+    ),
+    exerciseElapsedSeconds: Array.from({ length: exerciseCount }, (_, index) =>
+      Math.max(Number(runtimeState.exerciseElapsedSeconds?.[index]) || 0, 0),
+    ),
+    setWeightsByExercise: normalizeWeightMatrix(
+      workoutDraft.exercises,
+      runtimeState.setWeightsByExercise,
+    ),
+    phase: runtimeState.phase === "rest" ? "rest" : "exercise",
+    restRemainingSeconds: Math.max(
+      Number(runtimeState.restRemainingSeconds) ||
+        workoutDraft.exercises[safeExerciseIndex]?.restSeconds ||
+        REST_DURATION_SECONDS,
+      0,
+    ),
+    pendingTransition:
+      runtimeState.pendingTransition &&
+      typeof runtimeState.pendingTransition === "object"
+        ? runtimeState.pendingTransition
+        : null,
+    restContinuePressCount: Math.max(
+      Number(runtimeState.restContinuePressCount) || 0,
+      0,
+    ),
+    hasUnlockedForceContinue: Boolean(runtimeState.hasUnlockedForceContinue),
+    isPaused: Boolean(runtimeState.isPaused),
+  };
+}
+
 export default function TraningPage() {
   const navigate = useNavigate();
   const { currentUser } = useAuth();
   const workoutDraft = useMemo(() => getActiveWorkoutDraft(), []);
-  const [startedAt] = useState(() => new Date().toISOString());
-  const [elapsedSeconds, setElapsedSeconds] = useState(0);
-  const [currentExerciseIndex, setCurrentExerciseIndex] = useState(0);
+  const runtimeState = useMemo(() => getActiveWorkoutRuntime(), []);
+  const initialRuntimeState = useMemo(
+    () => buildInitialRuntimeState(workoutDraft, runtimeState),
+    [runtimeState, workoutDraft],
+  );
+  const [startedAt] = useState(
+    () => initialRuntimeState?.startedAt ?? new Date().toISOString(),
+  );
+  const [elapsedSeconds, setElapsedSeconds] = useState(
+    () => initialRuntimeState?.elapsedSeconds ?? 0,
+  );
+  const [currentExerciseIndex, setCurrentExerciseIndex] = useState(
+    () => initialRuntimeState?.currentExerciseIndex ?? 0,
+  );
   const [completedSetsByExercise, setCompletedSetsByExercise] = useState(
-    () => workoutDraft?.exercises?.map(() => 0) ?? [],
+    () => initialRuntimeState?.completedSetsByExercise ?? [],
   );
   const [exerciseElapsedSeconds, setExerciseElapsedSeconds] = useState(
-    () => workoutDraft?.exercises?.map(() => 0) ?? [],
+    () => initialRuntimeState?.exerciseElapsedSeconds ?? [],
   );
-  const [setWeightsByExercise, setSetWeightsByExercise] = useState(() =>
-    createExerciseSetWeights(workoutDraft?.exercises ?? []),
+  const [setWeightsByExercise, setSetWeightsByExercise] = useState(
+    () => initialRuntimeState?.setWeightsByExercise ?? [],
   );
-  const [phase, setPhase] = useState("exercise");
+  const [phase, setPhase] = useState(
+    () => initialRuntimeState?.phase ?? "exercise",
+  );
   const [restRemainingSeconds, setRestRemainingSeconds] = useState(
-    workoutDraft?.exercises?.[0]?.restSeconds ?? REST_DURATION_SECONDS,
+    () => initialRuntimeState?.restRemainingSeconds ?? REST_DURATION_SECONDS,
   );
-  const [pendingTransition, setPendingTransition] = useState(null);
-  const [restContinuePressCount, setRestContinuePressCount] = useState(0);
-  const [hasUnlockedForceContinue, setHasUnlockedForceContinue] =
-    useState(false);
+  const [pendingTransition, setPendingTransition] = useState(
+    () => initialRuntimeState?.pendingTransition ?? null,
+  );
+  const [restContinuePressCount, setRestContinuePressCount] = useState(
+    () => initialRuntimeState?.restContinuePressCount ?? 0,
+  );
+  const [hasUnlockedForceContinue, setHasUnlockedForceContinue] = useState(
+    () => initialRuntimeState?.hasUnlockedForceContinue ?? false,
+  );
+  const [isPaused, setIsPaused] = useState(
+    () => initialRuntimeState?.isPaused ?? false,
+  );
+  const [isExitPromptOpen, setIsExitPromptOpen] = useState(false);
 
   const currentExercise =
     workoutDraft?.exercises?.[currentExerciseIndex] ?? null;
@@ -195,6 +309,7 @@ export default function TraningPage() {
   const canForceContinueRest =
     phase === "rest" &&
     (hasUnlockedForceContinue || restContinuePressCount >= 5);
+  const canSavePartialWorkout = completedSetsCount > 0;
   const currentSetWeight =
     setWeightsByExercise[currentExerciseIndex]?.[
       Math.max(currentSetNumber - 1, 0)
@@ -225,17 +340,16 @@ export default function TraningPage() {
         totalSets: workoutDraft.totalSets ?? 0,
         completedSetsCount: sumValues(
           completedSetsOverride.map((setsCount, index) =>
-            Math.min(
-              setsCount,
-              workoutDraft.exercises[index]?.sets ?? setsCount,
-            ),
+            Math.min(setsCount, workoutDraft.exercises[index]?.sets ?? setsCount),
           ),
         ),
         exerciseSetWeights: (workoutDraft.exercises ?? []).map(
           (exercise, index) => ({
             exerciseId: exercise.sourceExerciseId ?? exercise.id,
+            sourceExerciseId: exercise.sourceExerciseId ?? exercise.id,
             exerciseName: exercise.name,
             sets: exercise.sets,
+            plannedSetsCount: exercise.sets,
             repRange: exercise.repRange,
             restSeconds: exercise.restSeconds,
             weightsKg: (setWeightsByExercise[index] ?? [])
@@ -245,6 +359,7 @@ export default function TraningPage() {
         ),
       });
       clearActiveWorkoutDraft();
+      clearActiveWorkoutRuntime();
       navigate(ROUTES.WORKOUT_FINISH);
     },
     [
@@ -286,8 +401,45 @@ export default function TraningPage() {
     [currentExerciseIndex, workoutDraft],
   );
 
-  useEffect(() => {
+  const flushRuntimeState = useCallback(() => {
     if (!workoutDraft) {
+      return;
+    }
+
+    saveActiveWorkoutRuntime({
+      scheduledWorkoutId: workoutDraft.scheduledWorkoutId,
+      startedAt,
+      elapsedSeconds,
+      currentExerciseIndex,
+      completedSetsByExercise,
+      exerciseElapsedSeconds,
+      setWeightsByExercise,
+      phase,
+      restRemainingSeconds,
+      pendingTransition,
+      restContinuePressCount,
+      hasUnlockedForceContinue,
+      isPaused,
+      savedAt: new Date().toISOString(),
+    });
+  }, [
+    completedSetsByExercise,
+    currentExerciseIndex,
+    elapsedSeconds,
+    exerciseElapsedSeconds,
+    hasUnlockedForceContinue,
+    isPaused,
+    pendingTransition,
+    phase,
+    restContinuePressCount,
+    restRemainingSeconds,
+    setWeightsByExercise,
+    startedAt,
+    workoutDraft,
+  ]);
+
+  useEffect(() => {
+    if (!workoutDraft || isPaused) {
       return undefined;
     }
 
@@ -329,16 +481,61 @@ export default function TraningPage() {
     applyPendingTransition,
     currentExerciseIndex,
     finishWorkout,
+    isPaused,
     pendingTransition,
     phase,
     workoutDraft,
   ]);
 
+  useEffect(() => {
+    flushRuntimeState();
+  }, [flushRuntimeState]);
+
+  useEffect(() => {
+    if (!workoutDraft) {
+      return undefined;
+    }
+
+    const handleBeforeUnload = (event) => {
+      event.preventDefault();
+      event.returnValue = "";
+    };
+
+    window.addEventListener("beforeunload", handleBeforeUnload);
+
+    return () => {
+      window.removeEventListener("beforeunload", handleBeforeUnload);
+    };
+  }, [workoutDraft]);
+
+  useEffect(() => {
+    if (!workoutDraft) {
+      return undefined;
+    }
+
+    const handlePageVisibilityChange = () => {
+      if (document.visibilityState === "hidden") {
+        flushRuntimeState();
+      }
+    };
+    const handlePageHide = () => {
+      flushRuntimeState();
+    };
+
+    document.addEventListener("visibilitychange", handlePageVisibilityChange);
+    window.addEventListener("pagehide", handlePageHide);
+
+    return () => {
+      document.removeEventListener("visibilitychange", handlePageVisibilityChange);
+      window.removeEventListener("pagehide", handlePageHide);
+    };
+  }, [flushRuntimeState, workoutDraft]);
+
   if (!currentUser) {
     return <Navigate to={ROUTES.LOGIN} replace />;
   }
 
-  if (!workoutDraft || !currentExercise) {
+  if (!workoutDraft || !currentExercise || !initialRuntimeState) {
     return <Navigate to={ROUTES.WORKOUT_PLAN} replace />;
   }
 
@@ -391,7 +588,7 @@ export default function TraningPage() {
   }
 
   function handlePreviousExercise() {
-    if (currentExerciseIndex === 0) {
+    if (currentExerciseIndex === 0 || isPaused) {
       return;
     }
 
@@ -423,6 +620,10 @@ export default function TraningPage() {
   }
 
   function handleNextExercise() {
+    if (phase === "rest" || isPaused) {
+      return;
+    }
+
     if (currentExerciseIndex >= workoutDraft.exercises.length - 1) {
       const nextCompletedSetsByExercise = completedSetsByExercise.map(
         (value, index) =>
@@ -448,6 +649,10 @@ export default function TraningPage() {
   }
 
   function handlePrimaryAction() {
+    if (isPaused) {
+      return;
+    }
+
     if (phase === "rest") {
       setRestContinuePressCount((previousValue) => {
         const nextValue = previousValue + 1;
@@ -479,7 +684,7 @@ export default function TraningPage() {
   }
 
   function handleForceContinue() {
-    if (!canForceContinueRest) {
+    if (!canForceContinueRest || isPaused) {
       return;
     }
 
@@ -491,9 +696,61 @@ export default function TraningPage() {
     applyPendingTransition(pendingTransition);
   }
 
+  function handleTogglePause() {
+    setIsPaused((previousValue) => !previousValue);
+  }
+
+  function handleContinueLater() {
+    setIsExitPromptOpen(false);
+    flushRuntimeState();
+    navigate(ROUTES.HOME);
+  }
+
+  function handleSavePartialWorkout() {
+    setIsExitPromptOpen(false);
+    finishWorkout(completedSetsByExercise);
+  }
+
+  function handleDiscardWorkout() {
+    clearEntireActiveWorkoutSession();
+    navigate(ROUTES.HOME);
+  }
+
   return (
     <PageShell className="pt-5" showNavMenu={false}>
-      <section className="mx-auto flex w-full max-w-md flex-col gap-4">
+      <section className="mx-auto flex w-full max-w-md flex-col gap-4 pb-8">
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <p className="text-xs uppercase tracking-[0.18em] text-[#8E97A8]">
+              Активная сессия
+            </p>
+            <p className="mt-1 text-sm text-[#8E97A8]">
+              Прогресс сохраняется автоматически.
+            </p>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={handleTogglePause}
+              className="flex h-11 w-11 items-center justify-center rounded-2xl border border-[#2A3140] bg-[#12151C] text-white"
+              aria-label={
+                isPaused ? "Продолжить тренировку" : "Поставить на паузу"
+              }
+            >
+              <PauseIcon paused={isPaused} />
+            </button>
+            <button
+              type="button"
+              onClick={() => setIsExitPromptOpen(true)}
+              className="flex h-11 w-11 items-center justify-center rounded-2xl border border-[#2A3140] bg-[#12151C] text-white"
+              aria-label="Выйти из тренировки"
+            >
+              <CloseIcon />
+            </button>
+          </div>
+        </div>
+
         <header className="rounded-[24px] border border-[#2A3140] bg-[#12151C] p-4">
           <div className="flex items-start justify-between gap-4">
             <div>
@@ -522,36 +779,56 @@ export default function TraningPage() {
         </header>
 
         <section className="flex-1 rounded-[24px] border border-[#2A3140] bg-[#12151C] p-4">
-          {phase === "rest" ? (
-            <div
-              className="mb-3 inline-flex rounded-full bg-[#2A3140] px-3 py-1 text-[11px] uppercase tracking-[0.16em] text-[#D8E0EE]"
-              style={{ lineHeight: "15px" }}
-            >
-              Отдых {formatDuration(restRemainingSeconds)}
+          <div className="flex flex-wrap gap-2">
+            {phase === "rest" ? (
+              <div
+                className="inline-flex rounded-full bg-[#2A3140] px-3 py-1 text-[11px] uppercase tracking-[0.16em] text-[#D8E0EE]"
+                style={{ lineHeight: "15px" }}
+              >
+                Отдых {formatDuration(restRemainingSeconds)}
+              </div>
+            ) : null}
+
+            {isPaused ? (
+              <div className="inline-flex rounded-full bg-[#27303E] px-3 py-1 text-[11px] uppercase tracking-[0.16em] text-[#D8E0EE]">
+                Пауза
+              </div>
+            ) : null}
+
+            {canForceContinueRest ? (
+              <button
+                type="button"
+                onClick={handleForceContinue}
+                className="rounded-full border border-[#4C5A6A] px-3 py-1 text-[11px] font-medium uppercase tracking-[0.16em] text-white"
+              >
+                Принудительно продолжить
+              </button>
+            ) : null}
+          </div>
+
+          {isPaused ? (
+            <div className="mt-3 rounded-2xl border border-[#30425C] bg-[#102338] px-4 py-3">
+              <p className="text-sm font-medium text-white">Тренировка на паузе</p>
+              <p className="mt-1 text-sm leading-6 text-[#BFD6F0]">
+                Таймер остановлен. Можно продолжить позже без потери прогресса.
+              </p>
             </div>
-          ) : null}
-          {canForceContinueRest ? (
-            <button
-              type="button"
-              onClick={handleForceContinue}
-              className="mb-3 rounded-2xl border border-[#4C5A6A] px-3 py-2 text-xs font-medium text-white"
-            >
-              Принудительно продолжить
-            </button>
           ) : null}
 
           <p
-            className="text-xs uppercase tracking-[0.18em] text-[#8E97A8]"
+            className="mt-4 text-xs uppercase tracking-[0.18em] text-[#8E97A8]"
             style={{ lineHeight: "15px" }}
           >
             {phase === "rest" ? "Следующее действие" : "Текущее упражнение"}
           </p>
+
           <h2
             className="mt-2 h-16 overflow-hidden text-xl font-medium text-white"
             style={{ ...clampTwoLinesStyle, lineHeight: "15px" }}
           >
             {currentExercise.name}
           </h2>
+
           <p
             className="mt-2 h-10 overflow-hidden text-[11px] text-[#8E97A8]"
             style={{ ...clampTwoLinesStyle, lineHeight: "15px" }}
@@ -562,39 +839,37 @@ export default function TraningPage() {
           <div className="mt-4 grid grid-cols-3 gap-2">
             <div className="min-w-0 rounded-2xl bg-[#0B0E15] px-2 py-3 text-center">
               <p
-                className="overflow-hidden text-[10px] uppercase tracking-[0.14em] text-[#8E97A8] whitespace-nowrap text-ellipsis"
+                className="overflow-hidden text-[10px] uppercase tracking-[0.14em] text-[#8E97A8] text-ellipsis whitespace-nowrap"
                 style={{ lineHeight: "15px" }}
               >
                 Подход
               </p>
-              <p className="mt-1 overflow-hidden text-xl font-medium text-white text-center whitespace-nowrap text-ellipsis">
+              <p className="mt-1 overflow-hidden text-xl font-medium text-white text-ellipsis whitespace-nowrap">
                 {currentSetNumber}
               </p>
             </div>
 
             <div className="min-w-0 rounded-2xl bg-[#0B0E15] px-2 py-3 text-center">
               <p
-                className="overflow-hidden text-[10px] uppercase tracking-[0.14em] text-[#8E97A8] whitespace-nowrap text-ellipsis"
+                className="overflow-hidden text-[10px] uppercase tracking-[0.14em] text-[#8E97A8] text-ellipsis whitespace-nowrap"
                 style={{ lineHeight: "15px" }}
               >
                 Осталось
               </p>
-              <p className="mt-1 overflow-hidden text-xl font-medium text-white text-center whitespace-nowrap text-ellipsis">
+              <p className="mt-1 overflow-hidden text-xl font-medium text-white text-ellipsis whitespace-nowrap">
                 {remainingSetsInExercise}
               </p>
             </div>
 
             <div className="min-w-0 rounded-2xl bg-[#0B0E15] px-2 py-3 text-center">
               <p
-                className="overflow-hidden text-[10px] uppercase tracking-[0.14em] text-[#8E97A8] whitespace-nowrap text-ellipsis"
+                className="overflow-hidden text-[10px] uppercase tracking-[0.14em] text-[#8E97A8] text-ellipsis whitespace-nowrap"
                 style={{ lineHeight: "15px" }}
               >
                 На упражнении
               </p>
-              <p className="mt-1 overflow-hidden text-xl font-medium text-white text-center whitespace-nowrap text-ellipsis">
-                {formatDuration(
-                  exerciseElapsedSeconds[currentExerciseIndex] ?? 0,
-                )}
+              <p className="mt-1 overflow-hidden text-xl font-medium text-white text-ellipsis whitespace-nowrap">
+                {formatDuration(exerciseElapsedSeconds[currentExerciseIndex] ?? 0)}
               </p>
             </div>
           </div>
@@ -619,7 +894,7 @@ export default function TraningPage() {
               }
               inputMode="decimal"
               placeholder="Например, 25"
-              disabled={phase === "rest"}
+              disabled={phase === "rest" || isPaused}
               className="mt-3 w-full rounded-2xl border border-[#2A3140] bg-[#12151C] px-4 py-3 text-sm text-white outline-none placeholder:text-[#5D6677] disabled:opacity-60"
             />
           </div>
@@ -628,7 +903,7 @@ export default function TraningPage() {
             <button
               type="button"
               onClick={handlePreviousExercise}
-              disabled={currentExerciseIndex === 0 || phase === "rest"}
+              disabled={currentExerciseIndex === 0 || phase === "rest" || isPaused}
               className="flex h-14 w-14 items-center justify-center rounded-full border border-[#2A3140] bg-[#0B0E15] text-white disabled:opacity-35"
               aria-label="Вернуться к прошлому упражнению"
             >
@@ -638,13 +913,14 @@ export default function TraningPage() {
             <button
               type="button"
               onClick={handlePrimaryAction}
-              className={`flex h-18 w-18 items-center justify-center rounded-full ${
+              disabled={isPaused}
+              className={`flex h-[72px] w-[72px] items-center justify-center rounded-full ${
                 phase === "rest"
                   ? "bg-[#4F5B63] text-[#D8E0EE] opacity-70"
                   : "bg-[#01BB96] text-[#000214]"
-              }`}
+              } ${isPaused ? "opacity-40" : ""}`}
               aria-label={
-                phase === "rest" ? "Пропустить отдых" : "Закончить подход"
+                phase === "rest" ? "Ожидание окончания отдыха" : "Закончить подход"
               }
             >
               <FinishSetIcon />
@@ -653,7 +929,7 @@ export default function TraningPage() {
             <button
               type="button"
               onClick={handleNextExercise}
-              disabled={phase === "rest"}
+              disabled={phase === "rest" || isPaused}
               className="flex h-14 w-14 items-center justify-center rounded-full border border-[#2A3140] bg-[#0B0E15] text-white disabled:opacity-35"
               aria-label="Перейти к следующему упражнению"
             >
@@ -662,17 +938,9 @@ export default function TraningPage() {
           </div>
         </section>
 
-        <p className="px-1 text-lg font-medium text-white">
-          Следующее упражнение
-        </p>
+        <p className="px-1 text-lg font-medium text-white">Следующее упражнение</p>
 
         <section className="rounded-[22px] border border-[#2A3140] bg-[#12151C] px-4 py-3">
-          <p
-            className="hidden text-[10px] uppercase tracking-[0.14em] text-[#8E97A8]"
-            style={{ lineHeight: "15px" }}
-          >
-            Следующее упражнение
-          </p>
           <p
             className="mt-1 h-5 overflow-hidden text-sm font-medium text-white"
             style={{
@@ -694,6 +962,60 @@ export default function TraningPage() {
           </p>
         </section>
       </section>
+
+      {isExitPromptOpen ? (
+        <div className="fixed inset-0 z-50 flex items-end justify-center bg-[#030712]/80 px-5 pb-6 pt-20">
+          <div className="w-full max-w-md rounded-[28px] border border-[#2A3140] bg-[#12151C] p-5">
+            <p className="text-xs uppercase tracking-[0.18em] text-[#8E97A8]">
+              Выход из тренировки
+            </p>
+            <h2 className="mt-2 text-xl font-medium text-white">
+              Что сделать с текущей сессией?
+            </h2>
+            <p className="mt-2 text-sm leading-6 text-[#8E97A8]">
+              Можно выйти и продолжить позже, либо полностью сбросить текущий
+              прогресс.
+            </p>
+
+            <div className="mt-5 flex flex-col gap-3">
+              {canSavePartialWorkout ? (
+                <button
+                  type="button"
+                  onClick={handleSavePartialWorkout}
+                  className="rounded-3xl bg-[#01BB96] px-5 py-4 text-base font-medium text-[#000214]"
+                >
+                  Сохранить как частично выполненную
+                </button>
+              ) : null}
+              <button
+                type="button"
+                onClick={handleContinueLater}
+                className={`rounded-3xl px-5 py-4 text-base font-medium ${
+                  canSavePartialWorkout
+                    ? "border border-[#2A3140] text-white"
+                    : "bg-[#01BB96] text-[#000214]"
+                }`}
+              >
+                Продолжить позже
+              </button>
+              <button
+                type="button"
+                onClick={handleDiscardWorkout}
+                className="rounded-3xl border border-[#5C2A2A] px-5 py-4 text-base font-medium text-[#FFB3B3]"
+              >
+                Сбросить тренировку
+              </button>
+              <button
+                type="button"
+                onClick={() => setIsExitPromptOpen(false)}
+                className="rounded-3xl border border-[#2A3140] px-5 py-4 text-base font-medium text-white"
+              >
+                Остаться
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </PageShell>
   );
 }

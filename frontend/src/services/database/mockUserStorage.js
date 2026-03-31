@@ -11,6 +11,17 @@ const DATABASE_STORAGE_KEY = "workoutshedule-mock-db";
 
 let inMemoryDatabase = createInitialDatabase();
 
+function normalizeGenderValue(gender) {
+  const normalizedGender =
+    typeof gender === "string" ? gender.trim().toLowerCase() : "";
+
+  if (normalizedGender === "male" || normalizedGender === "female") {
+    return normalizedGender;
+  }
+
+  return "not_specified";
+}
+
 function canUseLocalStorage() {
   return typeof window !== "undefined" && Boolean(window.localStorage);
 }
@@ -24,12 +35,96 @@ function normalizeUserRecord(user) {
     ...user,
     login: String(user.login ?? user.name ?? "").trim(),
     name: String(user.name ?? user.login ?? "").trim(),
+    gender: normalizeGenderValue(user.gender),
     trainingPlanAdaptationHistory: Array.isArray(
       user.trainingPlanAdaptationHistory,
     )
       ? user.trainingPlanAdaptationHistory
       : [],
+    trainingMlFeedbackHistory: Array.isArray(user.trainingMlFeedbackHistory)
+      ? user.trainingMlFeedbackHistory
+      : [],
   };
+}
+
+function normalizeTrainingFeedbackEvent(event) {
+  if (!event || typeof event !== "object") {
+    return null;
+  }
+
+  if (typeof event.type !== "string" || !event.type.trim()) {
+    return null;
+  }
+
+  return {
+    id:
+      typeof event.id === "string" && event.id.trim()
+        ? event.id
+        : `ml_feedback_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+    createdAt:
+      typeof event.createdAt === "string" && event.createdAt.trim()
+        ? event.createdAt
+        : new Date().toISOString(),
+    type: event.type.trim(),
+    source:
+      typeof event.source === "string" && event.source.trim()
+        ? event.source
+        : "training_plan",
+    trainingPlanId: event.trainingPlanId ?? null,
+    scheduledWorkoutId: event.scheduledWorkoutId ?? null,
+    sessionId: event.sessionId ?? null,
+    sessionIndex: Number.isFinite(Number(event.sessionIndex))
+      ? Number(event.sessionIndex)
+      : null,
+    exerciseId: event.exerciseId ?? null,
+    sourceExerciseId: event.sourceExerciseId ?? null,
+    exerciseName: event.exerciseName ?? null,
+    nextExerciseId: event.nextExerciseId ?? null,
+    nextSourceExerciseId: event.nextSourceExerciseId ?? null,
+    nextExerciseName: event.nextExerciseName ?? null,
+    previousSets: Number.isFinite(Number(event.previousSets))
+      ? Number(event.previousSets)
+      : null,
+    nextSets: Number.isFinite(Number(event.nextSets))
+      ? Number(event.nextSets)
+      : null,
+    metadata:
+      event.metadata && typeof event.metadata === "object" && !Array.isArray(event.metadata)
+        ? { ...event.metadata }
+        : {},
+  };
+}
+
+function mergeTrainingFeedbackHistory(existingHistory = [], nextEvents = []) {
+  return [...(existingHistory ?? []), ...(nextEvents ?? [])]
+    .map(normalizeTrainingFeedbackEvent)
+    .filter(Boolean)
+    .sort((left, right) => left.createdAt.localeCompare(right.createdAt));
+}
+
+function buildWorkoutOutcomeFeedbackEvents(workoutHistoryEntry, source = "workout_result") {
+  const status = workoutHistoryEntry?.status;
+
+  if (status !== "skipped" && status !== "partial") {
+    return [];
+  }
+
+  return [
+    normalizeTrainingFeedbackEvent({
+      type: status === "skipped" ? "workout_skipped" : "workout_partial",
+      source,
+      trainingPlanId: workoutHistoryEntry.trainingPlanId ?? null,
+      scheduledWorkoutId: workoutHistoryEntry.scheduledWorkoutId ?? null,
+      sessionId: workoutHistoryEntry.sessionId ?? null,
+      sessionIndex: workoutHistoryEntry.sessionIndex ?? null,
+      metadata: {
+        title: workoutHistoryEntry.title ?? null,
+        date: workoutHistoryEntry.date ?? null,
+        completedSetsCount: workoutHistoryEntry.summary?.completedSetsCount ?? 0,
+        plannedSetsCount: workoutHistoryEntry.summary?.plannedSetsCount ?? 0,
+      },
+    }),
+  ].filter(Boolean);
 }
 
 function createInitialDatabase() {
@@ -151,6 +246,27 @@ function createTrainingPlanAdaptationEvent(previousPlan, nextPlan) {
   };
 }
 
+function enrichTrainingPlanVersion(previousPlan, nextPlan, trigger = "manual_builder") {
+  const now = new Date().toISOString();
+  const previousVersion = Number(previousPlan?.version);
+  const nextVersion = Number.isFinite(previousVersion) ? previousVersion + 1 : 1;
+
+  return {
+    ...nextPlan,
+    version: nextVersion,
+    createdAt:
+      typeof nextPlan?.createdAt === "string" && nextPlan.createdAt
+        ? nextPlan.createdAt
+        : previousPlan?.createdAt ?? now,
+    updatedAt: now,
+    previousPlanId: previousPlan?.id ?? null,
+    adaptiveMetadata: {
+      ...(nextPlan?.adaptiveMetadata ?? {}),
+      versionTrigger: trigger,
+    },
+  };
+}
+
 function normalizeNumber(value, fallbackValue = 0) {
   const parsedValue = Number(value);
 
@@ -163,6 +279,118 @@ function formatDateKey(date = new Date()) {
   const day = String(date.getDate()).padStart(2, "0");
 
   return `${year}-${month}-${day}`;
+}
+
+function getExpiredWorkoutCompletedAt(dateKey, now = new Date()) {
+  if (typeof dateKey !== "string" || !dateKey) {
+    return now.toISOString();
+  }
+
+  const [year, month, day] = dateKey.split("-").map(Number);
+
+  if (!year || !month || !day) {
+    return now.toISOString();
+  }
+
+  return new Date(year, month - 1, day + 1, 0, 0, 0, 0).toISOString();
+}
+
+function syncUserExpiredWorkouts(user) {
+  if (!user) {
+    return {
+      didChange: false,
+      user,
+    };
+  }
+
+  const today = formatDateKey(new Date());
+  let didChange = false;
+  const nextWorkoutHistory = [...(user.workoutHistory ?? [])];
+  const nextScheduledWorkouts = (user.scheduledWorkouts ?? []).map(
+    (scheduledWorkout) => {
+      if (
+        (scheduledWorkout?.status ?? "planned") !== "planned" ||
+        !scheduledWorkout?.date ||
+        scheduledWorkout.date >= today
+      ) {
+        return scheduledWorkout;
+      }
+
+      didChange = true;
+      const skippedAt = getExpiredWorkoutCompletedAt(scheduledWorkout.date);
+      const nextWorkoutHistoryEntry = {
+        id: createWorkoutHistoryId(),
+        scheduledWorkoutId: scheduledWorkout.id,
+        trainingPlanId: user.trainingPlan?.id ?? null,
+        sessionId: scheduledWorkout.sessionId ?? null,
+        sessionIndex: scheduledWorkout.sessionIndex ?? null,
+        title: scheduledWorkout.title,
+        emphasis: scheduledWorkout.emphasis,
+        date: scheduledWorkout.date,
+        time: scheduledWorkout.time,
+        status: "skipped",
+        startedAt: null,
+        finishedAt: skippedAt,
+        plannedDurationSeconds: (scheduledWorkout.estimatedDurationMin ?? 0) * 60,
+        actualDurationSeconds: 0,
+        durationSeconds: 0,
+        completedExercisesCount: 0,
+        completedSetsCount: 0,
+        exerciseSetWeights: [],
+        summary: {
+          plannedExercisesCount: scheduledWorkout.exercises?.length ?? 0,
+          completedExercisesCount: 0,
+          plannedSetsCount: (scheduledWorkout.exercises ?? []).reduce(
+            (total, exercise) => total + (Number(exercise?.sets) || 0),
+            0,
+          ),
+          completedSetsCount: 0,
+        },
+        metrics: {
+          weightKg: null,
+          burnedCalories: null,
+          energyLevel: null,
+          effortLevel: null,
+          sleepQuality: null,
+        },
+        completedAt: skippedAt,
+      };
+
+      nextWorkoutHistory.push(nextWorkoutHistoryEntry);
+
+      return {
+        ...scheduledWorkout,
+        status: "skipped",
+        completedAt: skippedAt,
+        result: nextWorkoutHistoryEntry,
+      };
+    },
+  );
+
+  if (!didChange) {
+    return {
+      didChange: false,
+      user,
+    };
+  }
+
+  return {
+    didChange: true,
+    user: {
+      ...user,
+      scheduledWorkouts: nextScheduledWorkouts,
+      workoutHistory: nextWorkoutHistory,
+      trainingMlFeedbackHistory: mergeTrainingFeedbackHistory(
+        user.trainingMlFeedbackHistory,
+        nextWorkoutHistory.flatMap((entry, index) =>
+          index >= (user.workoutHistory ?? []).length
+            ? buildWorkoutOutcomeFeedbackEvents(entry, "schedule_sync")
+            : [],
+        ),
+      ),
+      updatedAt: new Date().toISOString(),
+    },
+  };
 }
 
 function mapPublicUser(user) {
@@ -199,9 +427,20 @@ function findUserByName(name) {
 export const mockUserStorage = {
   async getById(userId) {
     const database = loadDatabase();
-    const user = database.users.find((item) => item.id === userId);
+    const userIndex = database.users.findIndex((item) => item.id === userId);
 
-    return mapPublicUser(user);
+    if (userIndex === -1) {
+      return null;
+    }
+
+    const syncResult = syncUserExpiredWorkouts(database.users[userIndex]);
+
+    if (syncResult.didChange) {
+      database.users[userIndex] = syncResult.user;
+      saveDatabase(database);
+    }
+
+    return mapPublicUser(syncResult.user);
   },
 
   async login({ login, password }) {
@@ -211,7 +450,7 @@ export const mockUserStorage = {
       return null;
     }
 
-    return mapPublicUser(user);
+    return this.getById(user.id);
   },
 
   async register({ login, password }) {
@@ -230,11 +469,13 @@ export const mockUserStorage = {
       name: trimmedLogin,
       password,
       email: null,
+      gender: "not_specified",
       profilePhoto: null,
       trainingLevel: "Не определен",
       lastTestScore: null,
       trainingPlan: null,
       trainingPlanAdaptationHistory: [],
+      trainingMlFeedbackHistory: [],
       scheduledWorkouts: [],
       workoutHistory: [],
       createdAt: timestamp,
@@ -247,7 +488,7 @@ export const mockUserStorage = {
     return mapPublicUser(nextUser);
   },
 
-  async updateProfile(userId, { name, email, password, profilePhoto }) {
+  async updateProfile(userId, { name, email, password, profilePhoto, gender }) {
     const database = loadDatabase();
     const userIndex = database.users.findIndex((item) => item.id === userId);
 
@@ -273,6 +514,7 @@ export const mockUserStorage = {
       ...currentUser,
       name: trimmedName || currentUser.name,
       email: String(email ?? "").trim() || null,
+      gender: normalizeGenderValue(gender ?? currentUser.gender),
       password: String(password ?? "").trim() || currentUser.password,
       profilePhoto: profilePhoto || currentUser.profilePhoto || null,
       updatedAt: new Date().toISOString(),
@@ -308,7 +550,13 @@ export const mockUserStorage = {
 
   async saveTrainingPlan(
     userId,
-    { workoutsPerWeek, focusKey, sessionSelections, trainingPlan: providedTrainingPlan },
+    {
+      workoutsPerWeek,
+      focusKey,
+      sessionSelections,
+      trainingPlan: providedTrainingPlan,
+      mlFeedbackEvents = [],
+    },
   ) {
     const database = loadDatabase();
     const userIndex = database.users.findIndex((item) => item.id === userId);
@@ -317,18 +565,27 @@ export const mockUserStorage = {
       return null;
     }
 
-    const currentUser = database.users[userIndex];
+    const syncResult = syncUserExpiredWorkouts(database.users[userIndex]);
+    const currentUser = syncResult.user;
     const trainingPlan =
       providedTrainingPlan &&
       typeof providedTrainingPlan === "object" &&
       Array.isArray(providedTrainingPlan.sessions)
-        ? providedTrainingPlan
-        : buildTrainingPlan({
+        ? enrichTrainingPlanVersion(
+            currentUser.trainingPlan,
+            providedTrainingPlan,
+            "manual_update",
+          )
+        : enrichTrainingPlanVersion(
+            currentUser.trainingPlan,
+            buildTrainingPlan({
             workoutsPerWeek,
             focusKey,
             trainingLevel: currentUser.trainingLevel,
             sessionSelections,
-          });
+            }),
+            "manual_builder",
+          );
     const nextUser = {
       ...currentUser,
       trainingPlan,
@@ -336,10 +593,37 @@ export const mockUserStorage = {
         ...(currentUser.trainingPlanAdaptationHistory ?? []),
         createTrainingPlanAdaptationEvent(currentUser.trainingPlan, trainingPlan),
       ],
+      trainingMlFeedbackHistory: mergeTrainingFeedbackHistory(
+        currentUser.trainingMlFeedbackHistory,
+        mlFeedbackEvents,
+      ),
       scheduledWorkouts: rebalanceScheduledWorkouts({
         scheduledWorkouts: currentUser.scheduledWorkouts ?? [],
         trainingPlan,
       }),
+      updatedAt: new Date().toISOString(),
+    };
+
+    database.users[userIndex] = nextUser;
+    saveDatabase(database);
+
+    return mapPublicUser(nextUser);
+  },
+
+  async saveTrainingFeedback(userId, feedbackEvents = []) {
+    const database = loadDatabase();
+    const userIndex = database.users.findIndex((item) => item.id === userId);
+
+    if (userIndex === -1) {
+      return null;
+    }
+
+    const nextUser = {
+      ...database.users[userIndex],
+      trainingMlFeedbackHistory: mergeTrainingFeedbackHistory(
+        database.users[userIndex].trainingMlFeedbackHistory,
+        feedbackEvents,
+      ),
       updatedAt: new Date().toISOString(),
     };
 
@@ -357,7 +641,8 @@ export const mockUserStorage = {
       return null;
     }
 
-    const currentUser = database.users[userIndex];
+    const syncResult = syncUserExpiredWorkouts(database.users[userIndex]);
+    const currentUser = syncResult.user;
     const nextUser = {
       ...currentUser,
       scheduledWorkouts: addScheduledWorkout({
@@ -383,7 +668,8 @@ export const mockUserStorage = {
       return null;
     }
 
-    const currentUser = database.users[userIndex];
+    const syncResult = syncUserExpiredWorkouts(database.users[userIndex]);
+    const currentUser = syncResult.user;
     const scheduledWorkout = (currentUser.scheduledWorkouts ?? []).find(
       (item) => item.id === scheduledWorkoutId,
     );
@@ -424,6 +710,9 @@ export const mockUserStorage = {
       metrics: {
         weightKg: null,
         burnedCalories: null,
+        energyLevel: null,
+        effortLevel: null,
+        sleepQuality: null,
       },
       completedAt: canceledAt,
     };
@@ -455,7 +744,8 @@ export const mockUserStorage = {
       return null;
     }
 
-    const currentUser = database.users[userIndex];
+    const syncResult = syncUserExpiredWorkouts(database.users[userIndex]);
+    const currentUser = syncResult.user;
     const scheduledWorkout = (currentUser.scheduledWorkouts ?? []).find(
       (item) => item.id === scheduledWorkoutId,
     );
@@ -496,20 +786,32 @@ export const mockUserStorage = {
       metrics: {
         weightKg: null,
         burnedCalories: null,
+        energyLevel: null,
+        effortLevel: null,
+        sleepQuality: null,
       },
       completedAt: skippedAt,
     };
     const nextUser = {
       ...currentUser,
-      scheduledWorkouts: removeScheduledWorkout({
-        scheduledWorkouts: currentUser.scheduledWorkouts ?? [],
-        trainingPlan: currentUser.trainingPlan,
-        scheduledWorkoutId,
-      }),
+      scheduledWorkouts: (currentUser.scheduledWorkouts ?? []).map((item) =>
+        item.id === scheduledWorkoutId
+          ? {
+              ...item,
+              status: "skipped",
+              completedAt: skippedAt,
+              result: nextWorkoutHistoryEntry,
+            }
+          : item,
+      ),
       workoutHistory: [
         ...(currentUser.workoutHistory ?? []),
         nextWorkoutHistoryEntry,
       ],
+      trainingMlFeedbackHistory: mergeTrainingFeedbackHistory(
+        currentUser.trainingMlFeedbackHistory,
+        buildWorkoutOutcomeFeedbackEvents(nextWorkoutHistoryEntry),
+      ),
       updatedAt: skippedAt,
     };
 
@@ -527,7 +829,8 @@ export const mockUserStorage = {
       return null;
     }
 
-    const currentUser = database.users[userIndex];
+    const syncResult = syncUserExpiredWorkouts(database.users[userIndex]);
+    const currentUser = syncResult.user;
     const scheduledWorkout = (currentUser.scheduledWorkouts ?? []).find(
       (item) => item.id === scheduledWorkoutId,
     );
@@ -593,6 +896,9 @@ export const mockUserStorage = {
       metrics: {
         weightKg: completionPayload.weightKg ?? null,
         burnedCalories: completionPayload.burnedCalories ?? null,
+        energyLevel: completionPayload.energyLevel ?? null,
+        effortLevel: completionPayload.effortLevel ?? null,
+        sleepQuality: completionPayload.sleepQuality ?? null,
       },
       completedAt,
     };
@@ -612,6 +918,10 @@ export const mockUserStorage = {
         ...(currentUser.workoutHistory ?? []),
         nextWorkoutHistoryEntry,
       ],
+      trainingMlFeedbackHistory: mergeTrainingFeedbackHistory(
+        currentUser.trainingMlFeedbackHistory,
+        buildWorkoutOutcomeFeedbackEvents(nextWorkoutHistoryEntry),
+      ),
       updatedAt: completedAt,
     };
 

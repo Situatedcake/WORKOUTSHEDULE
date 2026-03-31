@@ -1,4 +1,5 @@
 const WORKOUT_DRAFT_STORAGE_KEY = "workoutshedule-active-workout-draft";
+const WORKOUT_RUNTIME_STORAGE_KEY = "workoutshedule-active-workout-runtime";
 const WORKOUT_RESULT_STORAGE_KEY = "workoutshedule-active-workout-result";
 
 function canUseSessionStorage() {
@@ -46,6 +47,29 @@ export function clearActiveWorkoutDraft() {
   removeValue(WORKOUT_DRAFT_STORAGE_KEY);
 }
 
+export function getActiveWorkoutRuntime() {
+  return readJsonValue(WORKOUT_RUNTIME_STORAGE_KEY);
+}
+
+export function saveActiveWorkoutRuntime(runtimeState) {
+  writeJsonValue(WORKOUT_RUNTIME_STORAGE_KEY, runtimeState);
+}
+
+export function clearActiveWorkoutRuntime() {
+  removeValue(WORKOUT_RUNTIME_STORAGE_KEY);
+}
+
+export function hasActiveWorkoutInProgress() {
+  const draft = getActiveWorkoutDraft();
+  const runtime = getActiveWorkoutRuntime();
+
+  return Boolean(
+    draft?.scheduledWorkoutId &&
+      runtime?.scheduledWorkoutId &&
+      draft.scheduledWorkoutId === runtime.scheduledWorkoutId,
+  );
+}
+
 export function getActiveWorkoutResultDraft() {
   return readJsonValue(WORKOUT_RESULT_STORAGE_KEY);
 }
@@ -60,5 +84,6 @@ export function clearActiveWorkoutResultDraft() {
 
 export function clearEntireActiveWorkoutSession() {
   clearActiveWorkoutDraft();
+  clearActiveWorkoutRuntime();
   clearActiveWorkoutResultDraft();
 }

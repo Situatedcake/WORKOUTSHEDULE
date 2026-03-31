@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link } from "react-router";
 import PageShell from "./PageShell";
 import PageBackButton from "./PageBackButton";
+import PasswordField from "./PasswordField";
 
 export default function AuthFormCard({
   title,
@@ -50,7 +51,7 @@ export default function AuthFormCard({
       <section className="mx-auto flex w-full max-w-md flex-col gap-5 rounded-[28px] border border-[#2A3140] bg-[#12151C] p-6">
         <PageBackButton />
 
-        <div className="space-y-2">
+        <div className="min-w-0 space-y-2">
           <h1 className="text-3xl font-medium text-white">{title}</h1>
           <p className="text-sm leading-6 text-[#8E97A8]">{subtitle}</p>
         </div>
@@ -67,32 +68,24 @@ export default function AuthFormCard({
             />
           </label>
 
-          <label className="flex flex-col gap-2">
-            <span className="text-sm text-[#8E97A8]">Пароль</span>
-            <input
-              type="password"
-              value={password}
-              onChange={(event) => setPassword(event.target.value)}
-              className="rounded-2xl border border-[#2A3140] bg-[#0B0E15] px-4 py-3 text-white outline-none focus:border-[#01BB96]"
-              placeholder="Введите пароль"
-              autoComplete={
-                requirePasswordConfirmation ? "new-password" : "current-password"
-              }
-            />
-          </label>
+          <PasswordField
+            label="Пароль"
+            value={password}
+            onChange={(event) => setPassword(event.target.value)}
+            placeholder="Введите пароль"
+            autoComplete={
+              requirePasswordConfirmation ? "new-password" : "current-password"
+            }
+          />
 
           {requirePasswordConfirmation ? (
-            <label className="flex flex-col gap-2">
-              <span className="text-sm text-[#8E97A8]">Подтвердите пароль</span>
-              <input
-                type="password"
-                value={passwordConfirmation}
-                onChange={(event) => setPasswordConfirmation(event.target.value)}
-                className="rounded-2xl border border-[#2A3140] bg-[#0B0E15] px-4 py-3 text-white outline-none focus:border-[#01BB96]"
-                placeholder="Повторите пароль"
-                autoComplete="new-password"
-              />
-            </label>
+            <PasswordField
+              label="Подтвердите пароль"
+              value={passwordConfirmation}
+              onChange={(event) => setPasswordConfirmation(event.target.value)}
+              placeholder="Повторите пароль"
+              autoComplete="new-password"
+            />
           ) : null}
 
           {errorMessage ? (
@@ -104,13 +97,13 @@ export default function AuthFormCard({
           <button
             type="submit"
             disabled={isSubmitting}
-            className="rounded-3xl bg-[#01BB96] px-5 py-4 text-base font-medium text-[#000214] disabled:opacity-60"
+            className="rounded-3xl bg-[#01BB96] px-5 py-4 text-base font-medium text-[#000214] shadow-[0_12px_28px_rgba(1,187,150,0.2)] disabled:opacity-60"
           >
             {isSubmitting ? "Подождите..." : submitText}
           </button>
         </form>
 
-        <p className="text-sm text-[#8E97A8]">
+        <p className="text-sm leading-6 text-[#8E97A8]">
           {footerText}{" "}
           <Link to={footerTo} className="text-[#01BB96]">
             {footerLinkText}

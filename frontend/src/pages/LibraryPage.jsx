@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import LoadingCard from "../components/LoadingCard";
 import PageBackButton from "../components/PageBackButton";
 import PageShell from "../components/PageShell";
 import { DATABASE_CONFIG } from "../services/database/databaseConfig";
@@ -195,7 +196,7 @@ function ExerciseCard({ exercise, exerciseNameMap }) {
 
       {isExpanded ? (
         <div className="mt-4 flex flex-col gap-3">
-          <div className="grid grid-cols-2 gap-3 text-sm">
+          <div className="grid grid-cols-1 gap-3 text-sm sm:grid-cols-2">
             <div className="rounded-2xl bg-[#12151C] px-3 py-3">
               <p className="text-xs uppercase tracking-[0.14em] text-[#667085]">
                 Формат
@@ -222,7 +223,7 @@ function ExerciseCard({ exercise, exerciseNameMap }) {
           />
           <ExerciseDetailBlock title="Альтернативы" items={alternatives} />
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <div className="rounded-2xl bg-[#12151C] px-3 py-3">
               <p className="text-xs uppercase tracking-[0.14em] text-[#667085]">
                 Сторона
@@ -321,8 +322,8 @@ export default function LibraryPage() {
           </p>
         </div>
 
-        <div className="grid grid-cols-3 gap-3">
-          <div className="rounded-2xl bg-[#0B0E15] px-4 py-4 text-center">
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+          <div className="col-span-2 rounded-2xl bg-[#0B0E15] px-4 py-4 text-center sm:col-span-1">
             <p className="text-xs uppercase tracking-[0.14em] text-[#667085]">
               Упражнений
             </p>
@@ -349,9 +350,11 @@ export default function LibraryPage() {
         </div>
 
         {isLoading ? (
-          <div className="rounded-[24px] bg-[#0B0E15] px-5 py-8 text-center text-sm text-[#8E97A8]">
-            Загружаем библиотеку упражнений...
-          </div>
+          <LoadingCard
+            title="Загружаем библиотеку упражнений"
+            description="Подтягиваем каталог, группы мышц и карточки упражнений."
+            centered
+          />
         ) : null}
 
         {error ? (

@@ -36,8 +36,10 @@ body {
   overflow-x: hidden;
   background-color: var(--app-bg);
   color: white;
-  touch-action: manipulation;
   -webkit-tap-highlight-color: transparent;
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
   overscroll-behavior-y: contain;
 }
 
@@ -45,9 +47,18 @@ body {
   min-height: calc(100dvh - var(--safe-area-top) - var(--safe-area-bottom));
 }
 
+#root,
+#root * {
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
 img {
   display: block;
   max-width: 100%;
+  -webkit-user-drag: none;
+  user-drag: none;
 }
 
 button,
@@ -63,6 +74,7 @@ input,
 select,
 textarea {
   -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
 }
 
 @media (display-mode: standalone) {

@@ -1,23 +1,28 @@
 import { useEffect, useState } from "react";
 import imageCompression from "browser-image-compression";
-import { Link, Navigate, useNavigate } from "react-router";
+import { Navigate, useNavigate } from "react-router";
+import PageBackButton from "../components/PageBackButton";
 import PageShell from "../components/PageShell";
+import PasswordField from "../components/PasswordField";
 import { ROUTES } from "../constants/routes";
 import { useAuth } from "../hooks/useAuth";
 import { startTastingSession } from "../utils/tastingSession";
 
 export default function UserEditPage() {
-  const { currentUser, isAuthReady, updateCurrentUserProfile } = useAuth();
+  const { currentUser, isAuthReady, logout, updateCurrentUserProfile } =
+    useAuth();
   const navigate = useNavigate();
   const [profileForm, setProfileForm] = useState({
     name: "",
     email: "",
+    gender: "not_specified",
     password: "",
     profilePhoto: "",
   });
   const [saveError, setSaveError] = useState("");
   const [saveMessage, setSaveMessage] = useState("");
   const [isSaving, setIsSaving] = useState(false);
+  const [isLogoutConfirmVisible, setIsLogoutConfirmVisible] = useState(false);
 
   useEffect(() => {
     if (!currentUser) {
@@ -27,6 +32,7 @@ export default function UserEditPage() {
     setProfileForm({
       name: currentUser.name ?? currentUser.login ?? "",
       email: currentUser.email ?? "",
+      gender: currentUser.gender ?? "not_specified",
       password: "",
       profilePhoto: currentUser.profilePhoto ?? "",
     });
@@ -46,6 +52,7 @@ export default function UserEditPage() {
         password: "",
       }));
       setSaveMessage("Профиль обновлен.");
+      setIsLogoutConfirmVisible(false);
     } catch (error) {
       setSaveError(
         error instanceof Error ? error.message : "Не удалось обновить профиль.",
@@ -104,6 +111,21 @@ export default function UserEditPage() {
     navigate(ROUTES.TASTING);
   }
 
+  function handleRequestLogout() {
+    setIsLogoutConfirmVisible(true);
+    setSaveError("");
+    setSaveMessage("");
+  }
+
+  function handleCancelLogout() {
+    setIsLogoutConfirmVisible(false);
+  }
+
+  function handleConfirmLogout() {
+    logout();
+    navigate(ROUTES.HOME, { replace: true });
+  }
+
   if (!isAuthReady) {
     return (
       <PageShell className="pt-5">
@@ -121,6 +143,8 @@ export default function UserEditPage() {
   return (
     <PageShell className="pt-5">
       <section className="mx-auto flex w-full max-w-md flex-col gap-5 rounded-[28px] border border-[#2A3140] bg-[#12151C] p-6">
+        <PageBackButton fallbackTo={ROUTES.USER} />
+
         <div className="space-y-2">
           <p className="text-sm uppercase tracking-[0.2em] text-[#8E97A8]">
             Профиль
@@ -132,11 +156,14 @@ export default function UserEditPage() {
           </p>
         </div>
 
-        <div className="rounded-2xl bg-[#0B0E15] px-4 py-3 text-sm text-[#8E97A8]">
-          Логин: <span className="text-white">{currentUser.login ?? currentUser.name}</span>
+        <div className="rounded-2xl bg-[#0B0E15] px-4 py-3 text-sm leading-6 text-[#8E97A8]">
+          Логин:{" "}
+          <span className="break-words text-white">
+            {currentUser.login ?? currentUser.name}
+          </span>
         </div>
 
-        <div className="flex items-center gap-4 rounded-2xl bg-[#0B0E15] px-4 py-4">
+        <div className="flex flex-col gap-4 rounded-2xl bg-[#0B0E15] px-4 py-4 sm:flex-row sm:items-center">
           <div className="h-20 w-20 overflow-hidden rounded-3xl bg-[#1D222D]">
             {profileForm.profilePhoto ? (
               <img
@@ -153,7 +180,7 @@ export default function UserEditPage() {
             )}
           </div>
 
-          <label className="flex-1 cursor-pointer rounded-2xl border border-[#2A3140] px-4 py-3 text-center text-sm text-white">
+          <label className="w-full cursor-pointer rounded-2xl border border-[#2A3140] px-4 py-3 text-center text-sm text-white sm:flex-1">
             Добавить фото
             <input
               type="file"
@@ -165,7 +192,7 @@ export default function UserEditPage() {
         </div>
 
         <form onSubmit={handleProfileSubmit} className="flex flex-col gap-4">
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <label className="flex flex-col gap-2">
               <span className="text-sm text-[#8E97A8]">Имя</span>
               <input
@@ -197,20 +224,35 @@ export default function UserEditPage() {
           </div>
 
           <label className="flex flex-col gap-2">
-            <span className="text-sm text-[#8E97A8]">Новый пароль</span>
-            <input
-              type="password"
-              value={profileForm.password}
+            <span className="text-sm text-[#8E97A8]">Пол</span>
+            <select
+              value={profileForm.gender}
               onChange={(event) =>
                 setProfileForm((previousForm) => ({
                   ...previousForm,
-                  password: event.target.value,
+                  gender: event.target.value,
                 }))
               }
-              placeholder="Оставь пустым, если менять не нужно"
-              className="rounded-2xl border border-[#2A3140] bg-[#0B0E15] px-4 py-3 text-white outline-none placeholder:text-[#5D6677]"
-            />
+              className="rounded-2xl border border-[#2A3140] bg-[#0B0E15] px-4 py-3 text-white outline-none"
+            >
+              <option value="not_specified">Не указан</option>
+              <option value="female">Женский</option>
+              <option value="male">Мужской</option>
+            </select>
           </label>
+
+          <PasswordField
+            label="Новый пароль"
+            value={profileForm.password}
+            onChange={(event) =>
+              setProfileForm((previousForm) => ({
+                ...previousForm,
+                password: event.target.value,
+              }))
+            }
+            placeholder="Оставь пустым, если менять не нужно"
+            autoComplete="new-password"
+          />
 
           {saveError ? (
             <div className="rounded-2xl border border-[#603838] bg-[#2B1717] px-4 py-3 text-sm text-[#FFB3B3]">
@@ -243,12 +285,37 @@ export default function UserEditPage() {
           </button>
         ) : null}
 
-        <Link
-          to={ROUTES.USER}
-          className="rounded-3xl border border-[#2A3140] px-5 py-4 text-center text-base font-medium text-white"
-        >
-          Назад в профиль
-        </Link>
+        {isLogoutConfirmVisible ? (
+          <div className="rounded-3xl border border-[#603838] bg-[#2B1717] p-4">
+            <p className="text-sm leading-6 text-[#FFB3B3]">
+              Выйти из профиля на этом устройстве?
+            </p>
+            <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <button
+                type="button"
+                onClick={handleCancelLogout}
+                className="rounded-3xl border border-[#2A3140] px-5 py-4 text-base font-medium text-white"
+              >
+                Отмена
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmLogout}
+                className="rounded-3xl bg-[#FF7A7A] px-5 py-4 text-base font-medium text-[#220909]"
+              >
+                Выйти
+              </button>
+            </div>
+          </div>
+        ) : (
+          <button
+            type="button"
+            onClick={handleRequestLogout}
+            className="rounded-3xl border border-[#2A3140] px-5 py-4 text-base font-medium text-white"
+          >
+            Выйти из профиля
+          </button>
+        )}
       </section>
     </PageShell>
   );

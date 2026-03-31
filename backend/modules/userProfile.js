@@ -11,6 +11,8 @@ const FOCUS_TO_GOAL = {
   arms: "mass",
   "fat-loss": "weight_loss",
   "general-strength": "strength",
+  "full-body": "strength",
+  "women-cardio": "weight_loss",
 };
 
 const FOCUS_TO_TARGET_BODY_PARTS = {
@@ -19,6 +21,8 @@ const FOCUS_TO_TARGET_BODY_PARTS = {
   arms: ["arms", "chest", "back"],
   "fat-loss": ["full_body", "cardio", "legs", "core"],
   "general-strength": ["full_body", "legs", "back", "chest", "core"],
+  "full-body": ["full_body", "legs", "back", "chest", "core", "shoulders"],
+  "women-cardio": ["cardio", "legs", "full_body", "core", "shoulders"],
 };
 
 function normalizeStringArray(value) {
@@ -67,10 +71,23 @@ function resolveTargetBodyParts(data = {}) {
   return FOCUS_TO_TARGET_BODY_PARTS[focusKey] ?? ["full_body"];
 }
 
+function resolveGender(data = {}) {
+  const normalizedGender = String(data.gender ?? "")
+    .trim()
+    .toLowerCase();
+
+  if (["male", "female"].includes(normalizedGender)) {
+    return normalizedGender;
+  }
+
+  return "not_specified";
+}
+
 export function buildUserProfile(data = {}) {
   return {
     level: resolveProfileLevel(data),
     trainingLevel: String(data.trainingLevel ?? "").trim() || "Не определен",
+    gender: resolveGender(data),
     goal: resolveGoal(data),
     focusKey: String(data.focusKey ?? "").trim() || "general-strength",
     targetBodyParts: resolveTargetBodyParts(data),
@@ -84,6 +101,8 @@ export function buildUserProfile(data = {}) {
 export function vectorizeProfile(profile) {
   return [
     profile.level / 100,
+    profile.gender === "male" ? 1 : 0,
+    profile.gender === "female" ? 1 : 0,
     profile.goal === "strength" ? 1 : 0,
     profile.goal === "mass" ? 1 : 0,
     profile.goal === "weight_loss" ? 1 : 0,

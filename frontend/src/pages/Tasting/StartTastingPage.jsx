@@ -28,14 +28,25 @@ export default function StartTastingPage() {
 
   return (
     <main className="pb-[calc(8rem+env(safe-area-inset-bottom))]">
-      <section className="mx-auto flex w-full max-w-md flex-wrap px-5">
-        <img src={TestImg} alt="Иллюстрация теста" />
-        <h1 className="text-2xl">Тест на определение уровня подготовки</h1>
-        <p className="text-neutral-500 text-l">
+      <section className="mx-auto flex w-full max-w-md flex-wrap gap-4 px-5">
+        <img
+          src={TestImg}
+          alt="Иллюстрация теста"
+          className="mx-auto w-full max-w-[389px] rounded-[28px]"
+          loading="eager"
+          style={{ imageRendering: "-webkit-optimize-contrast" }}
+        />
+
+        <h1 className="text-2xl">
+          Тест на определение уровня подготовки
+        </h1>
+
+        <p className="text-l text-neutral-500">
           Определите свой уровень и мы составим программу тренировок только для
           вас
         </p>
-        <ol className="flex flex-wrap gap-2 ">
+
+        <ol className="flex flex-wrap gap-2">
           {tastingFeatures.map((feature) => (
             <li key={feature} className="pl-3 text-neutral-500">
               {feature}
@@ -47,9 +58,10 @@ export default function StartTastingPage() {
           <div className="mt-3 flex w-full flex-col gap-3 rounded-3xl border border-[#2A3140] bg-[#12151C] p-4">
             <p className="text-sm leading-6 text-[#8E97A8]">
               Тест можно пройти и без аккаунта. Но если войти или
-              зарегистрироваться, мы сохраним ваш результат и уровень подготовки
-              в профиль.
+              зарегистрироваться, мы сохраним ваш результат и уровень
+              подготовки в профиль.
             </p>
+
             <div className="flex gap-3">
               <Link
                 to={ROUTES.LOGIN}
@@ -57,6 +69,7 @@ export default function StartTastingPage() {
               >
                 Войти
               </Link>
+
               <Link
                 to={ROUTES.REGISTER}
                 className="rounded-3xl border border-[#2A3140] px-4 py-3 text-sm text-white"

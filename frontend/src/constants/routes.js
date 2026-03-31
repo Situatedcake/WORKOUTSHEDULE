@@ -12,6 +12,7 @@ export const ROUTES = {
   WORKOUT_PLAN: "/training/plan",
   WORKOUT_ACTIVE: "/training/active",
   WORKOUT_FINISH: "/training/finish",
+  WORKOUT_HISTORY: "/training/history",
   START_TASTING: "/start-tasting",
   TASTING: "/tasting",
   TASTING_FINISH: "/tasting/finish",

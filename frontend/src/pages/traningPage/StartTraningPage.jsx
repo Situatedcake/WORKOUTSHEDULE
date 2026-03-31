@@ -9,6 +9,10 @@ import { ROUTES } from "../../constants/routes";
 import { useAuth } from "../../hooks/useAuth";
 import { DATABASE_CONFIG } from "../../services/database/databaseConfig";
 import {
+  calculateWorkoutTotals,
+  decorateWorkoutExercises,
+} from "../../shared/activeWorkout";
+import {
   TRAINING_GOALS,
   WORKOUTS_PER_WEEK_OPTIONS,
   buildTrainingPlan,
@@ -19,6 +23,8 @@ import {
   getExercisePrescriptionDetails,
   getRecommendedTrainingSetup,
 } from "../../shared/trainingPlanBuilder";
+import { createTrainingFeedbackEvent } from "../../shared/trainingMlFeedback";
+import { formatDateKey } from "../../shared/workoutSchedule";
 import { getTastingScore } from "../../utils/tastingSession";
 import { getTrainingLevelByScore } from "../../utils/trainingLevel";
 
@@ -39,6 +45,65 @@ function getGoalLabel(focusKey) {
     TRAINING_GOALS.find((goal) => goal.key === focusKey)?.label ??
     TRAINING_GOALS[0].label
   );
+}
+
+function getGoalDescription(focusKey) {
+  return (
+    TRAINING_GOALS.find((goal) => goal.key === focusKey)?.description ?? ""
+  );
+}
+
+function getSuggestedSetupByGender(trainingLevel, gender) {
+  const normalizedGender =
+    typeof gender === "string" ? gender.trim().toLowerCase() : "not_specified";
+
+  if (trainingLevel === "Продвинутый") {
+    return getRecommendedTrainingSetup(trainingLevel);
+  }
+
+  if (trainingLevel === "Средний" && normalizedGender === "female") {
+    return {
+      workoutsPerWeek: 4,
+      focusKey: "full-body",
+      reason:
+        "Рекомендуем фуллбади-план, чтобы держать баланс между силой, тонусом и кардио-нагрузкой.",
+    };
+  }
+
+  if (trainingLevel === "Начинающий" && normalizedGender === "female") {
+    return {
+      workoutsPerWeek: 3,
+      focusKey: "women-cardio",
+      reason:
+        "Рекомендуем мягкий кардио-старт с упором на ноги, ягодицы, корпус и общий тонус.",
+    };
+  }
+
+  if (trainingLevel === "Начинающий") {
+    return {
+      workoutsPerWeek: 3,
+      focusKey: "full-body",
+      reason:
+        "Рекомендуем фуллбади-план, чтобы спокойно собрать технику и базовую силу на всем теле.",
+    };
+  }
+
+  if (normalizedGender === "female") {
+    return {
+      workoutsPerWeek: 3,
+      focusKey: "women-cardio",
+      reason:
+        "Рекомендуем кардио-программу с акцентом на общий тонус и нижнюю часть тела.",
+    };
+  }
+
+  return {
+    ...getRecommendedTrainingSetup(trainingLevel),
+    focusKey:
+      getRecommendedTrainingSetup(trainingLevel).focusKey === "general-strength"
+        ? "full-body"
+        : getRecommendedTrainingSetup(trainingLevel).focusKey,
+  };
 }
 
 function cloneValue(value) {
@@ -141,6 +206,52 @@ function createFallbackPlan({ workoutsPerWeek, focusKey, trainingLevel }) {
   };
 }
 
+function getSessionEstimatedMinutes(session, trainingLevel) {
+  const decoratedExercises = decorateWorkoutExercises(
+    session?.exercises ?? [],
+    trainingLevel,
+  );
+  const totals = calculateWorkoutTotals(decoratedExercises);
+
+  return Math.max(Math.round(totals.totalEstimatedSeconds / 60), 1);
+}
+
+function getDraftPlanEstimatedMinutes(plan, trainingLevel) {
+  return (plan?.sessions ?? []).reduce(
+    (total, session) => total + getSessionEstimatedMinutes(session, trainingLevel),
+    0,
+  );
+}
+
+function validateDraftPlan(plan, trainingLevel) {
+  if (!plan?.sessions?.length) {
+    return "Сначала собери хотя бы одну тренировочную сессию.";
+  }
+
+  for (const session of plan.sessions) {
+    const exercises = session?.exercises ?? [];
+
+    if (!exercises.length) {
+      return `В дне "${session?.title ?? "Тренировка"}" должно остаться хотя бы одно упражнение.`;
+    }
+
+    const plannedSets = exercises.reduce(
+      (total, exercise) => total + Math.max(Number(exercise?.sets) || 0, 0),
+      0,
+    );
+
+    if (plannedSets < 3) {
+      return `В дне "${session?.title ?? "Тренировка"}" слишком маленький объём. Добавь хотя бы 3 подхода.`;
+    }
+
+    if (getSessionEstimatedMinutes(session, trainingLevel) < 8) {
+      return `День "${session?.title ?? "Тренировка"}" получился слишком коротким. Добавь ещё одно упражнение или увеличь объём.`;
+    }
+  }
+
+  return "";
+}
+
 export default function StartTraningPage() {
   const location = useLocation();
   const { currentUser, saveCurrentUserTrainingPlan } = useAuth();
@@ -185,8 +296,11 @@ export default function StartTraningPage() {
       return locationSetup;
     }
 
-    return getRecommendedTrainingSetup(suggestedTrainingLevel);
-  }, [location.state, suggestedTrainingLevel]);
+    return getSuggestedSetupByGender(
+      suggestedTrainingLevel,
+      currentUser?.gender,
+    );
+  }, [currentUser?.gender, location.state, suggestedTrainingLevel]);
 
   const [editorMode, setEditorMode] = useState(() =>
     currentTrainingPlan && !location.state?.suggestedFromTest
@@ -215,9 +329,27 @@ export default function StartTraningPage() {
   const [planError, setPlanError] = useState("");
   const [isSaving, setIsSaving] = useState(false);
   const [formError, setFormError] = useState("");
+  const [pendingFeedbackEvents, setPendingFeedbackEvents] = useState([]);
+  const [pendingEditorAction, setPendingEditorAction] = useState("");
+  const [isRebalancePromptOpen, setIsRebalancePromptOpen] = useState(false);
 
   const shouldShowEditor = !currentTrainingPlan || editorMode !== "hidden";
-  const draftEstimatedMinutesPerWeek = draftPlan?.estimatedMinutesPerWeek ?? 0;
+  const todayDateKey = useMemo(() => formatDateKey(new Date()), []);
+  const futurePlannedWorkoutsCount = useMemo(
+    () =>
+      (currentUser?.scheduledWorkouts ?? []).filter(
+        (workout) =>
+          (workout.status ?? "planned") === "planned" &&
+          typeof workout.date === "string" &&
+          workout.date >= todayDateKey,
+      ).length,
+    [currentUser?.scheduledWorkouts, todayDateKey],
+  );
+  const hasFuturePlannedWorkouts = futurePlannedWorkoutsCount > 0;
+  const draftEstimatedMinutesPerWeek = useMemo(
+    () => getDraftPlanEstimatedMinutes(draftPlan, suggestedTrainingLevel),
+    [draftPlan, suggestedTrainingLevel],
+  );
 
   useEffect(() => {
     if (!shouldShowEditor) {
@@ -233,6 +365,7 @@ export default function StartTraningPage() {
       );
       setAdaptationSummary([]);
       setPlanError("");
+      setPendingFeedbackEvents([]);
       return;
     }
 
@@ -252,10 +385,13 @@ export default function StartTraningPage() {
             },
             body: JSON.stringify({
               trainingLevel: suggestedTrainingLevel,
+              gender: currentUser?.gender ?? "not_specified",
               focusKey,
               workoutsPerWeek,
               time: 45,
               workoutHistory: currentUser?.workoutHistory ?? [],
+              trainingMlFeedbackHistory:
+                currentUser?.trainingMlFeedbackHistory ?? [],
             }),
             signal: abortController.signal,
           },
@@ -285,6 +421,7 @@ export default function StartTraningPage() {
           setDraftPlan(fallbackPayload.trainingPlan);
           setHighlightedExercises(fallbackPayload.highlightedExercises);
           setAdaptationSummary(fallbackPayload.adaptationSummary);
+          setPendingFeedbackEvents([]);
           return;
         }
 
@@ -299,6 +436,7 @@ export default function StartTraningPage() {
             ? payload.adaptationSummary
             : [],
         );
+        setPendingFeedbackEvents([]);
       } catch (error) {
         if (error.name === "AbortError") {
           return;
@@ -313,6 +451,7 @@ export default function StartTraningPage() {
         setDraftPlan(fallbackPayload.trainingPlan);
         setHighlightedExercises(fallbackPayload.highlightedExercises);
         setAdaptationSummary(fallbackPayload.adaptationSummary);
+        setPendingFeedbackEvents([]);
         setPlanError("");
         setPlanError(
           error instanceof Error
@@ -333,6 +472,8 @@ export default function StartTraningPage() {
     };
   }, [
     currentTrainingPlan,
+    currentUser?.gender,
+    currentUser?.trainingMlFeedbackHistory,
     currentUser?.workoutHistory,
     editorMode,
     focusKey,
@@ -342,6 +483,30 @@ export default function StartTraningPage() {
   ]);
 
   function updateSessionExercise(sessionIndex, exerciseIndex, value) {
+    const session = draftPlan?.sessions?.[sessionIndex];
+    const previousExercise = session?.exercises?.[exerciseIndex];
+    const nextExercise =
+      session?.exerciseOptions?.find((option) => option.name === value) ?? null;
+
+    if (
+      previousExercise &&
+      nextExercise &&
+      previousExercise.name !== nextExercise.name
+    ) {
+      setPendingFeedbackEvents((previousEvents) => [
+        ...previousEvents,
+        createTrainingFeedbackEvent({
+          type: "exercise_replaced",
+          source: "training_plan",
+          trainingPlanId: draftPlan?.id ?? null,
+          sessionId: session?.id ?? null,
+          sessionIndex: sessionIndex + 1,
+          exercise: previousExercise,
+          nextExercise,
+        }),
+      ]);
+    }
+
     setDraftPlan((previousPlan) => {
       if (!previousPlan) {
         return previousPlan;
@@ -402,6 +567,23 @@ export default function StartTraningPage() {
   }
 
   function removeSessionExercise(sessionIndex, exerciseIndex) {
+    const session = draftPlan?.sessions?.[sessionIndex];
+    const previousExercise = session?.exercises?.[exerciseIndex];
+
+    if (previousExercise && ensureSelectedExerciseNames(session).length > 1) {
+      setPendingFeedbackEvents((previousEvents) => [
+        ...previousEvents,
+        createTrainingFeedbackEvent({
+          type: "exercise_removed",
+          source: "training_plan",
+          trainingPlanId: draftPlan?.id ?? null,
+          sessionId: session?.id ?? null,
+          sessionIndex: sessionIndex + 1,
+          exercise: previousExercise,
+        }),
+      ]);
+    }
+
     setDraftPlan((previousPlan) => {
       if (!previousPlan) {
         return previousPlan;
@@ -434,16 +616,34 @@ export default function StartTraningPage() {
     });
   }
 
-  function handleEditPlan() {
-    setEditorMode("edit");
+  function openEditor(mode) {
+    if (mode === "new") {
+      setWorkoutsPerWeek(suggestedSetup.workoutsPerWeek);
+      setFocusKey(suggestedSetup.focusKey);
+    }
+
+    setEditorMode(mode);
+    setPendingFeedbackEvents([]);
     setIsMenuOpen(false);
   }
 
+  function requestEditorOpen(mode) {
+    if (hasFuturePlannedWorkouts) {
+      setPendingEditorAction(mode);
+      setIsRebalancePromptOpen(true);
+      setIsMenuOpen(false);
+      return;
+    }
+
+    openEditor(mode);
+  }
+
+  function handleEditPlan() {
+    requestEditorOpen("edit");
+  }
+
   function handleCreateNewPlan() {
-    setWorkoutsPerWeek(suggestedSetup.workoutsPerWeek);
-    setFocusKey(suggestedSetup.focusKey);
-    setEditorMode("new");
-    setIsMenuOpen(false);
+    requestEditorOpen("new");
   }
 
   async function handleSavePlan() {
@@ -457,16 +657,37 @@ export default function StartTraningPage() {
       return;
     }
 
+    const validationError = validateDraftPlan(draftPlan, suggestedTrainingLevel);
+
+    if (validationError) {
+      setFormError(validationError);
+      return;
+    }
+
+    const trainingPlanToSave = {
+      ...draftPlan,
+      estimatedMinutesPerWeek: draftEstimatedMinutesPerWeek,
+      sessions: (draftPlan.sessions ?? []).map((session) => ({
+        ...session,
+        estimatedDurationMin: getSessionEstimatedMinutes(
+          session,
+          suggestedTrainingLevel,
+        ),
+      })),
+    };
+
     setIsSaving(true);
     setFormError("");
 
     try {
       await saveCurrentUserTrainingPlan({
-        workoutsPerWeek: draftPlan.workoutsPerWeek,
-        focusKey: draftPlan.focusKey,
-        trainingPlan: draftPlan,
+        workoutsPerWeek: trainingPlanToSave.workoutsPerWeek,
+        focusKey: trainingPlanToSave.focusKey,
+        trainingPlan: trainingPlanToSave,
+        mlFeedbackEvents: pendingFeedbackEvents,
       });
       setEditorMode("hidden");
+      setPendingFeedbackEvents([]);
       setIsMenuOpen(false);
     } catch (error) {
       setFormError(
@@ -543,6 +764,19 @@ export default function StartTraningPage() {
             </div>
           </div>
 
+          {hasFuturePlannedWorkouts ? (
+            <div className="rounded-2xl border border-[#3A4C62] bg-[#102338] px-4 py-4">
+              <p className="text-xs uppercase tracking-[0.2em] text-[#8E97A8]">
+                Внимание
+              </p>
+              <p className="mt-2 text-sm leading-6 text-[#D6E6F8]">
+                После сохранения программа перестроит {futurePlannedWorkoutsCount}{" "}
+                будущ{futurePlannedWorkoutsCount === 1 ? "ую тренировку" : "их тренировок"} в
+                календаре под новый порядок сессий.
+              </p>
+            </div>
+          ) : null}
+
           {hasTestBasedSuggestion ? (
             <div className="rounded-2xl border border-[#2A3140] bg-[#0B0E15] px-4 py-4">
               <p className="text-xs uppercase tracking-[0.2em] text-[#8E97A8]">
@@ -606,36 +840,36 @@ export default function StartTraningPage() {
 
           <div className="space-y-3">
             <p className="text-sm text-[#8E97A8]">На чем делаем упор?</p>
-            <div className="flex flex-col gap-3">
-              {TRAINING_GOALS.map((goal) => (
-                <button
-                  key={goal.key}
-                  type="button"
-                  onClick={() => {
-                    setFocusKey(goal.key);
-                    setEditorMode("new");
-                  }}
-                  className={`rounded-2xl border px-4 py-4 text-left transition ${
-                    focusKey === goal.key
-                      ? "border-[#01BB96] bg-[#0D3A33]"
-                      : "border-[#2A3140] bg-[#0B0E15]"
-                  }`}
-                >
-                  <span className="block text-base font-medium text-white">
+            <label className="flex flex-col gap-3">
+              <select
+                value={focusKey}
+                onChange={(event) => {
+                  setFocusKey(event.target.value);
+                  setEditorMode("new");
+                }}
+                className="w-full rounded-2xl border border-[#2A3140] bg-[#0B0E15] px-4 py-4 text-sm text-white outline-none"
+              >
+                {TRAINING_GOALS.map((goal) => (
+                  <option key={goal.key} value={goal.key}>
                     {goal.label}
-                  </span>
-                  <span className="mt-1 block text-sm text-[#8E97A8]">
-                    {goal.description}
-                  </span>
-                </button>
-              ))}
-            </div>
+                  </option>
+                ))}
+              </select>
+              <div className="rounded-2xl border border-[#2A3140] bg-[#0B0E15] px-4 py-4">
+                <p className="text-base font-medium text-white">
+                  {getGoalLabel(focusKey)}
+                </p>
+                <p className="mt-1 text-sm leading-6 text-[#8E97A8]">
+                  {getGoalDescription(focusKey)}
+                </p>
+              </div>
+            </label>
           </div>
 
           <div className="space-y-3">
             <div className="flex items-center justify-between gap-3">
               <div>
-                <p className="text-sm text-white">Псевдо-ML рекомендует</p>
+                <p className="text-sm text-white">Мы рекомендуем</p>
                 <p className="text-xs text-[#8E97A8]">
                   Подборка учитывает цель, уровень и историю завершенных
                   тренировок.
@@ -712,7 +946,7 @@ export default function StartTraningPage() {
                 </div>
 
                 <span className="text-sm text-[#8E97A8]">
-                  {session.estimatedDurationMin} мин
+                  {getSessionEstimatedMinutes(session, suggestedTrainingLevel)} мин
                 </span>
               </div>
 
@@ -932,6 +1166,49 @@ export default function StartTraningPage() {
             ))}
           </div>
         </section>
+      ) : null}
+
+      {isRebalancePromptOpen ? (
+        <div className="fixed inset-0 z-30 flex items-end justify-center bg-[#030712]/80 px-5 pb-6 pt-20">
+          <div className="w-full max-w-md rounded-[28px] border border-[#2A3140] bg-[#12151C] p-5">
+            <p className="text-xs uppercase tracking-[0.18em] text-[#8E97A8]">
+              Перестройка календаря
+            </p>
+            <h2 className="mt-2 text-xl font-medium text-white">
+              Будущие тренировки изменятся
+            </h2>
+            <p className="mt-2 text-sm leading-6 text-[#8E97A8]">
+              В календаре уже есть {futurePlannedWorkoutsCount} будущ
+              {futurePlannedWorkoutsCount === 1 ? "ая тренировка" : "их тренировок"}.
+              После изменения программы они автоматически перестроятся под новый
+              порядок дней.
+            </p>
+
+            <div className="mt-5 flex flex-col gap-3">
+              <button
+                type="button"
+                onClick={() => {
+                  openEditor(pendingEditorAction || "edit");
+                  setPendingEditorAction("");
+                  setIsRebalancePromptOpen(false);
+                }}
+                className="rounded-3xl bg-[#01BB96] px-5 py-4 text-base font-medium text-[#000214]"
+              >
+                Продолжить
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setPendingEditorAction("");
+                  setIsRebalancePromptOpen(false);
+                }}
+                className="rounded-3xl border border-[#2A3140] px-5 py-4 text-base font-medium text-white"
+              >
+                Оставить как есть
+              </button>
+            </div>
+          </div>
+        </div>
       ) : null}
     </PageShell>
   );

@@ -94,6 +94,18 @@ export const apiUserStorage = {
     return payload.user ?? null;
   },
 
+  async saveTrainingFeedback(userId, feedbackEvents = []) {
+    const payload = await requestJson(
+      `/users/${encodeURIComponent(userId)}/training-feedback`,
+      {
+        method: "POST",
+        body: JSON.stringify({ events: feedbackEvents }),
+      },
+    );
+
+    return payload.user ?? null;
+  },
+
   async scheduleWorkout(userId, workoutPayload) {
     const payload = await requestJson(
       `/users/${encodeURIComponent(userId)}/scheduled-workouts`,
