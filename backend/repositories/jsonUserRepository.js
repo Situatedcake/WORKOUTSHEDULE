@@ -8,6 +8,7 @@ import {
 import {
   cancelWorkout as removeScheduledWorkout,
   rebalanceScheduledWorkouts,
+  rescheduleWorkout as updateScheduledWorkout,
   scheduleWorkout as addScheduledWorkout,
 } from "../shared/workoutSchedule.js";
 import {
@@ -273,6 +274,34 @@ export const jsonUserRepository = {
     return sanitizeUser(nextUser);
   },
 
+  async rescheduleWorkout(userId, scheduledWorkoutId, { date, time }) {
+    const database = await readDatabase();
+    const userIndex = database.users.findIndex((item) => item.id === userId);
+
+    if (userIndex === -1) {
+      return null;
+    }
+
+    const syncResult = syncUserExpiredWorkouts(database.users[userIndex]);
+    const currentUser = syncResult.user;
+    const nextUser = {
+      ...currentUser,
+      scheduledWorkouts: updateScheduledWorkout({
+        scheduledWorkouts: currentUser.scheduledWorkouts ?? [],
+        trainingPlan: currentUser.trainingPlan,
+        scheduledWorkoutId,
+        date,
+        time,
+      }),
+      updatedAt: new Date().toISOString(),
+    };
+
+    database.users[userIndex] = nextUser;
+    await writeDatabase(database);
+
+    return sanitizeUser(nextUser);
+  },
+
   async cancelWorkout(userId, scheduledWorkoutId) {
     const database = await readDatabase();
     const userIndex = database.users.findIndex((item) => item.id === userId);
@@ -288,7 +317,7 @@ export const jsonUserRepository = {
     );
 
     if (!scheduledWorkout) {
-      throw new Error("РўСЂРµРЅРёСЂРѕРІРєР° РЅРµ РЅР°Р№РґРµРЅР° РІ РєР°Р»РµРЅРґР°СЂРµ.");
+      throw new Error("Тренировка не найдена в календаре.");
     }
 
     const canceledAt = new Date().toISOString();
@@ -338,7 +367,7 @@ export const jsonUserRepository = {
     );
 
     if (!scheduledWorkout) {
-      throw new Error("РўСЂРµРЅРёСЂРѕРІРєР° РЅРµ РЅР°Р№РґРµРЅР° РІ РєР°Р»РµРЅРґР°СЂРµ.");
+      throw new Error("Тренировка не найдена в календаре.");
     }
 
     const skippedAt = new Date().toISOString();

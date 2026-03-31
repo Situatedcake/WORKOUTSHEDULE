@@ -4,6 +4,7 @@ import { buildWorkoutStats } from "../../shared/workoutStats";
 import {
   cancelWorkout as removeScheduledWorkout,
   rebalanceScheduledWorkouts,
+  rescheduleWorkout as updateScheduledWorkout,
   scheduleWorkout as addScheduledWorkout,
 } from "../../shared/workoutSchedule";
 
@@ -223,7 +224,162 @@ function buildTrainingPlanVolumeBreakdown(trainingPlan = null) {
   return result;
 }
 
-function createTrainingPlanAdaptationEvent(previousPlan, nextPlan) {
+function buildExerciseSignature(exercise = {}) {
+  return [
+    String(exercise?.id ?? ""),
+    String(exercise?.name ?? ""),
+    String(exercise?.type ?? ""),
+    Number(exercise?.sets ?? 0),
+    String(exercise?.repRange ?? ""),
+    Number(exercise?.restSeconds ?? 0),
+  ].join("::");
+}
+
+function formatExerciseCountLabel(count) {
+  if (count % 10 === 1 && count % 100 !== 11) {
+    return `${count} упражнение`;
+  }
+
+  if (
+    count % 10 >= 2 &&
+    count % 10 <= 4 &&
+    (count % 100 < 12 || count % 100 > 14)
+  ) {
+    return `${count} упражнения`;
+  }
+
+  return `${count} упражнений`;
+}
+
+function getTrainingPlanExerciseCount(trainingPlan = null) {
+  return (trainingPlan?.sessions ?? []).reduce(
+    (total, session) => total + (session.exercises?.length ?? 0),
+    0,
+  );
+}
+
+function buildManualVolumeReason(previousExercise, nextExercise) {
+  if (!previousExercise) {
+    return "Упражнение добавлено вручную, поэтому система учитывает его как ручное изменение плана.";
+  }
+
+  if (String(previousExercise?.name ?? "") !== String(nextExercise?.name ?? "")) {
+    return "Упражнение заменено вручную, поэтому блок адаптации показывает его как ручное изменение.";
+  }
+
+  return "План обновлён вручную, поэтому упражнение помечено как ручная корректировка.";
+}
+
+function annotateManualTrainingPlanChanges(previousPlan = null, nextPlan = null) {
+  if (!nextPlan?.sessions?.length) {
+    return nextPlan;
+  }
+
+  const clonedPlan = cloneValue(nextPlan);
+
+  clonedPlan.sessions = (clonedPlan.sessions ?? []).map((session, sessionIndex) => {
+    const previousSession =
+      (previousPlan?.sessions ?? []).find(
+        (item) =>
+          String(item?.id ?? `session_${sessionIndex + 1}`) ===
+          String(session?.id ?? `session_${sessionIndex + 1}`),
+      ) ??
+      previousPlan?.sessions?.[sessionIndex] ??
+      null;
+
+    return {
+      ...session,
+      exercises: (session.exercises ?? []).map((exercise, exerciseIndex) => {
+        const previousExercise = previousSession?.exercises?.[exerciseIndex] ?? null;
+        const currentTrend = String(exercise?.volumeTrend ?? "base");
+        const didSlotChange =
+          !previousExercise ||
+          buildExerciseSignature(previousExercise) !==
+            buildExerciseSignature(exercise);
+
+        if (!didSlotChange || currentTrend === "manual") {
+          return exercise;
+        }
+
+        if (currentTrend === "progressing" || currentTrend === "stalled") {
+          return exercise;
+        }
+
+        return {
+          ...exercise,
+          volumeTrend: "manual",
+          volumeReason:
+            exercise?.volumeReason || buildManualVolumeReason(previousExercise, exercise),
+        };
+      }),
+    };
+  });
+
+  return clonedPlan;
+}
+
+function buildManualTrainingPlanAdaptationSummary(previousPlan = null, nextPlan = null) {
+  if (!nextPlan) {
+    return [];
+  }
+
+  const previousExerciseCount = getTrainingPlanExerciseCount(previousPlan);
+  const nextExerciseCount = getTrainingPlanExerciseCount(nextPlan);
+  const manualVolumeBreakdown = buildTrainingPlanVolumeBreakdown(nextPlan);
+  const changedExercisesCount = (nextPlan?.sessions ?? []).reduce(
+    (total, session, sessionIndex) =>
+      total +
+      (session.exercises ?? []).reduce((sessionTotal, exercise, exerciseIndex) => {
+        const previousExercise =
+          previousPlan?.sessions?.[sessionIndex]?.exercises?.[exerciseIndex] ?? null;
+
+        return (
+          sessionTotal +
+          (
+            !previousExercise ||
+            buildExerciseSignature(previousExercise) !==
+              buildExerciseSignature(exercise)
+              ? 1
+              : 0
+          )
+        );
+      }, 0),
+    0,
+  );
+  const summary = [];
+
+  if (changedExercisesCount > 0) {
+    summary.push(
+      `Ручная правка затронула ${formatExerciseCountLabel(changedExercisesCount)}.`,
+    );
+  }
+
+  if (nextExerciseCount > previousExerciseCount) {
+    summary.push(
+      `В программу добавили ${formatExerciseCountLabel(
+        nextExerciseCount - previousExerciseCount,
+      )}.`,
+    );
+  } else if (previousExerciseCount > nextExerciseCount) {
+    summary.push(
+      `Из программы убрали ${formatExerciseCountLabel(
+        previousExerciseCount - nextExerciseCount,
+      )}.`,
+    );
+  }
+
+  if (manualVolumeBreakdown.manual > 0) {
+    summary.push(
+      `Блок адаптации пометил ${formatExerciseCountLabel(
+        manualVolumeBreakdown.manual,
+      )} как ручные изменения.`,
+    );
+  }
+
+  return summary.slice(0, 4);
+}
+
+function createTrainingPlanAdaptationEvent(previousPlan, nextPlan, adaptationSummary = []) {
   const volumeBreakdown = buildTrainingPlanVolumeBreakdown(nextPlan);
   const totalExercises = Object.values(volumeBreakdown).reduce(
     (total, value) => total + value,
@@ -242,7 +398,7 @@ function createTrainingPlanAdaptationEvent(previousPlan, nextPlan) {
       volumeBreakdown.manual,
     totalExercises,
     volumeBreakdown,
-    adaptationSummary: [],
+    adaptationSummary,
   };
 }
 
@@ -567,7 +723,11 @@ export const mockUserStorage = {
 
     const syncResult = syncUserExpiredWorkouts(database.users[userIndex]);
     const currentUser = syncResult.user;
-    const trainingPlan =
+    const isProvidedTrainingPlan =
+      providedTrainingPlan &&
+      typeof providedTrainingPlan === "object" &&
+      Array.isArray(providedTrainingPlan.sessions);
+    const rawTrainingPlan =
       providedTrainingPlan &&
       typeof providedTrainingPlan === "object" &&
       Array.isArray(providedTrainingPlan.sessions)
@@ -586,12 +746,28 @@ export const mockUserStorage = {
             }),
             "manual_builder",
           );
+    const trainingPlan = isProvidedTrainingPlan
+      ? annotateManualTrainingPlanChanges(
+          currentUser.trainingPlan,
+          rawTrainingPlan,
+        )
+      : rawTrainingPlan;
+    const adaptationSummary = isProvidedTrainingPlan
+      ? buildManualTrainingPlanAdaptationSummary(
+          currentUser.trainingPlan,
+          trainingPlan,
+        )
+      : [];
     const nextUser = {
       ...currentUser,
       trainingPlan,
       trainingPlanAdaptationHistory: [
         ...(currentUser.trainingPlanAdaptationHistory ?? []),
-        createTrainingPlanAdaptationEvent(currentUser.trainingPlan, trainingPlan),
+        createTrainingPlanAdaptationEvent(
+          currentUser.trainingPlan,
+          trainingPlan,
+          adaptationSummary,
+        ),
       ],
       trainingMlFeedbackHistory: mergeTrainingFeedbackHistory(
         currentUser.trainingMlFeedbackHistory,
@@ -660,6 +836,34 @@ export const mockUserStorage = {
     return mapPublicUser(nextUser);
   },
 
+  async rescheduleWorkout(userId, scheduledWorkoutId, { date, time }) {
+    const database = loadDatabase();
+    const userIndex = database.users.findIndex((item) => item.id === userId);
+
+    if (userIndex === -1) {
+      return null;
+    }
+
+    const syncResult = syncUserExpiredWorkouts(database.users[userIndex]);
+    const currentUser = syncResult.user;
+    const nextUser = {
+      ...currentUser,
+      scheduledWorkouts: updateScheduledWorkout({
+        scheduledWorkouts: currentUser.scheduledWorkouts ?? [],
+        trainingPlan: currentUser.trainingPlan,
+        scheduledWorkoutId,
+        date,
+        time,
+      }),
+      updatedAt: new Date().toISOString(),
+    };
+
+    database.users[userIndex] = nextUser;
+    saveDatabase(database);
+
+    return mapPublicUser(nextUser);
+  },
+
   async cancelWorkout(userId, scheduledWorkoutId) {
     const database = loadDatabase();
     const userIndex = database.users.findIndex((item) => item.id === userId);
@@ -675,7 +879,7 @@ export const mockUserStorage = {
     );
 
     if (!scheduledWorkout) {
-      throw new Error("РўСЂРµРЅРёСЂРѕРІРєР° РЅРµ РЅР°Р№РґРµРЅР° РІ РєР°Р»РµРЅРґР°СЂРµ.");
+      throw new Error("Тренировка не найдена в календаре.");
     }
 
     const canceledAt = new Date().toISOString();
@@ -751,7 +955,7 @@ export const mockUserStorage = {
     );
 
     if (!scheduledWorkout) {
-      throw new Error("РўСЂРµРЅРёСЂРѕРІРєР° РЅРµ РЅР°Р№РґРµРЅР° РІ РєР°Р»РµРЅРґР°СЂРµ.");
+      throw new Error("Тренировка не найдена в календаре.");
     }
 
     const skippedAt = new Date().toISOString();

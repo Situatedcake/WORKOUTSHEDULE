@@ -122,6 +122,41 @@ function buildExerciseCatalog(session) {
   );
 }
 
+function createRuntimeExerciseFromOption({
+  workoutDraft,
+  exerciseOption,
+  exerciseIndex,
+}) {
+  const volumeDetails = getExercisePrescriptionDetails(
+    workoutDraft.trainingLevel,
+    exerciseOption?.type ?? "compound",
+  );
+
+  return {
+    id: createRuntimeExerciseId(
+      workoutDraft.scheduledWorkoutId ?? "exercise",
+      exerciseIndex,
+    ),
+    sourceExerciseId: exerciseOption?.id ?? null,
+    name: exerciseOption?.name ?? "Новое упражнение",
+    type: exerciseOption?.type ?? "compound",
+    sets: volumeDetails.sets,
+    repRange: volumeDetails.repRange,
+    restSeconds: volumeDetails.restSeconds,
+    prescription: volumeDetails.prescription,
+    difficultyLabel: getExerciseDifficultyLabel(
+      exerciseOption?.type ?? "compound",
+    ),
+    estimatedSeconds: estimateExerciseSeconds(
+      exerciseOption?.type ?? "compound",
+      volumeDetails.sets,
+    ),
+    volumeTrend: "manual",
+    volumeReason:
+      "Упражнение добавлено вручную из рекомендованных вариантов, поэтому объём выставлен по базовой рекомендации для текущего уровня.",
+  };
+}
+
 export function getExerciseDifficultyLabel(exerciseType) {
   return DIFFICULTY_LABELS[exerciseType] ?? "Средняя";
 }
@@ -252,6 +287,46 @@ export function replaceWorkoutExercise({
         }
       : item,
   );
+
+  return {
+    ...workoutDraft,
+    exercises: nextExercises,
+    ...calculateWorkoutTotals(nextExercises),
+  };
+}
+
+export function getAddableWorkoutExerciseOptions(workoutDraft) {
+  const selectedExerciseNames = new Set(
+    (workoutDraft?.exercises ?? []).map((exercise) => exercise.name),
+  );
+
+  return (workoutDraft?.exerciseOptions ?? []).filter(
+    (exerciseOption) => !selectedExerciseNames.has(exerciseOption.name),
+  );
+}
+
+export function addWorkoutExercise(workoutDraft, nextExerciseName) {
+  if (!workoutDraft || !nextExerciseName) {
+    return workoutDraft;
+  }
+
+  const nextExerciseOption =
+    (workoutDraft.exerciseOptions ?? []).find(
+      (exerciseOption) => exerciseOption.name === nextExerciseName,
+    ) ?? null;
+
+  if (!nextExerciseOption) {
+    return workoutDraft;
+  }
+
+  const nextExercises = [
+    ...(workoutDraft.exercises ?? []),
+    createRuntimeExerciseFromOption({
+      workoutDraft,
+      exerciseOption: nextExerciseOption,
+      exerciseIndex: workoutDraft.exercises?.length ?? 0,
+    }),
+  ];
 
   return {
     ...workoutDraft,

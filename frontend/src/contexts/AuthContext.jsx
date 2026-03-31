@@ -259,6 +259,28 @@ export function AuthProvider({ children }) {
     [currentUserId],
   );
 
+  const rescheduleCurrentUserWorkout = useCallback(
+    async (scheduledWorkoutId, schedulePayload) => {
+      if (!currentUserId) {
+        return null;
+      }
+
+      const updatedUser = await userRepository.rescheduleWorkout(
+        currentUserId,
+        scheduledWorkoutId,
+        schedulePayload,
+      );
+
+      if (updatedUser) {
+        setCurrentUser(updatedUser);
+        setAuthError("");
+      }
+
+      return updatedUser;
+    },
+    [currentUserId],
+  );
+
   const cancelCurrentUserWorkout = useCallback(
     async (scheduledWorkoutId) => {
       if (!currentUserId) {
@@ -343,6 +365,7 @@ export function AuthProvider({ children }) {
         saveCurrentUserTrainingPlan,
         saveCurrentUserTrainingFeedback,
         scheduleCurrentUserWorkout,
+        rescheduleCurrentUserWorkout,
         cancelCurrentUserWorkout,
         skipCurrentUserWorkout,
         completeCurrentUserWorkout,

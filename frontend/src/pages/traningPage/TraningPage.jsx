@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Navigate, useNavigate } from "react-router";
 import PageShell from "../../components/PageShell";
 import { ROUTES } from "../../constants/routes";
@@ -170,6 +170,7 @@ function normalizeWeightMatrix(exercises = [], savedMatrix = []) {
 
 function buildInitialRuntimeState(workoutDraft, runtimeState) {
   const exerciseCount = workoutDraft?.exercises?.length ?? 0;
+  const nowIso = new Date().toISOString();
 
   if (!workoutDraft || !exerciseCount) {
     return null;
@@ -180,7 +181,7 @@ function buildInitialRuntimeState(workoutDraft, runtimeState) {
 
   if (!hasCompatibleRuntime) {
     return {
-      startedAt: new Date().toISOString(),
+      startedAt: nowIso,
       elapsedSeconds: 0,
       currentExerciseIndex: 0,
       completedSetsByExercise: Array.from({ length: exerciseCount }, () => 0),
@@ -193,6 +194,8 @@ function buildInitialRuntimeState(workoutDraft, runtimeState) {
       restContinuePressCount: 0,
       hasUnlockedForceContinue: false,
       isPaused: false,
+      lastTickAt: nowIso,
+      pausedAt: null,
     };
   }
 
@@ -233,6 +236,135 @@ function buildInitialRuntimeState(workoutDraft, runtimeState) {
     ),
     hasUnlockedForceContinue: Boolean(runtimeState.hasUnlockedForceContinue),
     isPaused: Boolean(runtimeState.isPaused),
+    lastTickAt:
+      runtimeState.lastTickAt ??
+      runtimeState.savedAt ??
+      runtimeState.startedAt ??
+      nowIso,
+    pausedAt:
+      runtimeState.isPaused
+        ? runtimeState.pausedAt ??
+          runtimeState.savedAt ??
+          runtimeState.lastTickAt ??
+          nowIso
+        : null,
+  };
+}
+
+function cloneRuntimeSnapshot(snapshot) {
+  return {
+    ...snapshot,
+    completedSetsByExercise: [...(snapshot?.completedSetsByExercise ?? [])],
+    exerciseElapsedSeconds: [...(snapshot?.exerciseElapsedSeconds ?? [])],
+    setWeightsByExercise: (snapshot?.setWeightsByExercise ?? []).map((weights) => [
+      ...(weights ?? []),
+    ]),
+    pendingTransition:
+      snapshot?.pendingTransition && typeof snapshot.pendingTransition === "object"
+        ? { ...snapshot.pendingTransition }
+        : null,
+  };
+}
+
+function getExerciseRestSeconds(workoutDraft, exerciseIndex) {
+  return (
+    workoutDraft?.exercises?.[exerciseIndex]?.restSeconds ?? REST_DURATION_SECONDS
+  );
+}
+
+function applyPendingTransitionToSnapshot(snapshot, workoutDraft) {
+  const nextSnapshot = cloneRuntimeSnapshot(snapshot);
+
+  if (nextSnapshot.pendingTransition?.type === "nextExercise") {
+    nextSnapshot.currentExerciseIndex = Math.min(
+      nextSnapshot.currentExerciseIndex + 1,
+      Math.max((workoutDraft?.exercises?.length ?? 1) - 1, 0),
+    );
+  }
+
+  nextSnapshot.phase = "exercise";
+  nextSnapshot.pendingTransition = null;
+  nextSnapshot.restContinuePressCount = 0;
+  nextSnapshot.restRemainingSeconds = getExerciseRestSeconds(
+    workoutDraft,
+    nextSnapshot.currentExerciseIndex,
+  );
+
+  return nextSnapshot;
+}
+
+function advanceRuntimeSnapshot(snapshot, workoutDraft, deltaSeconds) {
+  const nextSnapshot = cloneRuntimeSnapshot(snapshot);
+  const normalizedDelta = Math.max(Math.floor(deltaSeconds), 0);
+
+  if (!normalizedDelta || !workoutDraft) {
+    return {
+      snapshot: nextSnapshot,
+      shouldFinishWorkout: false,
+    };
+  }
+
+  nextSnapshot.elapsedSeconds += normalizedDelta;
+
+  let remainingDelta = normalizedDelta;
+
+  while (remainingDelta > 0) {
+    if (nextSnapshot.phase === "rest") {
+      const currentRestSeconds = Math.max(nextSnapshot.restRemainingSeconds ?? 0, 0);
+
+      if (currentRestSeconds <= 0) {
+        if (nextSnapshot.pendingTransition?.type === "finish") {
+          return {
+            snapshot: nextSnapshot,
+            shouldFinishWorkout: true,
+          };
+        }
+
+        Object.assign(
+          nextSnapshot,
+          applyPendingTransitionToSnapshot(nextSnapshot, workoutDraft),
+        );
+        continue;
+      }
+
+      const consumedRestSeconds = Math.min(currentRestSeconds, remainingDelta);
+      nextSnapshot.restRemainingSeconds = currentRestSeconds - consumedRestSeconds;
+      remainingDelta -= consumedRestSeconds;
+
+      if (nextSnapshot.restRemainingSeconds <= 0) {
+        if (nextSnapshot.pendingTransition?.type === "finish") {
+          return {
+            snapshot: nextSnapshot,
+            shouldFinishWorkout: true,
+          };
+        }
+
+        Object.assign(
+          nextSnapshot,
+          applyPendingTransitionToSnapshot(nextSnapshot, workoutDraft),
+        );
+      }
+
+      continue;
+    }
+
+    const safeExerciseIndex = Math.max(
+      0,
+      Math.min(
+        nextSnapshot.currentExerciseIndex,
+        Math.max((workoutDraft.exercises?.length ?? 1) - 1, 0),
+      ),
+    );
+
+    nextSnapshot.exerciseElapsedSeconds[safeExerciseIndex] =
+      Math.max(nextSnapshot.exerciseElapsedSeconds[safeExerciseIndex] ?? 0, 0) +
+      remainingDelta;
+    remainingDelta = 0;
+  }
+
+  return {
+    snapshot: nextSnapshot,
+    shouldFinishWorkout: false,
   };
 }
 
@@ -281,7 +413,14 @@ export default function TraningPage() {
   const [isPaused, setIsPaused] = useState(
     () => initialRuntimeState?.isPaused ?? false,
   );
+  const [lastTickAt, setLastTickAt] = useState(
+    () => initialRuntimeState?.lastTickAt ?? new Date().toISOString(),
+  );
+  const [pausedAt, setPausedAt] = useState(
+    () => initialRuntimeState?.pausedAt ?? null,
+  );
   const [isExitPromptOpen, setIsExitPromptOpen] = useState(false);
+  const runtimeSnapshotRef = useRef(null);
 
   const currentExercise =
     workoutDraft?.exercises?.[currentExerciseIndex] ?? null;
@@ -316,10 +455,20 @@ export default function TraningPage() {
     ] ?? "";
 
   const finishWorkout = useCallback(
-    (completedSetsOverride = completedSetsByExercise) => {
+    (
+      completedSetsOverride = completedSetsByExercise,
+      runtimeSnapshotOverride = null,
+    ) => {
       if (!workoutDraft) {
         return;
       }
+
+      const effectiveSnapshot = runtimeSnapshotOverride ?? runtimeSnapshotRef.current;
+      const effectiveElapsedSeconds =
+        effectiveSnapshot?.elapsedSeconds ?? elapsedSeconds;
+      const effectiveSetWeightsByExercise =
+        effectiveSnapshot?.setWeightsByExercise ?? setWeightsByExercise;
+      const effectiveStartedAt = effectiveSnapshot?.startedAt ?? startedAt;
 
       saveActiveWorkoutResultDraft({
         scheduledWorkoutId: workoutDraft.scheduledWorkoutId,
@@ -329,9 +478,9 @@ export default function TraningPage() {
         emphasis: workoutDraft.emphasis,
         date: workoutDraft.scheduledDate,
         time: workoutDraft.scheduledTime,
-        startedAt,
+        startedAt: effectiveStartedAt,
         plannedDurationSeconds: workoutDraft.totalEstimatedSeconds ?? 0,
-        durationSeconds: elapsedSeconds,
+        durationSeconds: effectiveElapsedSeconds,
         totalExercisesCount: workoutDraft.exercises?.length ?? 0,
         completedExercisesCount: completedSetsOverride.filter(
           (setsCount, index) =>
@@ -352,7 +501,7 @@ export default function TraningPage() {
             plannedSetsCount: exercise.sets,
             repRange: exercise.repRange,
             restSeconds: exercise.restSeconds,
-            weightsKg: (setWeightsByExercise[index] ?? [])
+            weightsKg: (effectiveSetWeightsByExercise[index] ?? [])
               .slice(0, exercise.sets)
               .map(normalizeWeightValue),
           }),
@@ -401,12 +550,29 @@ export default function TraningPage() {
     [currentExerciseIndex, workoutDraft],
   );
 
-  const flushRuntimeState = useCallback(() => {
+  const applyRuntimeSnapshot = useCallback((snapshot) => {
+    setElapsedSeconds(snapshot.elapsedSeconds);
+    setCurrentExerciseIndex(snapshot.currentExerciseIndex);
+    setCompletedSetsByExercise(snapshot.completedSetsByExercise);
+    setExerciseElapsedSeconds(snapshot.exerciseElapsedSeconds);
+    setSetWeightsByExercise(snapshot.setWeightsByExercise);
+    setPhase(snapshot.phase);
+    setRestRemainingSeconds(snapshot.restRemainingSeconds);
+    setPendingTransition(snapshot.pendingTransition);
+    setRestContinuePressCount(snapshot.restContinuePressCount);
+    setHasUnlockedForceContinue(snapshot.hasUnlockedForceContinue);
+    setIsPaused(snapshot.isPaused);
+    setLastTickAt(snapshot.lastTickAt);
+    setPausedAt(snapshot.pausedAt ?? null);
+  }, []);
+
+  useEffect(() => {
     if (!workoutDraft) {
+      runtimeSnapshotRef.current = null;
       return;
     }
 
-    saveActiveWorkoutRuntime({
+    runtimeSnapshotRef.current = {
       scheduledWorkoutId: workoutDraft.scheduledWorkoutId,
       startedAt,
       elapsedSeconds,
@@ -420,8 +586,9 @@ export default function TraningPage() {
       restContinuePressCount,
       hasUnlockedForceContinue,
       isPaused,
-      savedAt: new Date().toISOString(),
-    });
+      lastTickAt,
+      pausedAt,
+    };
   }, [
     completedSetsByExercise,
     currentExerciseIndex,
@@ -429,6 +596,136 @@ export default function TraningPage() {
     exerciseElapsedSeconds,
     hasUnlockedForceContinue,
     isPaused,
+    lastTickAt,
+    pausedAt,
+    pendingTransition,
+    phase,
+    restContinuePressCount,
+    restRemainingSeconds,
+    setWeightsByExercise,
+    startedAt,
+    workoutDraft,
+  ]);
+
+  const flushRuntimeState = useCallback((snapshotOverride = null) => {
+    if (!workoutDraft) {
+      return;
+    }
+
+    const runtimeSnapshot = snapshotOverride ?? runtimeSnapshotRef.current;
+
+    if (!runtimeSnapshot) {
+      return;
+    }
+
+    saveActiveWorkoutRuntime({
+      scheduledWorkoutId: workoutDraft.scheduledWorkoutId,
+      startedAt: runtimeSnapshot.startedAt,
+      elapsedSeconds: runtimeSnapshot.elapsedSeconds,
+      currentExerciseIndex: runtimeSnapshot.currentExerciseIndex,
+      completedSetsByExercise: runtimeSnapshot.completedSetsByExercise,
+      exerciseElapsedSeconds: runtimeSnapshot.exerciseElapsedSeconds,
+      setWeightsByExercise: runtimeSnapshot.setWeightsByExercise,
+      phase: runtimeSnapshot.phase,
+      restRemainingSeconds: runtimeSnapshot.restRemainingSeconds,
+      pendingTransition: runtimeSnapshot.pendingTransition,
+      restContinuePressCount: runtimeSnapshot.restContinuePressCount,
+      hasUnlockedForceContinue: runtimeSnapshot.hasUnlockedForceContinue,
+      isPaused: runtimeSnapshot.isPaused,
+      lastTickAt: runtimeSnapshot.lastTickAt,
+      pausedAt: runtimeSnapshot.pausedAt,
+      savedAt: new Date().toISOString(),
+    });
+  }, [workoutDraft]);
+
+  const syncRuntimeWithClock = useCallback(
+    (referenceDate = new Date()) => {
+      if (!workoutDraft || !runtimeSnapshotRef.current) {
+        return null;
+      }
+
+      const currentSnapshot = runtimeSnapshotRef.current;
+      const nowIso = referenceDate.toISOString();
+
+      if (currentSnapshot.isPaused) {
+        const pausedSnapshot = {
+          ...cloneRuntimeSnapshot(currentSnapshot),
+          lastTickAt: nowIso,
+          pausedAt: currentSnapshot.pausedAt ?? nowIso,
+        };
+
+        runtimeSnapshotRef.current = pausedSnapshot;
+        applyRuntimeSnapshot(pausedSnapshot);
+        return pausedSnapshot;
+      }
+
+      const lastTickTimestamp = Date.parse(
+        currentSnapshot.lastTickAt ??
+          currentSnapshot.savedAt ??
+          currentSnapshot.startedAt ??
+          nowIso,
+      );
+      const deltaSeconds = Number.isFinite(lastTickTimestamp)
+        ? Math.max(
+            Math.floor((referenceDate.getTime() - lastTickTimestamp) / 1000),
+            0,
+          )
+        : 0;
+      const { snapshot: nextSnapshot, shouldFinishWorkout } = advanceRuntimeSnapshot(
+        currentSnapshot,
+        workoutDraft,
+        deltaSeconds,
+      );
+      const normalizedSnapshot = {
+        ...nextSnapshot,
+        lastTickAt: nowIso,
+      };
+
+      runtimeSnapshotRef.current = normalizedSnapshot;
+      applyRuntimeSnapshot(normalizedSnapshot);
+
+      if (shouldFinishWorkout) {
+        finishWorkout(
+          normalizedSnapshot.completedSetsByExercise,
+          normalizedSnapshot,
+        );
+      }
+
+      return normalizedSnapshot;
+    },
+    [applyRuntimeSnapshot, finishWorkout, workoutDraft],
+  );
+
+  useEffect(() => {
+    if (!workoutDraft || isPaused) {
+      return undefined;
+    }
+
+    const intervalId = window.setInterval(() => {
+      syncRuntimeWithClock(new Date());
+    }, 1000);
+
+    return () => {
+      window.clearInterval(intervalId);
+    };
+  }, [isPaused, syncRuntimeWithClock, workoutDraft]);
+
+  useEffect(() => {
+    if (!workoutDraft) {
+      return;
+    }
+
+    flushRuntimeState(runtimeSnapshotRef.current);
+  }, [
+    completedSetsByExercise,
+    currentExerciseIndex,
+    elapsedSeconds,
+    exerciseElapsedSeconds,
+    flushRuntimeState,
+    hasUnlockedForceContinue,
+    isPaused,
+    lastTickAt,
+    pausedAt,
     pendingTransition,
     phase,
     restContinuePressCount,
@@ -439,57 +736,12 @@ export default function TraningPage() {
   ]);
 
   useEffect(() => {
-    if (!workoutDraft || isPaused) {
-      return undefined;
+    if (!workoutDraft) {
+      return;
     }
 
-    const intervalId = window.setInterval(() => {
-      setElapsedSeconds((previousValue) => previousValue + 1);
-
-      if (phase === "rest") {
-        setRestRemainingSeconds((previousValue) => {
-          if (previousValue <= 1) {
-            window.setTimeout(() => {
-              if (pendingTransition?.type === "finish") {
-                finishWorkout();
-                return;
-              }
-
-              applyPendingTransition(pendingTransition);
-            }, 0);
-
-            return 0;
-          }
-
-          return previousValue - 1;
-        });
-
-        return;
-      }
-
-      setExerciseElapsedSeconds((previousValue) =>
-        previousValue.map((value, index) =>
-          index === currentExerciseIndex ? value + 1 : value,
-        ),
-      );
-    }, 1000);
-
-    return () => {
-      window.clearInterval(intervalId);
-    };
-  }, [
-    applyPendingTransition,
-    currentExerciseIndex,
-    finishWorkout,
-    isPaused,
-    pendingTransition,
-    phase,
-    workoutDraft,
-  ]);
-
-  useEffect(() => {
-    flushRuntimeState();
-  }, [flushRuntimeState]);
+    syncRuntimeWithClock(new Date());
+  }, [syncRuntimeWithClock, workoutDraft]);
 
   useEffect(() => {
     if (!workoutDraft) {
@@ -515,11 +767,16 @@ export default function TraningPage() {
 
     const handlePageVisibilityChange = () => {
       if (document.visibilityState === "hidden") {
-        flushRuntimeState();
+        const syncedSnapshot = syncRuntimeWithClock(new Date());
+        flushRuntimeState(syncedSnapshot);
+        return;
       }
+
+      syncRuntimeWithClock(new Date());
     };
     const handlePageHide = () => {
-      flushRuntimeState();
+      const syncedSnapshot = syncRuntimeWithClock(new Date());
+      flushRuntimeState(syncedSnapshot);
     };
 
     document.addEventListener("visibilitychange", handlePageVisibilityChange);
@@ -529,7 +786,7 @@ export default function TraningPage() {
       document.removeEventListener("visibilitychange", handlePageVisibilityChange);
       window.removeEventListener("pagehide", handlePageHide);
     };
-  }, [flushRuntimeState, workoutDraft]);
+  }, [flushRuntimeState, syncRuntimeWithClock, workoutDraft]);
 
   if (!currentUser) {
     return <Navigate to={ROUTES.LOGIN} replace />;
@@ -540,6 +797,8 @@ export default function TraningPage() {
   }
 
   function handleFinishSet() {
+    const actionTimestamp = new Date().toISOString();
+
     setSetWeightsByExercise((previousValue) =>
       previousValue.map((weights, index) => {
         if (index !== currentExerciseIndex) {
@@ -585,6 +844,8 @@ export default function TraningPage() {
     setPendingTransition({
       type: isExerciseCompleted ? "nextExercise" : "nextSet",
     });
+    setLastTickAt(actionTimestamp);
+    setPausedAt(null);
   }
 
   function handlePreviousExercise() {
@@ -593,6 +854,7 @@ export default function TraningPage() {
     }
 
     const previousIndex = currentExerciseIndex - 1;
+    const actionTimestamp = new Date().toISOString();
 
     setCompletedSetsByExercise((previousValue) =>
       previousValue.map((value, index) => (index >= previousIndex ? 0 : value)),
@@ -617,12 +879,16 @@ export default function TraningPage() {
     setRestRemainingSeconds(
       workoutDraft.exercises[previousIndex]?.restSeconds ?? REST_DURATION_SECONDS,
     );
+    setLastTickAt(actionTimestamp);
+    setPausedAt(null);
   }
 
   function handleNextExercise() {
     if (phase === "rest" || isPaused) {
       return;
     }
+
+    const actionTimestamp = new Date().toISOString();
 
     if (currentExerciseIndex >= workoutDraft.exercises.length - 1) {
       const nextCompletedSetsByExercise = completedSetsByExercise.map(
@@ -646,6 +912,8 @@ export default function TraningPage() {
       workoutDraft.exercises[currentExerciseIndex + 1]?.restSeconds ??
         REST_DURATION_SECONDS,
     );
+    setLastTickAt(actionTimestamp);
+    setPausedAt(null);
   }
 
   function handlePrimaryAction() {
@@ -688,25 +956,38 @@ export default function TraningPage() {
       return;
     }
 
+    const actionTimestamp = new Date().toISOString();
+
     if (pendingTransition?.type === "finish") {
       finishWorkout();
       return;
     }
 
     applyPendingTransition(pendingTransition);
+    setLastTickAt(actionTimestamp);
+    setPausedAt(null);
   }
 
   function handleTogglePause() {
-    setIsPaused((previousValue) => !previousValue);
+    const syncedSnapshot = syncRuntimeWithClock(new Date());
+    const isCurrentlyPaused = syncedSnapshot?.isPaused ?? isPaused;
+    const nextPausedValue = !isCurrentlyPaused;
+    const actionTimestamp = new Date().toISOString();
+
+    setIsPaused(nextPausedValue);
+    setPausedAt(nextPausedValue ? actionTimestamp : null);
+    setLastTickAt(actionTimestamp);
   }
 
   function handleContinueLater() {
+    const syncedSnapshot = syncRuntimeWithClock(new Date());
     setIsExitPromptOpen(false);
-    flushRuntimeState();
+    flushRuntimeState(syncedSnapshot);
     navigate(ROUTES.HOME);
   }
 
   function handleSavePartialWorkout() {
+    syncRuntimeWithClock(new Date());
     setIsExitPromptOpen(false);
     finishWorkout(completedSetsByExercise);
   }
@@ -824,7 +1105,7 @@ export default function TraningPage() {
 
           <h2
             className="mt-2 h-16 overflow-hidden text-xl font-medium text-white"
-            style={{ ...clampTwoLinesStyle, lineHeight: "15px" }}
+            style={{ ...clampTwoLinesStyle, lineHeight: "18px" }}
           >
             {currentExercise.name}
           </h2>
@@ -947,7 +1228,7 @@ export default function TraningPage() {
               overflow: "hidden",
               textOverflow: "ellipsis",
               whiteSpace: "nowrap",
-              lineHeight: "15px",
+              lineHeight: "18px",
             }}
           >
             {nextExercise ? nextExercise.name : "Финиш тренировки"}

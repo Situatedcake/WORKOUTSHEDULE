@@ -10,6 +10,26 @@ function normalizeString(value, fallbackValue = "") {
   return typeof value === "string" && value.trim() ? value.trim() : fallbackValue;
 }
 
+function cloneValue(value) {
+  return JSON.parse(JSON.stringify(value));
+}
+
+function formatExerciseCountLabel(count) {
+  if (count % 10 === 1 && count % 100 !== 11) {
+    return `${count} упражнение`;
+  }
+
+  if (
+    count % 10 >= 2 &&
+    count % 10 <= 4 &&
+    (count % 100 < 12 || count % 100 > 14)
+  ) {
+    return `${count} упражнения`;
+  }
+
+  return `${count} упражнений`;
+}
+
 function buildExerciseSignature(exercise = {}) {
   return [
     normalizeString(exercise.id),
@@ -93,6 +113,27 @@ function calculateChangedExerciseSlots(previousPlan = null, nextPlan = null) {
   }, 0);
 }
 
+function getExerciseCount(trainingPlan = null) {
+  return (trainingPlan?.sessions ?? []).reduce(
+    (total, session) => total + (session.exercises?.length ?? 0),
+    0,
+  );
+}
+
+function buildManualVolumeReason(previousExercise, nextExercise) {
+  if (!previousExercise) {
+    return "Упражнение добавлено вручную, поэтому система учитывает его как ручное изменение плана.";
+  }
+
+  if (
+    normalizeString(previousExercise.name) !== normalizeString(nextExercise?.name)
+  ) {
+    return "Упражнение заменено вручную, поэтому блок адаптации показывает его как ручное изменение.";
+  }
+
+  return "План обновлён вручную, поэтому упражнение помечено как ручная корректировка.";
+}
+
 function normalizeVolumeBreakdown(breakdown = {}) {
   return {
     progressing: normalizeNumber(breakdown.progressing, 0),
@@ -136,6 +177,116 @@ export function normalizeTrainingPlanAdaptationHistory(history = []) {
         .map(normalizeTrainingPlanAdaptationEvent)
         .sort((left, right) => left.createdAt.localeCompare(right.createdAt))
     : [];
+}
+
+export function annotateManualTrainingPlanChanges(previousPlan = null, nextPlan = null) {
+  if (!nextPlan?.sessions?.length) {
+    return nextPlan;
+  }
+
+  const annotatedPlan = cloneValue(nextPlan);
+
+  annotatedPlan.sessions = (annotatedPlan.sessions ?? []).map(
+    (session, sessionIndex) => {
+      const previousSession =
+        (previousPlan?.sessions ?? []).find(
+          (item) =>
+            normalizeString(item?.id, `session_${sessionIndex + 1}`) ===
+            normalizeString(session?.id, `session_${sessionIndex + 1}`),
+        ) ??
+        previousPlan?.sessions?.[sessionIndex] ??
+        null;
+
+      return {
+        ...session,
+        exercises: (session.exercises ?? []).map((exercise, exerciseIndex) => {
+          const previousExercise = previousSession?.exercises?.[exerciseIndex] ?? null;
+          const currentTrend = normalizeString(exercise?.volumeTrend, "base");
+          const didSlotChange =
+            !previousExercise ||
+            buildExerciseSignature(previousExercise) !==
+              buildExerciseSignature(exercise);
+
+          if (!didSlotChange || currentTrend === "manual") {
+            return exercise;
+          }
+
+          if (currentTrend === "progressing" || currentTrend === "stalled") {
+            return exercise;
+          }
+
+          return {
+            ...exercise,
+            volumeTrend: "manual",
+            volumeReason:
+              normalizeString(exercise?.volumeReason) ||
+              buildManualVolumeReason(previousExercise, exercise),
+          };
+        }),
+      };
+    },
+  );
+
+  return annotatedPlan;
+}
+
+export function buildManualTrainingPlanAdaptationSummary(
+  previousPlan = null,
+  nextPlan = null,
+) {
+  if (!nextPlan) {
+    return [];
+  }
+
+  const summary = [];
+  const previousExerciseCount = getExerciseCount(previousPlan);
+  const nextExerciseCount = getExerciseCount(nextPlan);
+  const changedExercisesCount = calculateChangedExerciseSlots(previousPlan, nextPlan);
+  const manualVolumeBreakdown = buildTrainingPlanVolumeBreakdown(nextPlan);
+
+  if (
+    normalizeString(previousPlan?.focusLabel) &&
+    normalizeString(previousPlan?.focusLabel) !== normalizeString(nextPlan?.focusLabel)
+  ) {
+    summary.push(`Акцент программы изменён на «${nextPlan.focusLabel}».`);
+  }
+
+  if (
+    normalizeNumber(previousPlan?.workoutsPerWeek, 0) !==
+    normalizeNumber(nextPlan?.workoutsPerWeek, 0)
+  ) {
+    summary.push(`Частота обновлена: ${nextPlan.workoutsPerWeek} тренировки в неделю.`);
+  }
+
+  if (changedExercisesCount > 0) {
+    summary.push(
+      `Ручная правка затронула ${formatExerciseCountLabel(changedExercisesCount)}.`,
+    );
+  }
+
+  if (nextExerciseCount > previousExerciseCount) {
+    summary.push(
+      `В программу добавили ${formatExerciseCountLabel(
+        nextExerciseCount - previousExerciseCount,
+      )}.`,
+    );
+  } else if (previousExerciseCount > nextExerciseCount) {
+    summary.push(
+      `Из программы убрали ${formatExerciseCountLabel(
+        previousExerciseCount - nextExerciseCount,
+      )}.`,
+    );
+  }
+
+  if (manualVolumeBreakdown.manual > 0) {
+    summary.push(
+      `Блок адаптации пометил ${formatExerciseCountLabel(
+        manualVolumeBreakdown.manual,
+      )} как ручные изменения.`,
+    );
+  }
+
+  return summary.slice(0, 4);
 }
 
 export function createTrainingPlanAdaptationEvent({

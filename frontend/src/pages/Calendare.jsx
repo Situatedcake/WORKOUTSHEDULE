@@ -4,8 +4,8 @@ import { useAuth } from "../hooks/useAuth";
 import {
   DEFAULT_WORKOUT_TIME,
   formatDateKey,
-  getNearestScheduledWorkout,
   getMonthDays,
+  getNearestScheduledWorkout,
 } from "../shared/workoutSchedule";
 
 const weekDays = ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"];
@@ -104,14 +104,20 @@ function getAvailableTimeOptionsForDate(selectedDate, today) {
 }
 
 export default function Calendare() {
-  const { currentUser, scheduleCurrentUserWorkout, cancelCurrentUserWorkout } =
-    useAuth();
+  const {
+    currentUser,
+    scheduleCurrentUserWorkout,
+    rescheduleCurrentUserWorkout,
+    cancelCurrentUserWorkout,
+  } = useAuth();
   const [currentMonthDate, setCurrentMonthDate] = useState(() => new Date());
   const [selectedDate, setSelectedDate] = useState("");
   const [selectedTime, setSelectedTime] = useState(DEFAULT_WORKOUT_TIME);
+  const [rescheduleTime, setRescheduleTime] = useState(DEFAULT_WORKOUT_TIME);
   const [scheduleError, setScheduleError] = useState("");
   const [isScheduling, setIsScheduling] = useState(false);
   const [isCancelConfirmOpen, setIsCancelConfirmOpen] = useState(false);
+  const [isRescheduleOpen, setIsRescheduleOpen] = useState(false);
   const [hasFocusedNearestMonth, setHasFocusedNearestMonth] = useState(false);
 
   const monthDays = useMemo(
@@ -137,15 +143,28 @@ export default function Calendare() {
     () => getNearestScheduledWorkout(currentUser?.scheduledWorkouts ?? []),
     [currentUser?.scheduledWorkouts],
   );
-  const availableTimeOptions = useMemo(() => {
-    return getAvailableTimeOptionsForDate(selectedDate, today);
-  }, [selectedDate, today]);
+  const availableTimeOptions = useMemo(
+    () => getAvailableTimeOptionsForDate(selectedDate, today),
+    [selectedDate, today],
+  );
   const todayTimeOptions = useMemo(
     () => getAvailableTimeOptionsForDate(today, today),
     [today],
   );
+  const rescheduleTimeOptions = useMemo(
+    () =>
+      getAvailableTimeOptionsForDate(selectedWorkout?.date ?? today, today),
+    [selectedWorkout?.date, today],
+  );
 
   const selectedTimeIsAvailable = availableTimeOptions.includes(selectedTime);
+  const rescheduleTimeIsAvailable =
+    rescheduleTimeOptions.includes(rescheduleTime);
+  const canRescheduleSelectedWorkout = Boolean(
+    selectedWorkout &&
+      (selectedWorkout.status ?? "planned") === "planned" &&
+      selectedWorkout.date === today,
+  );
 
   useEffect(() => {
     if (!selectedTimeIsAvailable && availableTimeOptions.length > 0) {
@@ -154,10 +173,30 @@ export default function Calendare() {
   }, [availableTimeOptions, selectedTime, selectedTimeIsAvailable]);
 
   useEffect(() => {
+    if (!rescheduleTimeIsAvailable && rescheduleTimeOptions.length > 0) {
+      setRescheduleTime(rescheduleTimeOptions[0]);
+    }
+  }, [rescheduleTime, rescheduleTimeIsAvailable, rescheduleTimeOptions]);
+
+  useEffect(() => {
     if (isCancelConfirmOpen && !selectedWorkout) {
       setIsCancelConfirmOpen(false);
     }
   }, [isCancelConfirmOpen, selectedWorkout]);
+
+  useEffect(() => {
+    if (!selectedWorkout || !canRescheduleSelectedWorkout) {
+      setIsRescheduleOpen(false);
+      return;
+    }
+
+    setRescheduleTime(selectedWorkout.time ?? DEFAULT_WORKOUT_TIME);
+  }, [
+    canRescheduleSelectedWorkout,
+    selectedWorkout,
+    selectedWorkout?.id,
+    selectedWorkout?.time,
+  ]);
 
   useEffect(() => {
     if (hasFocusedNearestMonth || !nearestWorkout?.date) {
@@ -250,6 +289,30 @@ export default function Calendare() {
         error instanceof Error
           ? error.message
           : "Не удалось отменить тренировку.",
+      );
+    } finally {
+      setIsScheduling(false);
+    }
+  }
+
+  async function handleRescheduleWorkout() {
+    if (!selectedWorkout) {
+      return;
+    }
+
+    setIsScheduling(true);
+    setScheduleError("");
+
+    try {
+      await rescheduleCurrentUserWorkout(selectedWorkout.id, {
+        time: rescheduleTime,
+      });
+      setIsRescheduleOpen(false);
+    } catch (error) {
+      setScheduleError(
+        error instanceof Error
+          ? error.message
+          : "Не удалось перенести тренировку.",
       );
     } finally {
       setIsScheduling(false);
@@ -472,14 +535,77 @@ export default function Calendare() {
                 </p>
               </div>
             ) : (
-              <button
-                type="button"
-                onClick={() => setIsCancelConfirmOpen(true)}
-                disabled={isScheduling}
-                className="mt-4 text-sm font-medium text-[#FF7D7D] disabled:opacity-50"
-              >
-                Отменить тренировку
-              </button>
+              <div className="mt-4 flex flex-col gap-3">
+                {canRescheduleSelectedWorkout ? (
+                  <div className="rounded-2xl bg-[#12151C] px-4 py-4">
+                    <div className="flex items-start justify-between gap-3">
+                      <div>
+                        <p className="text-sm font-medium text-white">
+                          Перенести тренировку
+                        </p>
+                        <p className="mt-1 text-sm leading-6 text-[#8E97A8]">
+                          Перенос доступен только по времени в день тренировки и
+                          не влияет на статистику.
+                        </p>
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setIsRescheduleOpen((previousValue) => !previousValue)
+                        }
+                        className="rounded-2xl border border-[#2A3140] px-3 py-2 text-sm text-white"
+                      >
+                        {isRescheduleOpen ? "Скрыть" : "Перенести"}
+                      </button>
+                    </div>
+
+                    {isRescheduleOpen ? (
+                      <div className="mt-4 flex flex-col gap-3">
+                        <label className="flex flex-col gap-2">
+                          <span className="text-[11px] uppercase tracking-[0.18em] text-[#8E97A8]">
+                            Время
+                          </span>
+                          <select
+                            value={rescheduleTime}
+                            onChange={(event) =>
+                              setRescheduleTime(event.target.value)
+                            }
+                            className="rounded-xl border border-[#2A3140] bg-[#0B0E15] px-3 py-2 text-sm text-white outline-none"
+                          >
+                            {rescheduleTimeOptions.map((timeOption) => (
+                              <option
+                                key={`reschedule_${timeOption}`}
+                                value={timeOption}
+                              >
+                                {timeOption}
+                              </option>
+                            ))}
+                          </select>
+                        </label>
+
+                        <button
+                          type="button"
+                          onClick={() => void handleRescheduleWorkout()}
+                          disabled={isScheduling || rescheduleTimeOptions.length === 0}
+                          className="rounded-2xl bg-[#01BB96] px-4 py-3 text-sm font-medium text-[#000214] disabled:opacity-50"
+                        >
+                          Сохранить перенос
+                        </button>
+                      </div>
+                    ) : null}
+                  </div>
+                ) : null}
+
+                <button
+                  type="button"
+                  onClick={() => setIsCancelConfirmOpen(true)}
+                  disabled={isScheduling}
+                  className="text-left text-sm font-medium text-[#FF7D7D] disabled:opacity-50"
+                >
+                  Отменить тренировку
+                </button>
+              </div>
             )}
           </section>
         ) : selectedDate ? (
@@ -498,10 +624,12 @@ export default function Calendare() {
         <div className="rounded-2xl bg-[#0B0E15] px-4 py-4 text-sm leading-6 text-[#8E97A8]">
           Запланированные дни закрашиваются. Если добавить тренировку на более
           раннюю дату, следующий порядок автоматически перестроится по всей
-          программе. Если тренировка не выполнена до 00:00 следующего дня, она
-          автоматически считается пропущенной.
+          программе. Сегодняшнюю тренировку можно перенести только по времени в
+          пределах этого дня. Если тренировка не выполнена до 00:00 следующего
+          дня, она автоматически считается пропущенной.
         </div>
       </section>
+
       {isCancelConfirmOpen && selectedWorkout ? (
         <div className="fixed inset-0 z-30 flex items-end justify-center bg-[#030712]/80 px-5 pb-6 pt-20">
           <div className="w-full max-w-md rounded-[28px] border border-[#2A3140] bg-[#12151C] p-5">
@@ -512,9 +640,8 @@ export default function Calendare() {
               Убрать тренировку из календаря?
             </h2>
             <p className="mt-2 text-sm leading-6 text-[#8E97A8]">
-              Тренировка на {selectedWorkout.date} в {selectedWorkout.time}{" "}
-              будет удалена из расписания, а порядок следующих дней
-              пересоберётся.
+              Тренировка на {selectedWorkout.date} в {selectedWorkout.time} будет
+              удалена из расписания, а порядок следующих дней пересоберётся.
             </p>
 
             <div className="mt-5 flex flex-col gap-3">

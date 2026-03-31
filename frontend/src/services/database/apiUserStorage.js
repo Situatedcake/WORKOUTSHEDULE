@@ -118,6 +118,18 @@ export const apiUserStorage = {
     return payload.user ?? null;
   },
 
+  async rescheduleWorkout(userId, scheduledWorkoutId, workoutPayload) {
+    const payload = await requestJson(
+      `/users/${encodeURIComponent(userId)}/scheduled-workouts/${encodeURIComponent(scheduledWorkoutId)}`,
+      {
+        method: "PATCH",
+        body: JSON.stringify(workoutPayload),
+      },
+    );
+
+    return payload.user ?? null;
+  },
+
   async cancelWorkout(userId, scheduledWorkoutId) {
     const payload = await requestJson(
       `/users/${encodeURIComponent(userId)}/scheduled-workouts/${encodeURIComponent(scheduledWorkoutId)}`,

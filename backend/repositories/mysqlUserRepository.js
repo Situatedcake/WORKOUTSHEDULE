@@ -3,6 +3,7 @@ import { getMySqlPool } from "../db/mysqlPool.js";
 import {
   cancelWorkout as removeScheduledWorkout,
   rebalanceScheduledWorkouts,
+  rescheduleWorkout as updateScheduledWorkout,
   scheduleWorkout as addScheduledWorkout,
 } from "../shared/workoutSchedule.js";
 import {
@@ -386,6 +387,37 @@ export const mysqlUserRepository = {
     return this.getById(userId);
   },
 
+  async rescheduleWorkout(userId, scheduledWorkoutId, { date, time }) {
+    const currentUserRow = await findUserRowById(userId);
+
+    if (!currentUserRow) {
+      return null;
+    }
+
+    const syncResult = syncUserExpiredWorkouts(mapPublicUser(currentUserRow));
+    const currentUser = syncResult.user;
+    const scheduledWorkouts = updateScheduledWorkout({
+      scheduledWorkouts: currentUser.scheduledWorkouts ?? [],
+      trainingPlan: currentUser.trainingPlan,
+      scheduledWorkoutId,
+      date,
+      time,
+    });
+    const pool = getMySqlPool();
+    const timestamp = new Date().toISOString().slice(0, 19).replace("T", " ");
+
+    await pool.execute(
+      `
+        UPDATE users
+        SET scheduled_workouts_json = ?, updated_at = ?
+        WHERE id = ?
+      `,
+      [JSON.stringify(scheduledWorkouts), timestamp, userId],
+    );
+
+    return this.getById(userId);
+  },
+
   async cancelWorkout(userId, scheduledWorkoutId) {
     const currentUserRow = await findUserRowById(userId);
 
@@ -402,7 +434,7 @@ export const mysqlUserRepository = {
     );
 
     if (!scheduledWorkout) {
-      throw new Error("РўСЂРµРЅРёСЂРѕРІРєР° РЅРµ РЅР°Р№РґРµРЅР° РІ РєР°Р»РµРЅРґР°СЂРµ.");
+      throw new Error("Тренировка не найдена в календаре.");
     }
 
     const scheduledWorkouts = removeScheduledWorkout({
@@ -462,7 +494,7 @@ export const mysqlUserRepository = {
     );
 
     if (!scheduledWorkout) {
-      throw new Error("РўСЂРµРЅРёСЂРѕРІРєР° РЅРµ РЅР°Р№РґРµРЅР° РІ РєР°Р»РµРЅРґР°СЂРµ.");
+      throw new Error("Тренировка не найдена в календаре.");
     }
 
     const skippedAt = new Date().toISOString();

@@ -27,6 +27,40 @@ function createScheduledWorkoutId() {
   return `scheduled_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
 }
 
+function validateWorkoutDateAndTime({
+  scheduledWorkouts = [],
+  date,
+  time = DEFAULT_WORKOUT_TIME,
+  ignoreWorkoutId = null,
+}) {
+  if (!date) {
+    throw new Error("Дата тренировки обязательна.");
+  }
+
+  const today = formatDateKey(new Date());
+
+  if (date < today) {
+    throw new Error("Нельзя планировать тренировку на прошедшую дату.");
+  }
+
+  if (date === today) {
+    const currentHour = new Date().getHours();
+    const selectedHour = getTimeHour(time);
+
+    if (Number.isNaN(selectedHour) || selectedHour < currentHour) {
+      throw new Error("На сегодня можно выбрать только не прошедшее время.");
+    }
+  }
+
+  if (
+    scheduledWorkouts.some(
+      (workout) => workout.date === date && workout.id !== ignoreWorkoutId,
+    )
+  ) {
+    throw new Error("На этот день уже запланирована тренировка.");
+  }
+}
+
 export function getMonthDays(currentMonthDate) {
   const year = currentMonthDate.getFullYear();
   const month = currentMonthDate.getMonth();
@@ -51,8 +85,14 @@ export function formatWorkoutRelativeLabel(workout, now = new Date()) {
     return "Ближайшая тренировка не запланирована";
   }
 
-  const workoutDate = new Date(`${workout.date}T${workout.time ?? DEFAULT_WORKOUT_TIME}:00`);
-  const currentDateStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const workoutDate = new Date(
+    `${workout.date}T${workout.time ?? DEFAULT_WORKOUT_TIME}:00`,
+  );
+  const currentDateStart = new Date(
+    now.getFullYear(),
+    now.getMonth(),
+    now.getDate(),
+  );
   const workoutDateStart = new Date(
     workoutDate.getFullYear(),
     workoutDate.getMonth(),
@@ -84,15 +124,25 @@ export function getNearestScheduledWorkout(
   scheduledWorkouts = [],
   now = new Date(),
 ) {
-  return [...scheduledWorkouts]
+  const todayDateKey = formatDateKey(now);
+  const plannedWorkouts = [...scheduledWorkouts]
     .filter((workout) => (workout.status ?? "planned") === "planned")
-    .sort(compareScheduledWorkouts)
-    .find((workout) => {
+    .sort(compareScheduledWorkouts);
+  const plannedWorkoutForToday =
+    plannedWorkouts.find((workout) => workout.date === todayDateKey) ?? null;
+
+  if (plannedWorkoutForToday) {
+    return plannedWorkoutForToday;
+  }
+
+  return (
+    plannedWorkouts.find((workout) => {
       const workoutDate = new Date(
         `${workout.date}T${workout.time ?? DEFAULT_WORKOUT_TIME}:00`,
       );
       return workoutDate >= now;
-    }) ?? null;
+    }) ?? null
+  );
 }
 
 export function rebalanceScheduledWorkouts({
@@ -147,28 +197,11 @@ export function scheduleWorkout({
     throw new Error("Сначала составьте программу тренировок.");
   }
 
-  if (!date) {
-    throw new Error("Дата тренировки обязательна.");
-  }
-
-  const today = formatDateKey(new Date());
-
-  if (date < today) {
-    throw new Error("Нельзя планировать тренировку на прошедшую дату.");
-  }
-
-  if (date === today) {
-    const currentHour = new Date().getHours();
-    const selectedHour = getTimeHour(time);
-
-    if (Number.isNaN(selectedHour) || selectedHour < currentHour) {
-      throw new Error("На сегодня можно выбрать только не прошедшее время.");
-    }
-  }
-
-  if (scheduledWorkouts.some((workout) => workout.date === date)) {
-    throw new Error("На этот день уже запланирована тренировка.");
-  }
+  validateWorkoutDateAndTime({
+    scheduledWorkouts,
+    date,
+    time,
+  });
 
   const nextWorkouts = [
     ...scheduledWorkouts,
@@ -180,6 +213,65 @@ export function scheduleWorkout({
       createdAt: new Date().toISOString(),
     },
   ];
+
+  return rebalanceScheduledWorkouts({
+    scheduledWorkouts: nextWorkouts,
+    trainingPlan,
+  });
+}
+
+export function rescheduleWorkout({
+  scheduledWorkouts = [],
+  trainingPlan,
+  scheduledWorkoutId,
+  date,
+  time = DEFAULT_WORKOUT_TIME,
+}) {
+  if (!scheduledWorkoutId) {
+    throw new Error("Не удалось определить тренировку для переноса.");
+  }
+
+  const currentWorkout = scheduledWorkouts.find(
+    (workout) => workout.id === scheduledWorkoutId,
+  );
+
+  if (!currentWorkout) {
+    throw new Error("Тренировка не найдена в календаре.");
+  }
+
+  if ((currentWorkout.status ?? "planned") !== "planned") {
+    throw new Error("Можно переносить только запланированную тренировку.");
+  }
+
+  const nextDate = String(date ?? currentWorkout.date ?? "").trim();
+
+  if (!nextDate) {
+    throw new Error("Не удалось определить дату тренировки.");
+  }
+
+  if (nextDate !== currentWorkout.date) {
+    throw new Error(
+      "Сейчас можно переносить тренировку только по времени в пределах этого дня.",
+    );
+  }
+
+  validateWorkoutDateAndTime({
+    scheduledWorkouts,
+    date: nextDate,
+    time,
+    ignoreWorkoutId: scheduledWorkoutId,
+  });
+
+  const nextWorkouts = scheduledWorkouts.map((workout) =>
+    workout.id === scheduledWorkoutId
+      ? {
+          ...workout,
+          date: nextDate,
+          time,
+          updatedAt: new Date().toISOString(),
+        }
+      : workout,
+  );
 
   return rebalanceScheduledWorkouts({
     scheduledWorkouts: nextWorkouts,

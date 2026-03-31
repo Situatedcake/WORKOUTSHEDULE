@@ -13,7 +13,11 @@ import {
   isProductiveWorkoutStatus,
   normalizeWorkoutHistory,
 } from "./services/workoutHistory.js";
-import { createTrainingPlanAdaptationEvent } from "./services/trainingPlanAdaptationHistory.js";
+import {
+  annotateManualTrainingPlanChanges,
+  buildManualTrainingPlanAdaptationSummary,
+  createTrainingPlanAdaptationEvent,
+} from "./services/trainingPlanAdaptationHistory.js";
 import { buildTrainingFeatures } from "./services/trainingFeatureBuilder.js";
 import { normalizeTrainingMlFeedbackHistory } from "./services/trainingMlFeedback.js";
 import { buildWorkoutStatsPayload } from "./services/workoutStats.js";
@@ -523,27 +527,34 @@ export function createServerApp({ userRepository, databaseProvider }) {
       return;
     }
 
-    const trainingPlan =
+    const isPrebuiltTrainingPlan =
       prebuiltTrainingPlan &&
       typeof prebuiltTrainingPlan === "object" &&
-      Array.isArray(prebuiltTrainingPlan.sessions)
-        ? enrichTrainingPlanVersion(user.trainingPlan, prebuiltTrainingPlan, "manual_update")
-        : enrichTrainingPlanVersion(user.trainingPlan, buildTrainingPlan({
+      Array.isArray(prebuiltTrainingPlan.sessions);
+    const rawTrainingPlan = isPrebuiltTrainingPlan
+      ? enrichTrainingPlanVersion(user.trainingPlan, prebuiltTrainingPlan, "manual_update")
+      : enrichTrainingPlanVersion(
+          user.trainingPlan,
+          buildTrainingPlan({
             workoutsPerWeek,
             focusKey,
             trainingLevel: user.trainingLevel,
             sessionSelections,
-          }), "manual_builder");
+          }),
+          "manual_builder",
+        );
+    const trainingPlan = isPrebuiltTrainingPlan
+      ? annotateManualTrainingPlanChanges(user.trainingPlan, rawTrainingPlan)
+      : rawTrainingPlan;
     const mlFeedbackEvents = resolveTrainingMlFeedbackEvents(rawMlFeedbackEvents);
+    const adaptationSummary = isPrebuiltTrainingPlan
+      ? buildManualTrainingPlanAdaptationSummary(user.trainingPlan, trainingPlan)
+      : [];
     const adaptationEvent = createTrainingPlanAdaptationEvent({
       previousPlan: user.trainingPlan,
       nextPlan: trainingPlan,
-      trigger:
-        prebuiltTrainingPlan &&
-        typeof prebuiltTrainingPlan === "object" &&
-        Array.isArray(prebuiltTrainingPlan.sessions)
-          ? "manual_update"
-          : "manual_builder",
+      trigger: isPrebuiltTrainingPlan ? "manual_update" : "manual_builder",
+      adaptationSummary,
     });
     const updatedUser = await userRepository.saveTrainingPlan(
       request.params.id,
@@ -586,6 +597,38 @@ export function createServerApp({ userRepository, databaseProvider }) {
       });
     }
   });
+
+  app.patch(
+    "/api/users/:id/scheduled-workouts/:scheduledWorkoutId",
+    async (request, response) => {
+      const { date, time = DEFAULT_WORKOUT_TIME } = request.body ?? {};
+
+      try {
+        const user = await userRepository.rescheduleWorkout(
+          request.params.id,
+          request.params.scheduledWorkoutId,
+          {
+            date:
+              typeof date === "string" && date.trim().length > 0
+                ? String(date)
+                : undefined,
+            time: String(time),
+          },
+        );
+
+        if (!user) {
+          response.status(404).json({ message: "User not found." });
+          return;
+        }
+
+        response.json({ user });
+      } catch (error) {
+        response.status(400).json({
+          message: error instanceof Error ? error.message : "Reschedule failed.",
+        });
+      }
+    },
+  );
 
   app.delete(
     "/api/users/:id/scheduled-workouts/:scheduledWorkoutId",

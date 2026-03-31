@@ -749,7 +749,7 @@ export default function StartTraningPage() {
 
       {shouldShowEditor ? (
         <section className="mx-auto mt-8 flex w-full max-w-md flex-col gap-6 rounded-[28px] border border-[#2A3140] bg-[#12151C] p-6">
-          <div className="flex items-center gap-4">
+          <div className="order-2 flex items-center gap-4">
             <div className="rounded-2xl bg-[#0B0E15] p-3">
               <img src={clockIcon} alt="" aria-hidden="true" />
             </div>
@@ -765,7 +765,7 @@ export default function StartTraningPage() {
           </div>
 
           {hasFuturePlannedWorkouts ? (
-            <div className="rounded-2xl border border-[#3A4C62] bg-[#102338] px-4 py-4">
+            <div className="order-1 mb-6 rounded-2xl border border-[#3A4C62] bg-[#102338] px-4 py-4">
               <p className="text-xs uppercase tracking-[0.2em] text-[#8E97A8]">
                 Внимание
               </p>
@@ -1169,7 +1169,7 @@ export default function StartTraningPage() {
       ) : null}
 
       {isRebalancePromptOpen ? (
-        <div className="fixed inset-0 z-30 flex items-end justify-center bg-[#030712]/80 px-5 pb-6 pt-20">
+        <div className="fixed inset-0 z-30 flex items-end justify-center bg-[#030712]/80 px-5 pb-[calc(5.5rem+env(safe-area-inset-bottom))] pt-20">
           <div className="w-full max-w-md rounded-[28px] border border-[#2A3140] bg-[#12151C] p-5">
             <p className="text-xs uppercase tracking-[0.18em] text-[#8E97A8]">
               Перестройка календаря

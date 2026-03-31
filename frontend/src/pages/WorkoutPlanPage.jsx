@@ -11,8 +11,10 @@ import {
   getExerciseVolumeReasonTitle,
 } from "../shared/trainingPlanBuilder";
 import {
+  addWorkoutExercise,
   buildWorkoutDraft,
   formatDuration,
+  getAddableWorkoutExerciseOptions,
   removeWorkoutExercise,
   replaceWorkoutExercise,
   updateWorkoutExerciseSets,
@@ -210,12 +212,23 @@ export default function WorkoutPlanPage() {
   );
   const [workoutDraft, setWorkoutDraft] = useState(initialDraft);
   const [expandedExerciseIndex, setExpandedExerciseIndex] = useState(null);
+  const [exerciseToAddName, setExerciseToAddName] = useState("");
   const [pendingFeedbackEvents, setPendingFeedbackEvents] = useState([]);
   const activeWorkoutRuntime = useMemo(() => getActiveWorkoutRuntime(), []);
   const latestExerciseWeightMap = useMemo(
     () => buildLatestExerciseWeightMap(currentUser?.workoutHistory ?? []),
     [currentUser?.workoutHistory],
   );
+  const addableExerciseOptions = useMemo(
+    () => getAddableWorkoutExerciseOptions(workoutDraft),
+    [workoutDraft],
+  );
+  const selectedExerciseToAddName =
+    addableExerciseOptions.some(
+      (exerciseOption) => exerciseOption.name === exerciseToAddName,
+    )
+      ? exerciseToAddName
+      : addableExerciseOptions[0]?.name ?? "";
   const hasRuntimeForCurrentWorkout = Boolean(
     workoutDraft?.scheduledWorkoutId &&
       activeWorkoutRuntime?.scheduledWorkoutId === workoutDraft.scheduledWorkoutId,
@@ -224,6 +237,7 @@ export default function WorkoutPlanPage() {
   useEffect(() => {
     const resetTimeoutId = window.setTimeout(() => {
       setWorkoutDraft(initialDraft);
+      setExerciseToAddName("");
       setPendingFeedbackEvents([]);
     }, 0);
 
@@ -362,6 +376,16 @@ export default function WorkoutPlanPage() {
     );
   }
 
+  function handleAddExercise() {
+    if (!selectedExerciseToAddName) {
+      return;
+    }
+
+    setWorkoutDraft((previousDraft) =>
+      addWorkoutExercise(previousDraft, selectedExerciseToAddName),
+    );
+  }
+
   async function handleStartWorkout() {
     if (pendingFeedbackEvents.length > 0) {
       try {
@@ -390,7 +414,7 @@ export default function WorkoutPlanPage() {
   }
 
   return (
-    <PageShell className="pt-5 pb-36" showNavMenu={false}>
+    <PageShell className="pt-5 pb-44" showNavMenu={false}>
       <section className="mx-auto flex w-full max-w-md flex-col gap-5">
         <header className="flex items-center justify-between gap-3">
           <Link
@@ -598,13 +622,69 @@ export default function WorkoutPlanPage() {
             );
           })}
         </div>
+
+        {addableExerciseOptions.length > 0 ? (
+          <section className="rounded-[16px] border border-[#2A3140] bg-[#12151C] px-3 py-2.5">
+            <p className="hidden">
+              Добавить из рекомендаций
+            </p>
+            <p className="hidden">
+              Можно расширить тренировку упражнениями из рекомендованного
+              системой списка.
+            </p>
+            <p className="text-[9px] uppercase tracking-[0.16em] text-[#8E97A8]">
+              Добавить из рекомендаций
+            </p>
+            <p className="mt-1 text-[11px] leading-4 text-[#8E97A8]">
+              Можно расширить тренировку упражнениями из рекомендованного
+              системой списка.
+            </p>
+
+            <div className="mt-2.5 flex flex-col gap-2">
+              <select
+                value={selectedExerciseToAddName}
+                onChange={(event) => setExerciseToAddName(event.target.value)}
+                className="rounded-[16px] border border-[#2A3140] bg-[#0B0E15] px-3 py-2 text-sm leading-5 text-white outline-none"
+              >
+                {addableExerciseOptions.map((exerciseOption, optionIndex) => (
+                  <option
+                    key={`${exerciseOption.id ?? exerciseOption.name}_${optionIndex}`}
+                    value={exerciseOption.name}
+                  >
+                    {exerciseOption.name}
+                  </option>
+                ))}
+              </select>
+
+              <button
+                type="button"
+                onClick={handleAddExercise}
+                data-label="Добавить упражнение"
+                aria-label="Добавить упражнение"
+                className="relative overflow-hidden rounded-[16px] border border-[#2A3140] bg-[#0B0E15] px-3 py-2 text-sm font-medium leading-5 text-transparent after:absolute after:inset-0 after:flex after:items-center after:justify-center after:text-white after:content-[attr(data-label)]"
+              >
+                Добавить упражнение
+              </button>
+            </div>
+          </section>
+        ) : null}
       </section>
 
-      <div className="fixed inset-x-0 bottom-[calc(2rem+env(safe-area-inset-bottom))] z-30 flex justify-center px-5">
+      <div className="fixed inset-x-0 bottom-[calc(0.75rem+env(safe-area-inset-bottom))] z-30 flex justify-center px-5">
         <button
           type="button"
           onClick={handleStartWorkout}
-          className="w-full max-w-md rounded-3xl bg-[#01BB96] px-5 py-4 text-base font-medium text-[#000214]"
+          data-label={
+            hasRuntimeForCurrentWorkout
+              ? `Продолжить тренировку • ${formatDuration(workoutDraft.totalEstimatedSeconds)}`
+              : `Начать тренировку • ${formatDuration(workoutDraft.totalEstimatedSeconds)}`
+          }
+          aria-label={
+            hasRuntimeForCurrentWorkout
+              ? `Продолжить тренировку • ${formatDuration(workoutDraft.totalEstimatedSeconds)}`
+              : `Начать тренировку • ${formatDuration(workoutDraft.totalEstimatedSeconds)}`
+          }
+          className="relative w-full max-w-md overflow-hidden rounded-3xl bg-[#01BB96] px-5 py-4 text-base font-medium text-transparent after:absolute after:inset-0 after:flex after:items-center after:justify-center after:px-5 after:text-center after:text-[#000214] after:content-[attr(data-label)]"
         >
           {hasRuntimeForCurrentWorkout
             ? `Продолжить тренировку • ${formatDuration(workoutDraft.totalEstimatedSeconds)}`
