@@ -7,6 +7,7 @@ import {
   formatWorkoutRelativeLabel,
   getNearestScheduledWorkout,
 } from "../shared/workoutSchedule";
+import { getMomentumMeta, getTierMeta } from "../shared/gamificationUi";
 
 function SettingsIcon() {
   return (
@@ -39,6 +40,13 @@ export default function UserPage() {
     () => getNearestScheduledWorkout(currentUser?.scheduledWorkouts ?? []),
     [currentUser?.scheduledWorkouts],
   );
+  const gamification = currentUser?.gamification ?? null;
+  const featuredAchievements = gamification?.achievements?.featured ?? [];
+  const nextAchievement = gamification?.achievements?.nextUp ?? null;
+  const tierMeta = gamification
+    ? getTierMeta(gamification.rating.tierKey)
+    : getTierMeta("starter");
+  const momentumMeta = getMomentumMeta(gamification?.momentum?.key ?? "starting");
 
   if (!isAuthReady) {
     return (
@@ -164,6 +172,161 @@ export default function UserPage() {
             </p>
           </div>
         </div>
+
+        {gamification ? (
+          <>
+            <div className="grid grid-cols-2 gap-3">
+              <div
+                className={`min-w-0 rounded-2xl border px-4 py-4 ${tierMeta.panelClassName}`}
+              >
+                <p className="text-xs uppercase tracking-[0.16em] text-[#8E97A8]">
+                  Рейтинг
+                </p>
+                <p className="mt-2 break-words text-2xl font-medium text-white">
+                  {gamification.rating.score}
+                </p>
+                <p className={`mt-1 text-sm ${tierMeta.accentClassName}`}>
+                  {gamification.rating.tierLabel}
+                </p>
+                <div className="mt-3 h-2 overflow-hidden rounded-full bg-[#1D222D]">
+                  <div
+                    className={`h-full rounded-full ${tierMeta.progressClassName}`}
+                    style={{
+                      width: `${gamification.rating.progressPercent}%`,
+                    }}
+                  />
+                </div>
+                <p className="mt-2 text-xs leading-5 text-[#8E97A8]">
+                  {gamification.rating.nextTierLabel
+                    ? `До ${gamification.rating.nextTierLabel}: ${gamification.rating.pointsToNextTier}`
+                    : "Максимальный ранг открыт"}
+                </p>
+              </div>
+
+              <div className="min-w-0 rounded-2xl bg-[#0B0E15] px-4 py-4">
+                <p className="text-xs uppercase tracking-[0.16em] text-[#8E97A8]">
+                  Достижения
+                </p>
+                <p className="mt-2 break-words text-2xl font-medium text-white">
+                  {gamification.achievements.unlockedCount}/
+                  {gamification.achievements.totalCount}
+                </p>
+                <p className="mt-1 text-sm text-[#8E97A8]">
+                  Открыто {gamification.achievements.completionPercent}%
+                </p>
+                <div className="mt-3 h-2 overflow-hidden rounded-full bg-[#1D222D]">
+                  <div
+                    className="h-full rounded-full bg-[#3B82F6]"
+                    style={{
+                      width: `${gamification.achievements.completionPercent}%`,
+                    }}
+                  />
+                </div>
+                <p className="mt-2 text-xs leading-5 text-[#8E97A8]">
+                  Серия: {gamification.summary.streakDays} дн.
+                </p>
+              </div>
+            </div>
+
+            <div className="rounded-2xl bg-[#0B0E15] px-4 py-4">
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="text-xs uppercase tracking-[0.16em] text-[#8E97A8]">
+                    Импульс
+                  </p>
+                  <p className={`mt-2 text-lg font-medium ${momentumMeta.accentClassName}`}>
+                    {gamification.momentum?.label ?? momentumMeta.label}
+                  </p>
+                  <p className="mt-1 break-words text-xs leading-5 text-[#8E97A8]">
+                    {gamification.momentum?.description}
+                  </p>
+                </div>
+                <span
+                  className={`shrink-0 rounded-full px-3 py-1 text-[10px] uppercase tracking-[0.14em] ${momentumMeta.badgeClassName}`}
+                >
+                  {gamification.summary.recentProductiveWorkoutsCount ?? 0} / 14 дн.
+                </span>
+              </div>
+            </div>
+
+            <div className="rounded-2xl bg-[#0B0E15] px-4 py-4">
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="text-sm text-[#8E97A8]">Зачатки прогресса</p>
+                  <p className="mt-1 text-xl font-medium text-white">
+                    Достижения и рейтинг
+                  </p>
+                </div>
+                <span className="rounded-full bg-[#12151C] px-3 py-1 text-xs text-[#8E97A8]">
+                  beta
+                </span>
+              </div>
+
+              <div className="mt-4 flex flex-col gap-3">
+                {featuredAchievements.map((achievement) => (
+                  <div
+                    key={achievement.id}
+                    className="rounded-2xl border border-[#2A3140] bg-[#12151C] px-4 py-3"
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <p className="break-words text-sm font-medium text-white">
+                          {achievement.title}
+                        </p>
+                        <p className="mt-1 break-words text-xs leading-5 text-[#8E97A8]">
+                          {achievement.description}
+                        </p>
+                      </div>
+                      <span
+                        className={`shrink-0 rounded-full px-2.5 py-1 text-[10px] uppercase tracking-[0.14em] ${
+                          achievement.unlocked
+                            ? "bg-[#143423] text-[#8CF0B8]"
+                            : "bg-[#1A1F2A] text-[#B9C1CF]"
+                        }`}
+                      >
+                        {achievement.unlocked
+                          ? "Открыто"
+                          : `${achievement.current}/${achievement.target}`}
+                      </span>
+                    </div>
+                    {!achievement.unlocked ? (
+                      <div className="mt-3 h-2 overflow-hidden rounded-full bg-[#1D222D]">
+                        <div
+                          className="h-full rounded-full"
+                          style={{
+                            width: `${achievement.progressPercent}%`,
+                            backgroundColor: achievement.accentColor,
+                          }}
+                        />
+                      </div>
+                    ) : null}
+                  </div>
+                ))}
+              </div>
+
+              {nextAchievement ? (
+                <div className="mt-4 rounded-2xl border border-dashed border-[#2A3140] px-4 py-3">
+                  <p className="text-xs uppercase tracking-[0.14em] text-[#8E97A8]">
+                    Следующая цель
+                  </p>
+                  <p className="mt-2 text-sm font-medium text-white">
+                    {nextAchievement.title}
+                  </p>
+                  <p className="mt-1 text-xs leading-5 text-[#8E97A8]">
+                    {nextAchievement.description}
+                  </p>
+                </div>
+              ) : null}
+
+              <Link
+                to={ROUTES.USER_ACHIEVEMENTS}
+                className="mt-4 block w-full min-w-0 rounded-3xl border border-[#2A3140] px-5 py-4 text-center text-sm font-medium leading-5 text-white"
+              >
+                Открыть экран достижений
+              </Link>
+            </div>
+          </>
+        ) : null}
 
         {currentUser.lastTestScore == null ? (
           <Link

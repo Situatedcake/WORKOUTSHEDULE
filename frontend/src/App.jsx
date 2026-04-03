@@ -2,6 +2,7 @@ import { Suspense, lazy } from "react";
 import { BrowserRouter, Route, Routes } from "react-router";
 
 import AppLoadingScreen from "./components/AppLoadingScreen";
+import GamificationCelebrationLayer from "./components/GamificationCelebrationLayer";
 import PlaceholderPage from "./components/PlaceholderPage";
 import { ROUTES } from "./constants/routes";
 import { useAuth } from "./hooks/useAuth";
@@ -22,6 +23,7 @@ const LoginPage = lazy(() => import("./pages/Auth/LoginPage"));
 const RegisterPage = lazy(() => import("./pages/Auth/RegisterPage"));
 const LibraryPage = lazy(() => import("./pages/LibraryPage"));
 const UserEditPage = lazy(() => import("./pages/UserEditPage"));
+const UserAchievementsPage = lazy(() => import("./pages/UserAchievementsPage"));
 const WorkoutPlanPage = lazy(() => import("./pages/WorkoutPlanPage"));
 const TraningPage = lazy(() => import("./pages/traningPage/TraningPage"));
 const FinishTrainingPage = lazy(() =>
@@ -41,7 +43,7 @@ function AppRouteFallback() {
 }
 
 export default function App() {
-  const { isAuthReady } = useAuth();
+  const { currentUser, isAuthReady } = useAuth();
 
   if (!isAuthReady) {
     return (
@@ -64,6 +66,10 @@ export default function App() {
           <Route path={ROUTES.STATS} element={<StatisticPage />} />
           <Route path={ROUTES.USER} element={<UserPage />} />
           <Route path={ROUTES.USER_EDIT} element={<UserEditPage />} />
+          <Route
+            path={ROUTES.USER_ACHIEVEMENTS}
+            element={<UserAchievementsPage />}
+          />
           <Route path={ROUTES.CALENDAR} element={<Calendare />} />
           <Route path={ROUTES.LIBRARY} element={<LibraryPage />} />
           <Route path={ROUTES.WORKOUT_PLAN} element={<WorkoutPlanPage />} />
@@ -90,6 +96,7 @@ export default function App() {
           />
         </Routes>
       </Suspense>
+      <GamificationCelebrationLayer key={currentUser?.id ?? "guest"} />
     </BrowserRouter>
   );
 }

@@ -15,6 +15,7 @@ import {
   getTrainingPlanAdaptationBreakdown,
   getTrainingPlanAdaptationHighlights,
 } from "../shared/trainingPlanBuilder";
+import { getMomentumMeta, getTierMeta } from "../shared/gamificationUi";
 import { buildWorkoutStats } from "../shared/workoutStats";
 import {
   formatDateKey,
@@ -217,6 +218,7 @@ function GraphPanel({ eyebrow, title, description, children, footer }) {
 export default function StatisticPage() {
   const location = useLocation();
   const { currentUser } = useAuth();
+  const gamification = currentUser?.gamification ?? null;
   const trainingPlan = currentUser?.trainingPlan ?? null;
   const trainingPlanAdaptationHistory =
     currentUser?.trainingPlanAdaptationHistory ?? [];
@@ -267,6 +269,10 @@ export default function StatisticPage() {
   const nextWorkoutDescription = nextWorkout
     ? `${nextWorkout.title}, ${nextWorkout.time}`
     : "Пока в календаре нет ближайшей запланированной тренировки.";
+  const tierMeta = gamification
+    ? getTierMeta(gamification.rating.tierKey)
+    : getTierMeta("starter");
+  const momentumMeta = getMomentumMeta(gamification?.momentum?.key ?? "starting");
 
   useEffect(() => {
     let isMounted = true;
@@ -380,6 +386,91 @@ export default function StatisticPage() {
         {statsError ? (
           <div className="rounded-2xl border border-[#5E4B1D] bg-[#2E2510] px-4 py-3 text-sm leading-6 text-[#F3D9A1]">
             Показываем локальную статистику, пока расширенные данные с сервера недоступны.
+          </div>
+        ) : null}
+
+        {gamification ? (
+          <div className={`rounded-[24px] border px-5 py-5 ${tierMeta.panelClassName}`}>
+            <div className="flex items-start justify-between gap-4">
+              <div className="min-w-0">
+                <p className="text-xs uppercase tracking-[0.18em] text-[#667085]">
+                  Рейтинг
+                </p>
+                <h2 className="mt-1 text-xl font-medium text-white">
+                  {gamification.rating.score} очков
+                </h2>
+                <p className={`mt-1 text-sm ${tierMeta.accentClassName}`}>
+                  {gamification.rating.tierLabel}
+                </p>
+              </div>
+
+              <span
+                className={`shrink-0 rounded-full border px-3 py-1 text-xs ${tierMeta.badgeClassName} ${tierMeta.borderClassName}`}
+              >
+                {gamification.achievements.unlockedCount}/
+                {gamification.achievements.totalCount}
+              </span>
+            </div>
+
+            <div className="mt-4 h-2 overflow-hidden rounded-full bg-[#1D222D]">
+              <div
+                className={`h-full rounded-full ${tierMeta.progressClassName}`}
+                style={{ width: `${gamification.rating.progressPercent}%` }}
+              />
+            </div>
+
+            <div className="mt-4 grid grid-cols-2 gap-3">
+              <div className="rounded-2xl bg-[#12151C] px-4 py-3">
+                <p className="text-xs uppercase tracking-[0.14em] text-[#667085]">
+                  До следующего ранга
+                </p>
+                <p className="mt-2 text-lg font-medium text-white">
+                  {gamification.rating.nextTierLabel
+                    ? gamification.rating.pointsToNextTier
+                    : 0}
+                </p>
+                <p className="mt-1 text-xs text-[#8E97A8]">
+                  {gamification.rating.nextTierLabel ?? "Максимальный ранг"}
+                </p>
+              </div>
+
+              <div className="rounded-2xl bg-[#12151C] px-4 py-3">
+                <p className="text-xs uppercase tracking-[0.14em] text-[#667085]">
+                  Следующая цель
+                </p>
+                <p className="mt-2 break-words text-sm font-medium leading-5 text-white">
+                  {gamification.achievements.nextUp?.title ?? "Все ключевые цели уже открыты"}
+                </p>
+              </div>
+            </div>
+
+            <div className="mt-4 rounded-2xl bg-[#12151C] px-4 py-3">
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="text-xs uppercase tracking-[0.14em] text-[#667085]">
+                    Импульс
+                  </p>
+                  <p className={`mt-2 text-sm font-medium ${momentumMeta.accentClassName}`}>
+                    {gamification.momentum?.label ?? momentumMeta.label}
+                  </p>
+                  <p className="mt-1 break-words text-xs leading-5 text-[#8E97A8]">
+                    {gamification.momentum?.description}
+                  </p>
+                </div>
+                <span
+                  className={`shrink-0 rounded-full px-3 py-1 text-[10px] uppercase tracking-[0.14em] ${momentumMeta.badgeClassName}`}
+                >
+                  {gamification.summary.recentProductiveWorkoutsCount ?? 0} / 14 дн.
+                </span>
+              </div>
+            </div>
+
+            <Link
+              to={ROUTES.USER_ACHIEVEMENTS}
+              className="mt-4 inline-flex w-full justify-center rounded-2xl border border-[#2A3140] px-4 py-3 text-sm font-medium text-white"
+            >
+              Открыть достижения
+            </Link>
           </div>
         ) : null}
 

@@ -1,5 +1,6 @@
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
+import { attachGamificationSnapshot } from "./services/gamification.js";
 
 const databaseFilePath = path.resolve(
   process.cwd(),
@@ -110,5 +111,5 @@ export function sanitizeUser(user) {
   }
 
   const { password: _password, ...publicUser } = user;
-  return cloneValue(publicUser);
+  return cloneValue(attachGamificationSnapshot(publicUser));
 }

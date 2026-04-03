@@ -64,11 +64,15 @@ export const apiUserStorage = {
 
   async updateTrainingResult(userId, { score, trainingLevel }) {
     try {
+      const nextPayload =
+        typeof trainingLevel === "string" && trainingLevel.trim()
+          ? { score, trainingLevel }
+          : { score };
       const payload = await requestJson(
         `/users/${encodeURIComponent(userId)}/training-result`,
         {
           method: "PATCH",
-          body: JSON.stringify({ score, trainingLevel }),
+          body: JSON.stringify(nextPayload),
         },
       );
 

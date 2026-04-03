@@ -1,6 +1,7 @@
 import seedDatabase from "../../data/mockDatabase.json";
-import { buildTrainingPlan } from "../../shared/trainingPlanBuilder";
+import { buildTrainingPlan } from "./mockTrainingPlanBuilder";
 import { buildWorkoutStats } from "../../shared/workoutStats";
+import { getTrainingLevelByScore } from "../../utils/trainingLevel";
 import {
   cancelWorkout as removeScheduledWorkout,
   rebalanceScheduledWorkouts,
@@ -691,9 +692,13 @@ export const mockUserStorage = {
     }
 
     const currentUser = database.users[userIndex];
+    const resolvedTrainingLevel =
+      typeof trainingLevel === "string" && trainingLevel.trim()
+        ? trainingLevel.trim()
+        : getTrainingLevelByScore(score);
     const nextUser = {
       ...currentUser,
-      trainingLevel,
+      trainingLevel: resolvedTrainingLevel,
       lastTestScore: score,
       updatedAt: new Date().toISOString(),
     };

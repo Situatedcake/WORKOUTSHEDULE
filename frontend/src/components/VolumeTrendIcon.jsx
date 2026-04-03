@@ -75,6 +75,38 @@ export default function VolumeTrendIcon({
     );
   }
 
+  if (iconType === "programmed") {
+    return (
+      <svg
+        viewBox="0 0 16 16"
+        fill="none"
+        xmlns="http://www.w3.org/2000/svg"
+        aria-hidden="true"
+        className={className}
+      >
+        <path
+          d="M3 4.5H13"
+          stroke="currentColor"
+          strokeWidth="1.5"
+          strokeLinecap="round"
+        />
+        <path
+          d="M3 8H10.5"
+          stroke="currentColor"
+          strokeWidth="1.5"
+          strokeLinecap="round"
+        />
+        <path
+          d="M3 11.5H8"
+          stroke="currentColor"
+          strokeWidth="1.5"
+          strokeLinecap="round"
+        />
+        <circle cx="11.5" cy="8" r="1.5" fill="currentColor" />
+      </svg>
+    );
+  }
+
   return (
     <svg
       viewBox="0 0 16 16"

@@ -1,4 +1,4 @@
-import { normalizeTag } from "./exerciseCatalogUtils.js";
+import { normalizeTag, normalizeTagArray } from "./exerciseCatalogUtils.js";
 import {
   formatExercisePrescription,
   getExercisePrescriptionDetails,
@@ -95,6 +95,14 @@ function shiftRangeValue(rangeValue, { minDelta = 0, maxDelta = 0 } = {}) {
   });
 }
 
+function didVolumeChange(previousDetails, nextDetails) {
+  return (
+    previousDetails.sets !== nextDetails.sets ||
+    previousDetails.repRange !== nextDetails.repRange ||
+    previousDetails.restSeconds !== nextDetails.restSeconds
+  );
+}
+
 function resolveVolumeTrend(historyEntries, baseSets) {
   if (historyEntries.length < 2) {
     return "base";
@@ -128,37 +136,43 @@ function resolveVolumeTrend(historyEntries, baseSets) {
   return "base";
 }
 
-function applyProgression({
-  baseDetails,
-  exerciseType,
-}) {
+function applyProgression({ baseDetails, exerciseType }) {
   if (exerciseType === "compound") {
     return {
       sets: Math.min(baseDetails.sets + 1, 6),
-      repRange: shiftRangeValue(baseDetails.repRange, { minDelta: -1, maxDelta: -1 }),
+      repRange: shiftRangeValue(baseDetails.repRange, {
+        minDelta: -1,
+        maxDelta: -1,
+      }),
       restSeconds: Math.min(baseDetails.restSeconds + 15, 240),
       volumeReason:
-        "Добавили объём и чуть повысили интенсивность, потому что в последних тренировках по упражнению был прогресс.",
+        "Добавили объём и немного усилили нагрузку, потому что по упражнению уже виден рабочий прогресс.",
     };
   }
 
   if (exerciseType === "cardio") {
     return {
       sets: Math.min(baseDetails.sets + 1, 2),
-      repRange: shiftRangeValue(baseDetails.repRange, { minDelta: 2, maxDelta: 4 }),
+      repRange: shiftRangeValue(baseDetails.repRange, {
+        minDelta: 2,
+        maxDelta: 4,
+      }),
       restSeconds: Math.max(baseDetails.restSeconds - 5, 20),
       volumeReason:
-        "Увеличили кардио-блок и сделали отдых чуть плотнее, потому что пользователь стабильно справляется с текущим объёмом.",
+        "Увеличили кардио-блок и сделали отдых чуть плотнее, потому что текущий объём уже даётся уверенно.",
     };
   }
 
   if (exerciseType === "core") {
     return {
       sets: Math.min(baseDetails.sets + 1, 5),
-      repRange: shiftRangeValue(baseDetails.repRange, { minDelta: 5, maxDelta: 10 }),
+      repRange: shiftRangeValue(baseDetails.repRange, {
+        minDelta: 5,
+        maxDelta: 10,
+      }),
       restSeconds: Math.max(baseDetails.restSeconds, 45),
       volumeReason:
-        "Добавили дополнительный подход и время под нагрузкой, потому что корпус хорошо держит объём.",
+        "Добавили подход и время под нагрузкой, потому что корпус уже хорошо держит текущий объём.",
     };
   }
 
@@ -171,46 +185,248 @@ function applyProgression({
   };
 }
 
-function applyStallAdjustment({
-  baseDetails,
-  exerciseType,
-}) {
+function applyStallAdjustment({ baseDetails, exerciseType }) {
   if (exerciseType === "compound") {
     return {
       sets: Math.max(baseDetails.sets - 1, 3),
-      repRange: shiftRangeValue(baseDetails.repRange, { minDelta: 1, maxDelta: 2 }),
+      repRange: shiftRangeValue(baseDetails.repRange, {
+        minDelta: 1,
+        maxDelta: 2,
+      }),
       restSeconds: Math.min(baseDetails.restSeconds + 15, 240),
       volumeReason:
-        "Слегка снизили объём и сместили диапазон повторений в сторону техники, потому что прогресс по упражнению замедлился.",
+        "Слегка снизили объём и сместили диапазон повторений в сторону контроля техники, потому что прогресс замедлился.",
     };
   }
 
   if (exerciseType === "cardio") {
     return {
       sets: baseDetails.sets,
-      repRange: shiftRangeValue(baseDetails.repRange, { minDelta: -1, maxDelta: 1 }),
+      repRange: shiftRangeValue(baseDetails.repRange, {
+        minDelta: -1,
+        maxDelta: 1,
+      }),
       restSeconds: baseDetails.restSeconds,
       volumeReason:
-        "Оставили кардио-объём рядом с базой, чтобы не перегружать восстановление без явного прогресса.",
+        "Оставили кардио рядом с базой, чтобы не перегружать восстановление без явного прогресса.",
     };
   }
 
   if (exerciseType === "core") {
     return {
       sets: Math.max(baseDetails.sets - 1, 3),
-      repRange: shiftRangeValue(baseDetails.repRange, { minDelta: 5, maxDelta: 10 }),
+      repRange: shiftRangeValue(baseDetails.repRange, {
+        minDelta: 5,
+        maxDelta: 10,
+      }),
       restSeconds: Math.min(baseDetails.restSeconds + 10, 75),
       volumeReason:
-        "Немного разгрузили упражнение и дали больше контроля в повторениях, потому что по нему нет свежего роста.",
+        "Немного разгрузили упражнение и сделали повторения более контролируемыми, потому что по нему нет свежего роста.",
     };
   }
 
   return {
     sets: Math.max(baseDetails.sets - 1, 2),
-    repRange: shiftRangeValue(baseDetails.repRange, { minDelta: 2, maxDelta: 3 }),
+    repRange: shiftRangeValue(baseDetails.repRange, {
+      minDelta: 2,
+      maxDelta: 3,
+    }),
     restSeconds: Math.min(baseDetails.restSeconds + 5, 120),
     volumeReason:
       "Сместили акцент в сторону более контролируемого объёма, потому что упражнение перестало прогрессировать.",
+  };
+}
+
+function getContextTags(trainingFeatures, sessionContext = {}) {
+  return normalizeTagArray([
+    trainingFeatures?.profile?.goal,
+    trainingFeatures?.profile?.objective,
+    trainingFeatures?.profile?.adaptationPriority,
+    ...(trainingFeatures?.profile?.focusTags ?? []),
+    sessionContext.sessionObjective,
+    sessionContext.adaptationPriority,
+    sessionContext.intensity,
+    sessionContext.recoveryDemand,
+    ...(sessionContext.sessionGoalTags ?? []),
+    ...(sessionContext.sessionMlTags ?? []),
+    ...(sessionContext.sessionBodyParts ?? []),
+  ]);
+}
+
+function buildProgrammedVolume({
+  baseDetails,
+  exercise,
+  exerciseType,
+  trainingFeatures,
+  sessionContext,
+}) {
+  const profileTags = new Set(
+    normalizeTagArray([
+      trainingFeatures?.profile?.goal,
+      trainingFeatures?.profile?.objective,
+      trainingFeatures?.profile?.adaptationPriority,
+      ...(trainingFeatures?.profile?.focusTags ?? []),
+    ]),
+  );
+  const sessionSignalTags = new Set(
+    normalizeTagArray([
+      sessionContext.sessionObjective,
+      sessionContext.intensity,
+      sessionContext.recoveryDemand,
+      ...(sessionContext.sessionGoalTags ?? []),
+      ...(sessionContext.sessionBodyParts ?? []),
+    ]),
+  );
+  const sessionTags = new Set(
+    normalizeTagArray([
+      sessionContext.sessionObjective,
+      sessionContext.adaptationPriority,
+      sessionContext.intensity,
+      sessionContext.recoveryDemand,
+      ...(sessionContext.sessionGoalTags ?? []),
+      ...(sessionContext.sessionMlTags ?? []),
+      ...(sessionContext.sessionBodyParts ?? []),
+    ]),
+  );
+  const contextTags = new Set([...profileTags, ...sessionTags]);
+  const normalizedBodyPart = normalizeTag(exercise?.bodyPart);
+  const normalizedExerciseGoalTags = normalizeTagArray(exercise?.goalTags);
+  const readinessScore = Number(trainingFeatures?.readiness?.readinessScore) || 50;
+  const skipRate = Number(trainingFeatures?.history?.skipRate) || 0;
+  const partialRate = Number(trainingFeatures?.history?.partialRate) || 0;
+  const lowRecovery =
+    readinessScore <= 45 ||
+    skipRate >= 0.25 ||
+    partialRate >= 0.25 ||
+    (trainingFeatures?.recovery?.averageSleepQuality != null &&
+      Number(trainingFeatures.recovery.averageSleepQuality) <= 2.5) ||
+    (trainingFeatures?.recovery?.averageEnergyLevel != null &&
+      Number(trainingFeatures.recovery.averageEnergyLevel) <= 2.5);
+  const isArmsPriority =
+    ["arms", "biceps", "triceps", "forearms"].includes(normalizedBodyPart) ||
+    normalizedExerciseGoalTags.some((tag) =>
+      ["arms", "biceps", "triceps", "forearms"].includes(tag),
+    );
+  const isStrengthSession =
+    sessionSignalTags.has("strength") || sessionSignalTags.has("power");
+  const isPumpSession =
+    sessionSignalTags.has("pump") ||
+    sessionSignalTags.has("endurance") ||
+    sessionSignalTags.has("metabolic-stress");
+  const isSupportSession =
+    sessionSignalTags.has("support") ||
+    sessionSignalTags.has("balance") ||
+    sessionSignalTags.has("posture") ||
+    sessionSignalTags.has("health") ||
+    sessionSignalTags.has("recovery");
+  const isHighFrequencySession =
+    contextTags.has("high-frequency") ||
+    contextTags.has("frequency") ||
+    Number(trainingFeatures?.profile?.workoutsPerWeek) >= 4;
+  const isFatigueManagement =
+    contextTags.has("fatigue-management") ||
+    contextTags.has("fatigue-management".replace(/_/g, "-")) ||
+    contextTags.has("volume-distribution");
+  const isVolumePriority =
+    contextTags.has("hypertrophy") ||
+    contextTags.has("mass") ||
+    contextTags.has("high-volume") ||
+    contextTags.has("high-volume".replace(/_/g, "-")) ||
+    contextTags.has("arms-growth");
+
+  let nextDetails = { ...baseDetails };
+  let volumeReason = "Используем базовый объём по текущему уровню подготовки.";
+  const shouldUseSupportAdjustment =
+    lowRecovery ||
+    isSupportSession ||
+    ((isHighFrequencySession && isFatigueManagement) &&
+      !isStrengthSession &&
+      !isPumpSession &&
+      !isArmsPriority);
+
+  if (exerciseType === "compound" && isStrengthSession && !lowRecovery) {
+    nextDetails = {
+      ...nextDetails,
+      repRange: shiftRangeValue(nextDetails.repRange, {
+        minDelta: -1,
+        maxDelta: -2,
+      }),
+      restSeconds: Math.min(nextDetails.restSeconds + 15, 240),
+    };
+    volumeReason =
+      "Сместили упражнение в более силовой режим под задачу этого дня: меньше повторений и больше отдыха.";
+  }
+
+  if (
+    exerciseType === "isolation" &&
+    isArmsPriority &&
+    (isPumpSession || isVolumePriority) &&
+    !lowRecovery
+  ) {
+    nextDetails = {
+      ...nextDetails,
+      sets: Math.min(nextDetails.sets + 1, 6),
+      repRange: shiftRangeValue(nextDetails.repRange, {
+        minDelta: 2,
+        maxDelta: 3,
+      }),
+      restSeconds: Math.max(nextDetails.restSeconds - 10, 45),
+    };
+    volumeReason =
+      "Подняли объём изоляции под специализацию и памповую задачу дня, чтобы усилить локальную нагрузку.";
+  }
+
+  if (shouldUseSupportAdjustment && exerciseType !== "cardio") {
+    const minimumSets = exerciseType === "compound" ? 3 : 2;
+    nextDetails = {
+      ...nextDetails,
+      sets: Math.max(nextDetails.sets - 1, minimumSets),
+      repRange: shiftRangeValue(nextDetails.repRange, {
+        minDelta: 1,
+        maxDelta: 2,
+      }),
+      restSeconds: Math.min(nextDetails.restSeconds + 10, 180),
+    };
+    volumeReason =
+      "Сделали нагрузку спокойнее под поддерживающий день и контроль утомления, чтобы план было легче держать стабильно.";
+  }
+
+  if (
+    exerciseType === "core" &&
+    (isSupportSession || contextTags.has("stability") || contextTags.has("core"))
+  ) {
+    nextDetails = {
+      ...nextDetails,
+      sets: Math.min(nextDetails.sets + 1, 5),
+      repRange: shiftRangeValue(nextDetails.repRange, {
+        minDelta: 5,
+        maxDelta: 10,
+      }),
+    };
+    volumeReason =
+      "Добавили немного стабилизирующего объёма, потому что этот день поддерживает технику и общий баланс.";
+  }
+
+  if (
+    exerciseType === "cardio" &&
+    (contextTags.has("cardio") || contextTags.has("weight-loss"))
+  ) {
+    nextDetails = {
+      ...nextDetails,
+      repRange: shiftRangeValue(nextDetails.repRange, {
+        minDelta: 2,
+        maxDelta: 4,
+      }),
+      restSeconds: Math.max(nextDetails.restSeconds - 5, 20),
+    };
+    volumeReason =
+      "Сделали кардио-блок плотнее под цель снижения веса и более высокий расход.";
+  }
+
+  return {
+    ...nextDetails,
+    volumeReason,
+    isAdjusted: didVolumeChange(baseDetails, nextDetails),
   };
 }
 
@@ -219,32 +435,43 @@ export function buildAdaptiveExerciseVolume({
   trainingLevel,
   workoutHistory = [],
   adaptiveSignals = null,
+  trainingFeatures = null,
+  sessionContext = {},
 }) {
   const exerciseType = exercise?.type ?? "compound";
   const baseDetails = getExercisePrescriptionDetails(trainingLevel, exerciseType);
+  const programmedBase = buildProgrammedVolume({
+    baseDetails,
+    exercise,
+    exerciseType,
+    trainingFeatures,
+    sessionContext,
+  });
   const historyEntries = getRecentExerciseHistory(exercise?.name, workoutHistory);
-  const trend = resolveVolumeTrend(historyEntries, baseDetails.sets);
+  const trend = resolveVolumeTrend(historyEntries, programmedBase.sets);
   let nextDetails = {
-    ...baseDetails,
-    volumeReason: "Используем базовый объём по текущему уровню подготовки.",
+    ...programmedBase,
   };
+  let volumeTrend = programmedBase.isAdjusted ? "programmed" : "base";
 
   if (trend === "progressing") {
     nextDetails = {
       ...nextDetails,
       ...applyProgression({
-        baseDetails,
+        baseDetails: programmedBase,
         exerciseType,
       }),
     };
+    volumeTrend = "progressing";
   } else if (trend === "stalled") {
     nextDetails = {
       ...nextDetails,
       ...applyStallAdjustment({
-        baseDetails,
+        baseDetails: programmedBase,
         exerciseType,
       }),
     };
+    volumeTrend = "stalled";
   }
 
   const normalizedBodyPart = normalizeTag(exercise?.bodyPart);
@@ -262,6 +489,10 @@ export function buildAdaptiveExerciseVolume({
       volumeReason:
         "Чуть разгрузили мышечную группу, потому что в недавней истории на неё уже было много объёма.",
     };
+
+    if (volumeTrend === "base") {
+      volumeTrend = "programmed";
+    }
   }
 
   return {
@@ -272,7 +503,7 @@ export function buildAdaptiveExerciseVolume({
       repRange: nextDetails.repRange,
       restSeconds: nextDetails.restSeconds,
     }),
-    volumeTrend: trend,
+    volumeTrend,
     recentObservationCount: historyEntries.length,
   };
 }

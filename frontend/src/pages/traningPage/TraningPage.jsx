@@ -1,5 +1,6 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from "react";
 import { Navigate, useNavigate } from "react-router";
+import AchievementUnlockOverlay from "../../components/AchievementUnlockOverlay";
 import PageShell from "../../components/PageShell";
 import { ROUTES } from "../../constants/routes";
 import { useAuth } from "../../hooks/useAuth";
@@ -7,6 +8,11 @@ import {
   REST_DURATION_SECONDS,
   formatDuration,
 } from "../../shared/activeWorkout";
+import {
+  buildLiveWorkoutAchievementUnlocks,
+  getUnlockedAchievementIds,
+} from "../../shared/liveWorkoutAchievements";
+import { getCelebrationTimeout } from "../../shared/gamificationCelebration";
 import {
   clearActiveWorkoutDraft,
   clearActiveWorkoutRuntime,
@@ -16,6 +22,7 @@ import {
   saveActiveWorkoutRuntime,
   saveActiveWorkoutResultDraft,
 } from "../../utils/activeWorkoutSession";
+import { markGamificationCelebrationShown } from "../../utils/gamificationCelebrationSession";
 
 const clampTwoLinesStyle = {
   display: "-webkit-box",
@@ -420,7 +427,32 @@ export default function TraningPage() {
     () => initialRuntimeState?.pausedAt ?? null,
   );
   const [isExitPromptOpen, setIsExitPromptOpen] = useState(false);
+  const [achievementUnlockQueue, dispatchAchievementUnlockQueue] = useReducer(
+    (state, action) => {
+      switch (action.type) {
+        case "append":
+          return [...state, ...(action.items ?? [])];
+        case "shift":
+          return state.slice(1);
+        default:
+          return state;
+      }
+    },
+    [],
+  );
   const runtimeSnapshotRef = useRef(null);
+  const seenAchievementUnlockIdsRef = useRef(
+    getUnlockedAchievementIds(currentUser?.gamification),
+  );
+  const delayedFinishTimeoutRef = useRef(null);
+  const latestWorkoutMetricsRef = useRef({
+    startedAt: initialRuntimeState?.startedAt ?? new Date().toISOString(),
+    elapsedSeconds: initialRuntimeState?.elapsedSeconds ?? 0,
+    completedSetsByExercise: initialRuntimeState?.completedSetsByExercise ?? [],
+    setWeightsByExercise: initialRuntimeState?.setWeightsByExercise ?? [],
+    trainingPlanId: currentUser?.trainingPlan?.id ?? null,
+  });
+  const activeAchievementUnlock = achievementUnlockQueue[0] ?? null;
 
   const currentExercise =
     workoutDraft?.exercises?.[currentExerciseIndex] ?? null;
@@ -454,25 +486,89 @@ export default function TraningPage() {
       Math.max(currentSetNumber - 1, 0)
     ] ?? "";
 
+  useEffect(() => {
+    const unlockedIds = getUnlockedAchievementIds(currentUser?.gamification);
+
+    unlockedIds.forEach((achievementId) => {
+      seenAchievementUnlockIdsRef.current.add(achievementId);
+    });
+  }, [currentUser?.gamification]);
+
+  useEffect(() => {
+    latestWorkoutMetricsRef.current = {
+      startedAt,
+      elapsedSeconds,
+      completedSetsByExercise,
+      setWeightsByExercise,
+      trainingPlanId: currentUser?.trainingPlan?.id ?? null,
+    };
+  }, [
+    completedSetsByExercise,
+    currentUser?.trainingPlan?.id,
+    elapsedSeconds,
+    setWeightsByExercise,
+    startedAt,
+  ]);
+
+  useEffect(() => {
+    if (!activeAchievementUnlock) {
+      return undefined;
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      dispatchAchievementUnlockQueue({ type: "shift" });
+    }, getCelebrationTimeout(activeAchievementUnlock));
+
+    return () => {
+      window.clearTimeout(timeoutId);
+    };
+  }, [activeAchievementUnlock]);
+
+  const queueAchievementUnlocks = useCallback((achievementUnlocks = []) => {
+    const nextUnlocks = achievementUnlocks.filter((achievement) => {
+      if (!achievement?.id || seenAchievementUnlockIdsRef.current.has(achievement.id)) {
+        return false;
+      }
+
+      seenAchievementUnlockIdsRef.current.add(achievement.id);
+      markGamificationCelebrationShown(`achievement:${achievement.id}`);
+      return true;
+    });
+
+    if (!nextUnlocks.length) {
+      return false;
+    }
+
+    dispatchAchievementUnlockQueue({ type: "append", items: nextUnlocks });
+    return true;
+  }, []);
+
   const finishWorkout = useCallback(
-    (
-      completedSetsOverride = completedSetsByExercise,
-      runtimeSnapshotOverride = null,
-    ) => {
+    (completedSetsOverrideInput = null, runtimeSnapshotOverride = null) => {
       if (!workoutDraft) {
         return;
       }
 
+      if (delayedFinishTimeoutRef.current) {
+        window.clearTimeout(delayedFinishTimeoutRef.current);
+        delayedFinishTimeoutRef.current = null;
+      }
+
+      const latestWorkoutMetrics = latestWorkoutMetricsRef.current;
+      const completedSetsOverride =
+        completedSetsOverrideInput ?? latestWorkoutMetrics.completedSetsByExercise;
       const effectiveSnapshot = runtimeSnapshotOverride ?? runtimeSnapshotRef.current;
       const effectiveElapsedSeconds =
-        effectiveSnapshot?.elapsedSeconds ?? elapsedSeconds;
+        effectiveSnapshot?.elapsedSeconds ?? latestWorkoutMetrics.elapsedSeconds;
       const effectiveSetWeightsByExercise =
-        effectiveSnapshot?.setWeightsByExercise ?? setWeightsByExercise;
-      const effectiveStartedAt = effectiveSnapshot?.startedAt ?? startedAt;
+        effectiveSnapshot?.setWeightsByExercise ??
+        latestWorkoutMetrics.setWeightsByExercise;
+      const effectiveStartedAt =
+        effectiveSnapshot?.startedAt ?? latestWorkoutMetrics.startedAt;
 
       saveActiveWorkoutResultDraft({
         scheduledWorkoutId: workoutDraft.scheduledWorkoutId,
-        trainingPlanId: currentUser?.trainingPlan?.id ?? null,
+        trainingPlanId: latestWorkoutMetrics.trainingPlanId,
         sessionId: workoutDraft.sessionId,
         title: workoutDraft.title,
         emphasis: workoutDraft.emphasis,
@@ -511,15 +607,7 @@ export default function TraningPage() {
       clearActiveWorkoutRuntime();
       navigate(ROUTES.WORKOUT_FINISH);
     },
-    [
-      completedSetsByExercise,
-      currentUser?.trainingPlan?.id,
-      elapsedSeconds,
-      navigate,
-      setWeightsByExercise,
-      startedAt,
-      workoutDraft,
-    ],
+    [navigate, workoutDraft],
   );
 
   const applyPendingTransition = useCallback(
@@ -788,6 +876,14 @@ export default function TraningPage() {
     };
   }, [flushRuntimeState, syncRuntimeWithClock, workoutDraft]);
 
+  useEffect(() => {
+    return () => {
+      if (delayedFinishTimeoutRef.current) {
+        window.clearTimeout(delayedFinishTimeoutRef.current);
+      }
+    };
+  }, []);
+
   if (!currentUser) {
     return <Navigate to={ROUTES.LOGIN} replace />;
   }
@@ -797,29 +893,29 @@ export default function TraningPage() {
   }
 
   function handleFinishSet() {
-    const actionTimestamp = new Date().toISOString();
+    const actionTimestamp = new Date();
+    const actionTimestampIso = actionTimestamp.toISOString();
+    const nextSetWeightsByExercise = setWeightsByExercise.map((weights, index) => {
+      if (index !== currentExerciseIndex) {
+        return weights;
+      }
 
-    setSetWeightsByExercise((previousValue) =>
-      previousValue.map((weights, index) => {
-        if (index !== currentExerciseIndex) {
-          return weights;
-        }
+      const nextWeights = [...weights];
+      const currentWeightIndex = Math.max(currentSetNumber - 1, 0);
+      const nextWeightIndex = currentWeightIndex + 1;
 
-        const nextWeights = [...weights];
-        const currentWeightIndex = Math.max(currentSetNumber - 1, 0);
-        const nextWeightIndex = currentWeightIndex + 1;
+      if (
+        nextWeightIndex < nextWeights.length &&
+        !nextWeights[nextWeightIndex] &&
+        nextWeights[currentWeightIndex]
+      ) {
+        nextWeights[nextWeightIndex] = nextWeights[currentWeightIndex];
+      }
 
-        if (
-          nextWeightIndex < nextWeights.length &&
-          !nextWeights[nextWeightIndex] &&
-          nextWeights[currentWeightIndex]
-        ) {
-          nextWeights[nextWeightIndex] = nextWeights[currentWeightIndex];
-        }
+      return nextWeights;
+    });
 
-        return nextWeights;
-      }),
-    );
+    setSetWeightsByExercise(nextSetWeightsByExercise);
 
     const nextCompletedSetsByExercise = completedSetsByExercise.map(
       (value, index) =>
@@ -831,11 +927,27 @@ export default function TraningPage() {
       nextCompletedSetsByExercise[currentExerciseIndex] >= currentExercise.sets;
     const isLastExercise =
       currentExerciseIndex >= workoutDraft.exercises.length - 1;
+    const achievementUnlocks = buildLiveWorkoutAchievementUnlocks({
+      currentUser,
+      completedSetsByExercise: nextCompletedSetsByExercise,
+      setWeightsByExercise: nextSetWeightsByExercise,
+      willCompleteWorkout: isExerciseCompleted && isLastExercise,
+      workoutStatus: "completed",
+      referenceDate: actionTimestamp,
+    });
+    const hasNewAchievementUnlocks = queueAchievementUnlocks(achievementUnlocks);
 
     setCompletedSetsByExercise(nextCompletedSetsByExercise);
 
     if (isExerciseCompleted && isLastExercise) {
-      finishWorkout(nextCompletedSetsByExercise);
+      if (hasNewAchievementUnlocks) {
+        delayedFinishTimeoutRef.current = window.setTimeout(() => {
+          finishWorkout(nextCompletedSetsByExercise);
+        }, getCelebrationTimeout());
+      } else {
+        finishWorkout(nextCompletedSetsByExercise);
+      }
+
       return;
     }
 
@@ -844,7 +956,7 @@ export default function TraningPage() {
     setPendingTransition({
       type: isExerciseCompleted ? "nextExercise" : "nextSet",
     });
-    setLastTickAt(actionTimestamp);
+    setLastTickAt(actionTimestampIso);
     setPausedAt(null);
   }
 
@@ -1243,6 +1355,8 @@ export default function TraningPage() {
           </p>
         </section>
       </section>
+
+      <AchievementUnlockOverlay achievement={activeAchievementUnlock} />
 
       {isExitPromptOpen ? (
         <div className="fixed inset-0 z-50 flex items-end justify-center bg-[#030712]/80 px-5 pb-6 pt-20">

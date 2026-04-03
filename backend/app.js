@@ -21,6 +21,12 @@ import {
 import { buildTrainingFeatures } from "./services/trainingFeatureBuilder.js";
 import { normalizeTrainingMlFeedbackHistory } from "./services/trainingMlFeedback.js";
 import { buildWorkoutStatsPayload } from "./services/workoutStats.js";
+import { buildUserGamificationSnapshot } from "./services/gamification.js";
+import {
+  buildTastingQuestionsPayload,
+  buildTrainingConfigPayload,
+} from "./services/trainingData.js";
+import { getTrainingLevelByTestScore } from "./services/tastingScore.js";
 import { generateWorkoutAdvanced } from "./services/workoutGenerator.js";
 import { generateSmartTrainingPlan } from "./services/smartTrainingPlan.js";
 import { buildTrainingPlan } from "./shared/trainingPlanBuilder.js";
@@ -274,6 +280,14 @@ export function createServerApp({ userRepository, databaseProvider }) {
     }
   });
 
+  app.get("/api/training/config", (_, response) => {
+    response.json(buildTrainingConfigPayload());
+  });
+
+  app.get("/api/testing/questions", (_, response) => {
+    response.json(buildTastingQuestionsPayload());
+  });
+
   app.get("/api/users/:id", async (request, response) => {
     const user = await userRepository.getById(request.params.id);
 
@@ -373,16 +387,21 @@ export function createServerApp({ userRepository, databaseProvider }) {
   app.patch("/api/users/:id/training-result", async (request, response) => {
     const { score, trainingLevel } = request.body ?? {};
 
-    if (typeof score !== "number" || typeof trainingLevel !== "string") {
+    if (typeof score !== "number") {
       response.status(400).json({
-        message: "Score and trainingLevel are required.",
+        message: "Score is required.",
       });
       return;
     }
 
+    const resolvedTrainingLevel =
+      typeof trainingLevel === "string" && trainingLevel.trim()
+        ? trainingLevel.trim()
+        : getTrainingLevelByTestScore(score);
+
     const user = await userRepository.updateTrainingResult(request.params.id, {
       score,
-      trainingLevel,
+      trainingLevel: resolvedTrainingLevel,
     });
 
     if (!user) {
@@ -777,7 +796,12 @@ export function createServerApp({ userRepository, databaseProvider }) {
         periodDays,
       });
 
-      response.json({ stats });
+      response.json({
+        stats,
+        gamification: buildUserGamificationSnapshot(user, {
+          todayDateKey: formatDateKey(new Date()),
+        }),
+      });
     } catch (error) {
       response.status(400).json({
         message: error instanceof Error ? error.message : "Stats failed.",
@@ -876,6 +900,33 @@ export function createServerApp({ userRepository, databaseProvider }) {
         source: "fallback-builder",
         fallbackReason:
           error instanceof Error ? error.message : "Smart training plan failed.",
+      });
+    }
+  });
+
+  app.post("/api/workouts/basic-plan", async (request, response) => {
+    try {
+      const profile = buildUserProfile(request.body);
+      const trainingPlan = buildTrainingPlan({
+        workoutsPerWeek: profile.workoutsPerWeek,
+        focusKey: profile.focusKey,
+        trainingLevel: profile.trainingLevel,
+        sessionSelections: Array.isArray(request.body?.sessionSelections)
+          ? request.body.sessionSelections
+          : [],
+      });
+
+      response.json({
+        trainingPlan,
+        highlightedExercises: buildHighlightedExercisesFromPlan(trainingPlan),
+        adaptationSummary: [
+          "Показали базовый план без продвинутой адаптации, чтобы конструктор оставался доступным.",
+        ],
+      });
+    } catch (error) {
+      response.status(400).json({
+        message:
+          error instanceof Error ? error.message : "Basic training plan failed.",
       });
     }
   });

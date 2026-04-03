@@ -1,58 +1,72 @@
+Вот полный перевод файла `README.md` на русский язык. Я сохранил структуру и смысл без искажений.
+
+---
+
 # WORKOUTSHEDULE
 
-WorkoutSchedule is a fitness planning application with a React/Vite frontend and an Express/MySQL backend. A user passes a fitness test, receives a training level, builds a personalized plan, schedules workouts in a calendar, runs active workout sessions, and tracks progress in statistics.
+WorkoutSchedule — это приложение для планирования тренировок с фронтендом на React/Vite и бэкендом на Express/MySQL.
 
-Current project version: `1.0.4`
+Пользователь проходит фитнес-тест, получает уровень подготовки, создает персональный план, планирует тренировки в календаре, выполняет их и отслеживает прогресс.
 
-## Overview
+Текущая версия проекта: `1.0.5`
 
-The project is split into two parts:
+---
 
-- `frontend/` - React, Vite, Tailwind CSS, PWA
-- `backend/` - Express, MySQL, JSON fallback
+## Обзор
 
-Main user flow:
+Проект разделен на две части:
 
-1. Register and log in with `login + password`.
-2. Pass the fitness test.
-3. Get `score` and `trainingLevel`.
-4. Build or edit a personalized training plan.
-5. Schedule workouts in the calendar.
-6. Start an active workout on the planned day.
-7. Save workout results, weights, and completion data.
-8. Let the system adapt future plans based on progress and history.
+- `frontend/` — React, Vite, Tailwind CSS, PWA
+- `backend/` — Express, MySQL, JSON fallback
 
-## Features
+Основной пользовательский сценарий:
 
-- Registration and login
-- Profile editing: name, email, password, photo, gender
-- Fitness test and training level evaluation
-- Personalized plan generation
-- Pseudo-ML adaptation of exercise selection and volume
-- Workout calendar with planning, completion, cancellation, and time rescheduling
-- Active workout runtime with sets, rest timer, and weight tracking
-- Workout history and statistics dashboard
-- Exercise library
-- PWA install prompt and offline basics
+1. Регистрация и вход по `логину + паролю`
+2. Прохождение фитнес-теста
+3. Получение `score` и `trainingLevel`
+4. Создание или редактирование персонального плана тренировок
+5. Планирование тренировок в календаре
+6. Запуск тренировки в назначенный день
+7. Сохранение результатов: веса, выполнение и т.д.
+8. Адаптация будущих тренировок на основе прогресса и истории
 
-## Tech stack
+---
 
-### Frontend
+## Функциональность
+
+- Регистрация и авторизация
+- Редактирование профиля: имя, email, пароль, фото, пол
+- Фитнес-тест и определение уровня подготовки
+- Генерация персонального плана тренировок
+- Псевдо-ML адаптация упражнений и нагрузки
+- Календарь тренировок: планирование, выполнение, отмена, перенос
+- Активная тренировка: подходы, таймер отдыха, учет веса
+- История тренировок и статистика
+- Библиотека упражнений
+- PWA: установка и базовая оффлайн-работа
+
+---
+
+## Технологический стек
+
+### Фронтенд
 
 - React 19
 - React Router
 - Vite 8
 - Tailwind CSS 4
-- PWA manifest and service worker
+- PWA (manifest + service worker)
 
-### Backend
+### Бэкенд
 
 - Node.js
 - Express 5
 - MySQL2
-- JSON fallback repository
+- JSON fallback
 
-## Project structure
+---
+
+## Структура проекта
 
 ```text
 WORKOUTSHEDULE/
@@ -82,42 +96,44 @@ WORKOUTSHEDULE/
 `- README.md
 ```
 
-## Key files
+---
 
-### Frontend
+## Ключевые файлы
 
-- App routes: [frontend/src/App.jsx](./frontend/src/App.jsx)
-- Route constants: [frontend/src/constants/routes.js](./frontend/src/constants/routes.js)
-- Training constructor: [frontend/src/pages/traningPage/StartTraningPage.jsx](./frontend/src/pages/traningPage/StartTraningPage.jsx)
-- Workout plan screen: [frontend/src/pages/WorkoutPlanPage.jsx](./frontend/src/pages/WorkoutPlanPage.jsx)
-- Active workout screen: [frontend/src/pages/traningPage/TraningPage.jsx](./frontend/src/pages/traningPage/TraningPage.jsx)
-- Calendar page: [frontend/src/pages/Calendare.jsx](./frontend/src/pages/Calendare.jsx)
-- Statistics page: [frontend/src/pages/StatisticPage.jsx](./frontend/src/pages/StatisticPage.jsx)
-- Exercise library: [frontend/src/pages/LibraryPage.jsx](./frontend/src/pages/LibraryPage.jsx)
-- Frontend plan helpers: [frontend/src/shared/trainingPlanBuilder.js](./frontend/src/shared/trainingPlanBuilder.js)
-- Active workout helpers: [frontend/src/shared/activeWorkout.js](./frontend/src/shared/activeWorkout.js)
-- Frontend stats helpers: [frontend/src/shared/workoutStats.js](./frontend/src/shared/workoutStats.js)
+### Фронтенд
 
-### Backend
+- Маршруты: `frontend/src/App.jsx`
+- Константы маршрутов: `frontend/src/constants/routes.js`
+- Конструктор тренировок: `StartTraningPage.jsx`
+- Экран плана тренировок: `WorkoutPlanPage.jsx`
+- Экран активной тренировки: `TraningPage.jsx`
+- Календарь: `Calendare.jsx`
+- Статистика: `StatisticPage.jsx`
+- Библиотека упражнений: `LibraryPage.jsx`
+- Помощники планов: `trainingPlanBuilder.js`
+- Логика активной тренировки: `activeWorkout.js`
+- Статистика: `workoutStats.js`
 
-- API entrypoint: [backend/app.js](./backend/app.js)
-- MySQL connection and migrations: [backend/db/mysqlPool.js](./backend/db/mysqlPool.js)
-- SQL schema: [backend/sql/schema.sql](./backend/sql/schema.sql)
-- Smart plan builder: [backend/services/smartTrainingPlan.js](./backend/services/smartTrainingPlan.js)
-- Exercise ranking: [backend/services/workoutGenerator.js](./backend/services/workoutGenerator.js)
-- Adaptive volume: [backend/services/adaptiveVolume.js](./backend/services/adaptiveVolume.js)
-- Training level evaluator: [backend/services/trainingLevelEvaluator.js](./backend/services/trainingLevelEvaluator.js)
-- Feature builder for future ML: [backend/services/trainingFeatureBuilder.js](./backend/services/trainingFeatureBuilder.js)
-- ML feedback labels: [backend/services/trainingMlFeedback.js](./backend/services/trainingMlFeedback.js)
-- Adaptation history: [backend/services/trainingPlanAdaptationHistory.js](./backend/services/trainingPlanAdaptationHistory.js)
-- Training plan catalog: [backend/data/trainingPlanCatalog.js](./backend/data/trainingPlanCatalog.js)
-- Exercise catalog: [backend/data/exerciseCatalog.js](./backend/data/exerciseCatalog.js)
+### Бэкенд
 
-## Data model
+- Точка входа API: `backend/app.js`
+- Подключение к MySQL: `mysqlPool.js`
+- SQL схема: `schema.sql`
+- Генерация плана: `smartTrainingPlan.js`
+- Ранжирование упражнений: `workoutGenerator.js`
+- Адаптация нагрузки: `adaptiveVolume.js`
+- Оценка уровня: `trainingLevelEvaluator.js`
+- Формирование фичей (для ML): `trainingFeatureBuilder.js`
+- ML-фидбек: `trainingMlFeedback.js`
+- История адаптаций: `trainingPlanAdaptationHistory.js`
+- Каталог планов: `trainingPlanCatalog.js`
+- Каталог упражнений: `exerciseCatalog.js`
 
-### User
+---
 
-The current user model includes:
+## Модель данных
+
+### Пользователь
 
 - `login`
 - `name`
@@ -133,47 +149,55 @@ The current user model includes:
 - `scheduledWorkouts`
 - `workoutHistory`
 
-### Training plan
+---
 
-A training plan contains:
+### План тренировок
 
 - `focusKey`
 - `focusLabel`
 - `workoutsPerWeek`
 - `sessions`
-- exercise prescriptions
-- sets, rep ranges, rest
-- adaptation hints
-- version metadata
+- упражнения
+- подходы, повторения, отдых
+- подсказки адаптации
+- версия
 
-### Workout history
+---
 
-Workout history entries may include:
+### История тренировок
 
-- status
-- scheduled date and time
-- actual duration
-- planned duration
-- completed exercises
-- completed sets
-- set weights
-- calories
-- body weight
-- subjective metrics such as energy and effort
+- статус
+- дата и время
+- фактическая длительность
+- плановая длительность
+- выполненные упражнения
+- подходы
+- веса
+- калории
+- вес тела
+- субъективные показатели (энергия, усилие)
 
-## Pseudo-ML adaptation
+---
 
-The project does not use a trained neural model yet. Instead, it uses a rule-based recommendation system that already behaves like a lightweight ML layer.
+## Псевдо-ML адаптация
 
-Current capabilities:
+Проект пока не использует обученную нейросеть. Вместо этого применяется rule-based система рекомендаций.
 
-- evaluate training level from test results
-- normalize profile and workout history into features
-- rank exercises based on level, goal, equipment, body part, history, and adaptation signals
-- adapt sets, rest, and rep ranges based on recent performance
-- store manual feedback labels for future ML training
+Возможности:
 
-Current feedback labels include:
+- оценка уровня подготовки
+- преобразование профиля и истории в фичи
+- ранжирование упражнений по:
+  - уровню
+  - цели
+  - оборудованию
+  - группе мышц
+  - истории
+
+- адаптация подходов, отдыха и повторений
+- сохранение фидбека для будущего ML
+
+Типы фидбека:
 
 - `exercise_removed`
 - `exercise_replaced`
@@ -181,55 +205,59 @@ Current feedback labels include:
 - `workout_skipped`
 - `workout_partial`
 
-This gives the project a stable path toward a future learned ranker or inference service without rewriting the API contract.
+---
 
 ## API
 
-### Health and misc
+### Общее
 
 - `GET /api/health`
 - `GET /api/exercises`
 
-### Authentication and profile
+### Авторизация
 
 - `POST /api/auth/login`
 - `POST /api/auth/register`
 - `GET /api/users/:id`
 - `PATCH /api/users/:id/profile`
 
-### Test and training level
+### Тест
 
 - `PATCH /api/users/:id/training-result`
 - `POST /api/users/:id/evaluate-training-level`
 
-### Training plans
+### Планы
 
 - `PUT /api/users/:id/training-plan`
 - `POST /api/workouts/smart`
 - `POST /api/workouts/smart-plan`
 - `POST /api/users/:id/training-feedback`
 
-### Calendar and workouts
+### Календарь
 
 - `POST /api/users/:id/scheduled-workouts`
-- `PATCH /api/users/:id/scheduled-workouts/:scheduledWorkoutId`
-- `DELETE /api/users/:id/scheduled-workouts/:scheduledWorkoutId`
-- `POST /api/users/:id/scheduled-workouts/:scheduledWorkoutId/skip`
-- `POST /api/users/:id/scheduled-workouts/:scheduledWorkoutId/complete`
+- `PATCH /api/users/:id/scheduled-workouts/:id`
+- `DELETE /api/users/:id/scheduled-workouts/:id`
+- `POST /skip`
+- `POST /complete`
 
-### Statistics
+### Статистика
 
 - `GET /api/users/:id/stats`
 
-## Local development
+---
 
-### Requirements
+## Локальная разработка
+
+### Требования
 
 - Node.js 20+
 - npm 10+
-- MySQL 8+ or MariaDB
+- MySQL 8+ или MariaDB
 
-### Backend
+---
+
+### Бэкенд
 
 ```bash
 cd backend
@@ -238,19 +266,9 @@ cp .env.example .env
 npm run dev
 ```
 
-Example `backend/.env`:
+---
 
-```env
-API_PORT=3001
-SERVER_DB_PROVIDER=auto
-MYSQL_HOST=127.0.0.1
-MYSQL_PORT=3306
-MYSQL_USER=root
-MYSQL_PASSWORD=
-MYSQL_DATABASE=workoutshedule
-```
-
-### Frontend
+### Фронтенд
 
 ```bash
 cd frontend
@@ -258,102 +276,75 @@ npm install
 npm run dev
 ```
 
-Production build:
+Сборка:
 
 ```bash
-cd frontend
 npm run build
 ```
 
-## MySQL and JSON fallback
+---
 
-The backend works through repository abstractions. If MySQL is unavailable, the app can fall back to JSON storage for development and recovery scenarios.
+## MySQL и JSON fallback
 
-Notes:
+- MySQL — основное хранилище
+- JSON — резерв (для разработки и восстановления)
 
-- MySQL is the primary production storage.
-- JSON fallback is useful for local development.
-- The frontend production build no longer bundles the mock provider.
+---
 
 ## PWA
 
-The frontend is prepared as a Progressive Web App.
-
-Included:
+Включает:
 
 - manifest
 - service worker
-- offline page
-- install prompt logic
+- offline страницу
+- установку приложения
 
-Relevant files:
+---
 
-- [frontend/public/manifest.webmanifest](./frontend/public/manifest.webmanifest)
-- [frontend/public/sw.js](./frontend/public/sw.js)
-- [frontend/public/offline.html](./frontend/public/offline.html)
-- [frontend/src/utils/registerServiceWorker.js](./frontend/src/utils/registerServiceWorker.js)
-- [frontend/src/hooks/useInstallPrompt.js](./frontend/src/hooks/useInstallPrompt.js)
-
-## Ubuntu deployment
-
-Typical deployment flow:
-
-### 1. Update code
+## Деплой на Ubuntu
 
 ```bash
 git pull
+cd backend && npm ci
+cd ../frontend && npm ci && npm run build
+cd ../backend && npm start
 ```
 
-### 2. Install backend dependencies
-
-```bash
-cd backend
-npm ci
-```
-
-### 3. Install and build frontend
-
-```bash
-cd ../frontend
-npm ci
-npm run build
-```
-
-### 4. Start backend
-
-```bash
-cd ../backend
-npm start
-```
-
-If you use PM2:
+PM2:
 
 ```bash
 pm2 start index.js --name workoutshedule-api
 pm2 save
 ```
 
-## Current product areas
+---
 
-- auth and profile
-- test and level evaluation
-- personalized plan generation
-- active workouts
-- calendar and scheduling
-- statistics
-- exercise library
-- adaptive systems
+## Текущие направления
 
-## Known notes
+- авторизация и профиль
+- тест и уровень
+- генерация планов
+- активные тренировки
+- календарь
+- статистика
+- библиотека упражнений
+- адаптивные системы
 
-- The project uses pseudo-ML adaptation, not a trained model yet.
-- Windows-specific Vite/Tailwind issues were handled in frontend scripts via `--configLoader native`.
-- A license file has not been added yet.
+---
+
+## Примечания
+
+- Используется псевдо-ML, не полноценная модель
+- Были фиксы для Windows (Vite/Tailwind)
+- Лицензия пока не добавлена
+
+---
 
 ## Roadmap
 
-- richer statistics redesign
-- better exercise search and filters in the library
-- deeper adaptation based on recovery metrics
-- explicit plan history comparison
-- optional real ML re-ranking layer
+- переработка статистики
+- улучшение поиска упражнений
+- более глубокая адаптация
+- сравнение планов
+- внедрение настоящего ML

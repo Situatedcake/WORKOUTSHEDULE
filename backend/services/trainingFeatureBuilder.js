@@ -164,7 +164,10 @@ function buildProfileFeatures(user = {}) {
     trainingLevel: user.trainingLevel ?? "Не определен",
     gender: user.gender ?? "not_specified",
     goal: user.goal ?? "strength",
+    objective: user.objective ?? null,
     focusKey: user.focusKey ?? "general-strength",
+    focusTags: Array.isArray(user.focusTags) ? user.focusTags : [],
+    adaptationPriority: user.adaptationPriority ?? null,
     workoutsPerWeek: Number(user.workoutsPerWeek) || 3,
     time: Number(user.time) || 30,
   };

@@ -22,6 +22,7 @@ import {
 import { getNearestScheduledWorkout } from "../shared/workoutSchedule";
 import {
   clearActiveWorkoutResultDraft,
+  getActiveWorkoutDraft,
   clearActiveWorkoutRuntime,
   getActiveWorkoutRuntime,
   saveActiveWorkoutDraft,
@@ -198,23 +199,41 @@ function buildLatestExerciseWeightMap(workoutHistory = []) {
 export default function WorkoutPlanPage() {
   const navigate = useNavigate();
   const { currentUser, saveCurrentUserTrainingFeedback } = useAuth();
+  const storedWorkoutDraft = useMemo(() => getActiveWorkoutDraft(), []);
+  const activeWorkoutRuntime = useMemo(() => getActiveWorkoutRuntime(), []);
   const nearestWorkout = useMemo(
     () => getNearestScheduledWorkout(currentUser?.scheduledWorkouts ?? []),
     [currentUser?.scheduledWorkouts],
   );
   const initialDraft = useMemo(
-    () =>
-      buildWorkoutDraft({
+    () => {
+      const nextDraft = buildWorkoutDraft({
         scheduledWorkout: nearestWorkout,
         trainingPlan: currentUser?.trainingPlan ?? null,
-      }),
-    [currentUser?.trainingPlan, nearestWorkout],
+      });
+
+      if (
+        storedWorkoutDraft?.scheduledWorkoutId &&
+        activeWorkoutRuntime?.scheduledWorkoutId &&
+        storedWorkoutDraft.scheduledWorkoutId ===
+          activeWorkoutRuntime.scheduledWorkoutId &&
+        nextDraft?.scheduledWorkoutId === storedWorkoutDraft.scheduledWorkoutId
+      ) {
+        return storedWorkoutDraft;
+      }
+
+      return nextDraft;
+    },
+    [
+      activeWorkoutRuntime?.scheduledWorkoutId,
+      currentUser?.trainingPlan,
+      nearestWorkout,
+      storedWorkoutDraft,
+    ],
   );
   const [workoutDraft, setWorkoutDraft] = useState(initialDraft);
   const [expandedExerciseIndex, setExpandedExerciseIndex] = useState(null);
-  const [exerciseToAddName, setExerciseToAddName] = useState("");
   const [pendingFeedbackEvents, setPendingFeedbackEvents] = useState([]);
-  const activeWorkoutRuntime = useMemo(() => getActiveWorkoutRuntime(), []);
   const latestExerciseWeightMap = useMemo(
     () => buildLatestExerciseWeightMap(currentUser?.workoutHistory ?? []),
     [currentUser?.workoutHistory],
@@ -223,12 +242,6 @@ export default function WorkoutPlanPage() {
     () => getAddableWorkoutExerciseOptions(workoutDraft),
     [workoutDraft],
   );
-  const selectedExerciseToAddName =
-    addableExerciseOptions.some(
-      (exerciseOption) => exerciseOption.name === exerciseToAddName,
-    )
-      ? exerciseToAddName
-      : addableExerciseOptions[0]?.name ?? "";
   const hasRuntimeForCurrentWorkout = Boolean(
     workoutDraft?.scheduledWorkoutId &&
       activeWorkoutRuntime?.scheduledWorkoutId === workoutDraft.scheduledWorkoutId,
@@ -237,7 +250,6 @@ export default function WorkoutPlanPage() {
   useEffect(() => {
     const resetTimeoutId = window.setTimeout(() => {
       setWorkoutDraft(initialDraft);
-      setExerciseToAddName("");
       setPendingFeedbackEvents([]);
     }, 0);
 
@@ -377,12 +389,14 @@ export default function WorkoutPlanPage() {
   }
 
   function handleAddExercise() {
-    if (!selectedExerciseToAddName) {
+    const nextRecommendedExerciseName = addableExerciseOptions[0]?.name ?? "";
+
+    if (!nextRecommendedExerciseName) {
       return;
     }
 
     setWorkoutDraft((previousDraft) =>
-      addWorkoutExercise(previousDraft, selectedExerciseToAddName),
+      addWorkoutExercise(previousDraft, nextRecommendedExerciseName),
     );
   }
 
@@ -397,6 +411,7 @@ export default function WorkoutPlanPage() {
     }
 
     if (hasRuntimeForCurrentWorkout) {
+      saveActiveWorkoutDraft(workoutDraft);
       navigate(ROUTES.WORKOUT_ACTIVE);
       return;
     }
@@ -414,7 +429,10 @@ export default function WorkoutPlanPage() {
   }
 
   return (
-    <PageShell className="pt-5 pb-44" showNavMenu={false}>
+    <PageShell
+      className="pt-5 pb-[calc(15rem+env(safe-area-inset-bottom))]"
+      showNavMenu={false}
+    >
       <section className="mx-auto flex w-full max-w-md flex-col gap-5">
         <header className="flex items-center justify-between gap-3">
           <Link
@@ -624,7 +642,21 @@ export default function WorkoutPlanPage() {
         </div>
 
         {addableExerciseOptions.length > 0 ? (
-          <section className="rounded-[16px] border border-[#2A3140] bg-[#12151C] px-3 py-2.5">
+          <>
+            <section className="rounded-[20px] border border-dashed border-[#2A3140] bg-[#12151C] p-3">
+              <button
+                type="button"
+                onClick={handleAddExercise}
+                aria-label="Добавить лучшее рекомендованное упражнение"
+                className="flex min-h-[88px] w-full items-center justify-center rounded-[16px] border border-[#2A3140] bg-[#0B0E15] text-white transition active:scale-[0.98]"
+              >
+                <span className="text-5xl font-light leading-none">+</span>
+              </button>
+              <p className="mt-2 text-center text-[11px] leading-4 text-[#8E97A8]">
+                Добавим лучшее упражнение из рекомендаций ML
+              </p>
+            </section>
+          <section className="hidden rounded-[16px] border border-[#2A3140] bg-[#12151C] px-3 py-2.5">
             <p className="hidden">
               Добавить из рекомендаций
             </p>
@@ -642,8 +674,8 @@ export default function WorkoutPlanPage() {
 
             <div className="mt-2.5 flex flex-col gap-2">
               <select
-                value={selectedExerciseToAddName}
-                onChange={(event) => setExerciseToAddName(event.target.value)}
+                value={addableExerciseOptions[0]?.name ?? ""}
+                onChange={() => {}}
                 className="rounded-[16px] border border-[#2A3140] bg-[#0B0E15] px-3 py-2 text-sm leading-5 text-white outline-none"
               >
                 {addableExerciseOptions.map((exerciseOption, optionIndex) => (
@@ -667,10 +699,11 @@ export default function WorkoutPlanPage() {
               </button>
             </div>
           </section>
+          </>
         ) : null}
       </section>
 
-      <div className="fixed inset-x-0 bottom-[calc(0.75rem+env(safe-area-inset-bottom))] z-30 flex justify-center px-5">
+      <div className="pointer-events-none fixed inset-x-0 bottom-[calc(0.75rem+env(safe-area-inset-bottom))] z-30 flex justify-center px-5">
         <button
           type="button"
           onClick={handleStartWorkout}
@@ -684,7 +717,7 @@ export default function WorkoutPlanPage() {
               ? `Продолжить тренировку • ${formatDuration(workoutDraft.totalEstimatedSeconds)}`
               : `Начать тренировку • ${formatDuration(workoutDraft.totalEstimatedSeconds)}`
           }
-          className="relative w-full max-w-md overflow-hidden rounded-3xl bg-[#01BB96] px-5 py-4 text-base font-medium text-transparent after:absolute after:inset-0 after:flex after:items-center after:justify-center after:px-5 after:text-center after:text-[#000214] after:content-[attr(data-label)]"
+          className="pointer-events-auto relative w-full max-w-md overflow-hidden rounded-3xl bg-[#01BB96] px-5 py-4 text-base font-medium text-transparent after:absolute after:inset-0 after:flex after:items-center after:justify-center after:px-5 after:text-center after:text-[#000214] after:content-[attr(data-label)]"
         >
           {hasRuntimeForCurrentWorkout
             ? `Продолжить тренировку • ${formatDuration(workoutDraft.totalEstimatedSeconds)}`

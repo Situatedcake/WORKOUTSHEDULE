@@ -4,11 +4,15 @@ import { buildAdaptiveExerciseVolume } from "./adaptiveVolume.js";
 import { hasTagIntersection, normalizeTag, normalizeTagArray } from "./exerciseCatalogUtils.js";
 import { buildTrainingFeatures } from "./trainingFeatureBuilder.js";
 import { generateWorkoutAdvanced } from "./workoutGenerator.js";
-import { TRAINING_PLAN_BLUEPRINTS } from "../data/trainingPlanCatalog.js";
+import {
+  TRAINING_PLAN_BLUEPRINTS,
+  TRAINING_PLAN_LIBRARY,
+} from "../data/trainingPlanCatalog.js";
 import {
   EXERCISES_PER_SESSION,
   TRAINING_GOALS,
   getLevelConfig,
+  resolveTemplateExerciseType,
 } from "../shared/trainingPlanBuilder.js";
 
 const FOCUS_BLUEPRINTS = TRAINING_PLAN_BLUEPRINTS;
@@ -32,8 +36,110 @@ function getFocusMeta(focusKey) {
   );
 }
 
+function getLibraryFocusDefinition(focusKey) {
+  return (
+    TRAINING_PLAN_LIBRARY.find((item) => item.key === focusKey) ??
+    TRAINING_PLAN_LIBRARY[0] ??
+    null
+  );
+}
+
+function buildBlueprintSlotsFromPool(sessionBlueprint, focusDefinition) {
+  const focusTags = normalizeArray(focusDefinition?.mlProfile?.focusTags);
+  const sessionGoalTags = normalizeArray(sessionBlueprint.sessionGoalTags);
+  const sessionMlTags = normalizeArray(sessionBlueprint.mlTags);
+  const sessionMovementPatterns = normalizeArray(sessionBlueprint.movementPatterns);
+  const sessionObjective =
+    sessionBlueprint.objective ?? focusDefinition?.mlProfile?.objective ?? null;
+  const adaptationPriority = focusDefinition?.mlProfile?.adaptationPriority ?? null;
+  const orderedPool = normalizeArray(sessionBlueprint.exercisePool)
+    .slice()
+    .sort((left, right) => (left.priority ?? 99) - (right.priority ?? 99))
+    .slice(0, EXERCISES_PER_SESSION);
+
+  return orderedPool.map((exercise) => {
+    const exerciseType = resolveTemplateExerciseType(exercise);
+
+    return {
+      bodyParts: exercise.bodyPart ? [exercise.bodyPart] : [],
+      movementPatterns: exercise.movementPattern
+        ? [exercise.movementPattern]
+        : sessionMovementPatterns,
+      requiredMovementPatterns: exercise.movementPattern
+        ? [exercise.movementPattern]
+        : [],
+      goalTags: [
+        ...focusTags,
+        ...sessionGoalTags,
+        ...normalizeArray(exercise.goalTags),
+        ...sessionMlTags,
+        sessionObjective,
+        adaptationPriority,
+      ].filter(Boolean),
+      compound: exerciseType === "compound",
+      equipment: normalizeArray(exercise.equipment),
+      templateName: exercise.name,
+      templatePriority: exercise.priority ?? null,
+    };
+  });
+}
+
+function buildLibraryBlueprint(focusDefinition, workoutsPerWeek) {
+  const librarySessions = normalizeArray(focusDefinition?.sessions);
+
+  if (librarySessions.length === 0) {
+    return [];
+  }
+
+  return Array.from({ length: workoutsPerWeek }, (_, index) => {
+    const sourceSession = librarySessions[index % librarySessions.length];
+    const sessionBodyParts =
+      normalizeArray(sourceSession.sessionBodyParts).length > 0
+        ? normalizeArray(sourceSession.sessionBodyParts)
+        : Array.from(
+            new Set(
+              normalizeArray(sourceSession.exercisePool)
+                .map((exercise) => exercise.bodyPart)
+                .filter(Boolean),
+            ),
+          );
+
+    return {
+      key: sourceSession.key ?? `session-${index + 1}`,
+      title: sourceSession.title ?? `Сессия ${index + 1}`,
+      emphasis: sourceSession.emphasis ?? focusDefinition.description ?? "",
+      duration: Number(sourceSession.duration) || 60,
+      objective:
+        sourceSession.objective ?? focusDefinition.mlProfile?.objective ?? null,
+      intensity: sourceSession.intensity ?? null,
+      recoveryDemand: sourceSession.recoveryDemand ?? null,
+      sessionGoalTags:
+        normalizeArray(sourceSession.sessionGoalTags).length > 0
+          ? normalizeArray(sourceSession.sessionGoalTags)
+          : normalizeArray(focusDefinition.mlProfile?.focusTags),
+      movementPatterns: normalizeArray(sourceSession.movementPatterns),
+      sessionBodyParts,
+      mlTags:
+        normalizeArray(sourceSession.mlTags).length > 0
+          ? normalizeArray(sourceSession.mlTags)
+          : [
+              ...normalizeArray(focusDefinition.mlProfile?.focusTags),
+              focusDefinition.mlProfile?.objective,
+              focusDefinition.mlProfile?.adaptationPriority,
+            ].filter(Boolean),
+      slots: buildBlueprintSlotsFromPool(sourceSession, focusDefinition),
+      index,
+    };
+  });
+}
+
 function getFocusBlueprint(focusKey, workoutsPerWeek) {
-  const blueprint = FOCUS_BLUEPRINTS[focusKey] ?? FOCUS_BLUEPRINTS["general-strength"];
+  const focusDefinition = getLibraryFocusDefinition(focusKey);
+  const derivedBlueprint = buildLibraryBlueprint(focusDefinition, workoutsPerWeek);
+  const blueprint =
+    FOCUS_BLUEPRINTS[focusKey] ??
+    (derivedBlueprint.length > 0 ? derivedBlueprint : null) ??
+    FOCUS_BLUEPRINTS["general-strength"];
 
   return Array.from({ length: workoutsPerWeek }, (_, index) => {
     const sessionBlueprint = blueprint[index % blueprint.length];
@@ -200,16 +306,31 @@ function buildSessionExercises(
   const selectedExercises = [];
 
   sessionBlueprint.slots.forEach((slot) => {
+    const slotContext = {
+      ...slot,
+      sessionKey: sessionBlueprint.key,
+      sessionObjective: sessionBlueprint.objective ?? null,
+      sessionMlTags: sessionBlueprint.mlTags ?? [],
+      intensity: sessionBlueprint.intensity ?? null,
+      recoveryDemand: sessionBlueprint.recoveryDemand ?? null,
+      estimatedDurationMin: sessionBlueprint.duration ?? null,
+      goalTags: [
+        ...normalizeArray(slot.goalTags),
+        ...normalizeArray(sessionBlueprint.sessionGoalTags),
+        ...normalizeArray(sessionBlueprint.mlTags),
+        sessionBlueprint.objective,
+      ].filter(Boolean),
+      bodyParts: [
+        ...normalizeArray(slot.bodyParts),
+        ...normalizeArray(sessionBlueprint.sessionBodyParts),
+      ],
+    };
     const nextExercise = selectExerciseForSlot(
       exercises,
       user,
       workoutHistory,
       trainingFeatures,
-      {
-        ...slot,
-        goalTags: [...normalizeArray(slot.goalTags), ...normalizeArray(sessionBlueprint.sessionGoalTags)],
-        bodyParts: [...normalizeArray(slot.bodyParts), ...normalizeArray(sessionBlueprint.sessionBodyParts)],
-      },
+      slotContext,
       selectedExercises,
     );
 
@@ -253,11 +374,26 @@ function buildSessionCandidatePool(
 ) {
   const poolExercises = generateWorkoutAdvanced(exercises, user, {
     slot: {
+      sessionKey: sessionBlueprint.key,
+      sessionObjective: sessionBlueprint.objective ?? null,
+      sessionMlTags: sessionBlueprint.mlTags ?? [],
+      intensity: sessionBlueprint.intensity ?? null,
+      recoveryDemand: sessionBlueprint.recoveryDemand ?? null,
+      estimatedDurationMin: sessionBlueprint.duration ?? null,
       bodyParts: sessionBlueprint.sessionBodyParts,
-      movementPatterns: sessionBlueprint.slots.flatMap(
-        (slot) => normalizeArray(slot.movementPatterns).concat(normalizeArray(slot.requiredMovementPatterns)),
-      ),
-      goalTags: sessionBlueprint.sessionGoalTags,
+      movementPatterns: [
+        ...normalizeArray(sessionBlueprint.movementPatterns),
+        ...sessionBlueprint.slots.flatMap((slot) =>
+          normalizeArray(slot.movementPatterns).concat(
+            normalizeArray(slot.requiredMovementPatterns),
+          ),
+        ),
+      ],
+      goalTags: [
+        ...normalizeArray(sessionBlueprint.sessionGoalTags),
+        ...normalizeArray(sessionBlueprint.mlTags),
+        sessionBlueprint.objective,
+      ].filter(Boolean),
     },
     selectedExercises: [],
     workoutHistory,
@@ -287,6 +423,7 @@ export function generateSmartTrainingPlan({
     });
   const adaptiveSignals = trainingFeatures.adaptiveSignals;
   const focusMeta = getFocusMeta(focusKey);
+  const focusDefinition = getLibraryFocusDefinition(focusMeta.key);
   const planId = createPlanId(focusMeta.key);
   const levelConfig = getLevelConfig(user.trainingLevel);
   const blueprintSessions = orderBlueprintSessions(
@@ -322,6 +459,11 @@ export function generateSmartTrainingPlan({
       dayLabel: `Тренировка ${index + 1}`,
       title: sessionBlueprint.title,
       emphasis: sessionBlueprint.emphasis,
+      objective: sessionBlueprint.objective ?? null,
+      intensity: sessionBlueprint.intensity ?? null,
+      recoveryDemand: sessionBlueprint.recoveryDemand ?? null,
+      sessionBodyParts: sessionBlueprint.sessionBodyParts,
+      mlTags: sessionBlueprint.mlTags ?? [],
       adaptationHints: buildSessionAdaptationHints(
         sessionBlueprint,
         adaptiveSignals,
@@ -348,6 +490,18 @@ export function generateSmartTrainingPlan({
           trainingLevel: user.trainingLevel,
           workoutHistory,
           adaptiveSignals,
+          trainingFeatures,
+          sessionContext: {
+            sessionKey: sessionBlueprint.key,
+            sessionTitle: sessionBlueprint.title,
+            sessionObjective: sessionBlueprint.objective ?? null,
+            sessionGoalTags: sessionBlueprint.sessionGoalTags ?? [],
+            sessionBodyParts: sessionBlueprint.sessionBodyParts ?? [],
+            sessionMlTags: sessionBlueprint.mlTags ?? [],
+            intensity: sessionBlueprint.intensity ?? null,
+            recoveryDemand: sessionBlueprint.recoveryDemand ?? null,
+            adaptationPriority: focusDefinition?.mlProfile?.adaptationPriority ?? null,
+          },
         });
 
         return {
@@ -372,9 +526,11 @@ export function generateSmartTrainingPlan({
     trainingPlan: {
       id: planId,
       createdAt: new Date().toISOString(),
+      sourcePlanKey: focusMeta.key,
       focusKey: focusMeta.key,
       focusLabel: focusMeta.label,
       focusDescription: focusMeta.description,
+      mlProfile: focusDefinition?.mlProfile ?? {},
       workoutsPerWeek: sessions.length,
       trainingLevel: user.trainingLevel,
       estimatedMinutesPerWeek: sessions.reduce(

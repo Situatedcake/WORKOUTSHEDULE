@@ -1,83 +1,75 @@
-﻿import { TRAINING_PLAN_LIBRARY } from "../data/trainingPlanCatalog.js";
+import { TRAINING_PLAN_LIBRARY } from "../data/trainingPlanCatalog.js";
+
 export const WORKOUTS_PER_WEEK_OPTIONS = [2, 3, 4, 5];
 export const EXERCISES_PER_SESSION = 6;
 
 const LEVEL_CONFIGS = {
   "Не определен": {
-    warmup: "5-7 минут суставной разминки и легкого кардио",
+    warmup: "5-7 минут суставной разминки и лёгкого кардио",
     durationOffset: 0,
-    prescriptions: {
-      compound: "3 подхода по 8-10 повторений",
-      isolation: "2-3 подхода по 10-12 повторений",
-      cardio: "15-20 минут в умеренном темпе",
-      core: "3 круга по 30-40 секунд",
-    },
   },
   Начинающий: {
-    warmup: "5-7 минут ходьбы, велотренажера или орбитрека",
+    warmup: "5-7 минут ходьбы, велотренажёра или орбитрека",
     durationOffset: -5,
-    prescriptions: {
-      compound: "2-3 подхода по 10-12 повторений",
-      isolation: "2 подхода по 12-15 повторений",
-      cardio: "12-18 минут в ровном темпе",
-      core: "2-3 круга по 30 секунд",
-    },
   },
   Средний: {
     warmup: "7-10 минут кардио и динамической мобилизации",
     durationOffset: 5,
-    prescriptions: {
-      compound: "3-4 подхода по 8-12 повторений",
-      isolation: "3 подхода по 10-15 повторений",
-      cardio: "18-25 минут, включая интервалы",
-      core: "3-4 круга по 40 секунд",
-    },
   },
   Продвинутый: {
     warmup: "10 минут кардио, мобилизации и разминочных подходов",
     durationOffset: 12,
-    prescriptions: {
-      compound: "4-5 подходов по 6-10 повторений",
-      isolation: "3-4 подхода по 10-15 повторений",
-      cardio: "22-30 минут с темповыми отрезками",
-      core: "4 круга по 45-60 секунд",
-    },
   },
 };
 
-const [
-  UNDEFINED_TRAINING_LEVEL,
-  BEGINNER_TRAINING_LEVEL,
-  INTERMEDIATE_TRAINING_LEVEL,
-  ADVANCED_TRAINING_LEVEL,
-] = Object.keys(LEVEL_CONFIGS);
-
 const LEVEL_PRESCRIPTION_DETAILS = {
-  [UNDEFINED_TRAINING_LEVEL]: {
+  "Не определен": {
     compound: { sets: 3, repRange: "8-10", restSeconds: 120 },
     isolation: { sets: 3, repRange: "10-12", restSeconds: 75 },
     cardio: { sets: 1, repRange: "15-20 мин", restSeconds: 30 },
     core: { sets: 3, repRange: "30-40 сек", restSeconds: 45 },
   },
-  [BEGINNER_TRAINING_LEVEL]: {
+  Начинающий: {
     compound: { sets: 3, repRange: "10-12", restSeconds: 120 },
     isolation: { sets: 2, repRange: "12-15", restSeconds: 60 },
     cardio: { sets: 1, repRange: "12-18 мин", restSeconds: 30 },
     core: { sets: 3, repRange: "30 сек", restSeconds: 45 },
   },
-  [INTERMEDIATE_TRAINING_LEVEL]: {
+  Средний: {
     compound: { sets: 4, repRange: "8-12", restSeconds: 150 },
     isolation: { sets: 3, repRange: "10-15", restSeconds: 75 },
     cardio: { sets: 1, repRange: "18-25 мин", restSeconds: 30 },
     core: { sets: 4, repRange: "40-50 сек", restSeconds: 45 },
   },
-  [ADVANCED_TRAINING_LEVEL]: {
+  Продвинутый: {
     compound: { sets: 5, repRange: "6-10", restSeconds: 180 },
     isolation: { sets: 4, repRange: "10-15", restSeconds: 90 },
     cardio: { sets: 1, repRange: "22-30 мин", restSeconds: 30 },
     core: { sets: 4, repRange: "45-60 сек", restSeconds: 60 },
   },
 };
+
+const COMPOUND_MOVEMENT_PATTERNS = new Set([
+  "horizontal_push",
+  "incline_push",
+  "vertical_push",
+  "horizontal_pull",
+  "vertical_pull",
+  "squat",
+  "hip_hinge",
+  "lunge",
+  "hip_extension",
+  "full_body",
+]);
+
+export const TRAINING_GOALS = TRAINING_PLAN_LIBRARY.map(
+  ({ key, label, description, mlProfile }) => ({
+    key,
+    label,
+    description,
+    mlProfile: mlProfile ?? {},
+  }),
+);
 
 function formatRestDuration(restSeconds) {
   const normalizedRestSeconds = Math.max(Number(restSeconds) || 0, 0);
@@ -109,25 +101,52 @@ export function formatExercisePrescription({
   return `${sets} подход. • ${repRange} • отдых ${formatRestDuration(restSeconds)}`;
 }
 
-const FOCUS_LIBRARY = TRAINING_PLAN_LIBRARY;
-
-export const TRAINING_GOALS = FOCUS_LIBRARY.map(
-  ({ key, label, description }) => ({
-    key,
-    label,
-    description,
-  }),
-);
-
 export function getLevelConfig(trainingLevel) {
   return LEVEL_CONFIGS[trainingLevel] ?? LEVEL_CONFIGS["Не определен"];
+}
+
+export function resolveTemplateExerciseType(exercise = {}) {
+  if (typeof exercise.type === "string" && exercise.type.trim()) {
+    return exercise.type;
+  }
+
+  if (exercise.bodyPart === "cardio") {
+    return "cardio";
+  }
+
+  if (exercise.bodyPart === "core") {
+    return "core";
+  }
+
+  if (typeof exercise.compound === "boolean") {
+    return exercise.compound ? "compound" : "isolation";
+  }
+
+  if (COMPOUND_MOVEMENT_PATTERNS.has(exercise.movementPattern)) {
+    return "compound";
+  }
+
+  if (
+    exercise.bodyPart === "chest" ||
+    exercise.bodyPart === "upper_chest" ||
+    exercise.bodyPart === "back" ||
+    exercise.bodyPart === "legs" ||
+    exercise.bodyPart === "full_body"
+  ) {
+    return "compound";
+  }
+
+  return "isolation";
 }
 
 export function getExercisePrescriptionDetails(trainingLevel, exerciseType) {
   const levelDetails =
     LEVEL_PRESCRIPTION_DETAILS[trainingLevel] ??
-    LEVEL_PRESCRIPTION_DETAILS[UNDEFINED_TRAINING_LEVEL];
-  const resolvedType = typeof exerciseType === "string" ? exerciseType : "compound";
+    LEVEL_PRESCRIPTION_DETAILS["Не определен"];
+  const resolvedType =
+    typeof exerciseType === "string" && exerciseType.trim()
+      ? exerciseType
+      : "compound";
   const baseDetails = levelDetails[resolvedType] ?? levelDetails.compound;
 
   return {
@@ -145,8 +164,23 @@ export function getExercisePrescription(trainingLevel, exerciseType) {
   return getExercisePrescriptionDetails(trainingLevel, exerciseType).prescription;
 }
 
+function getDefaultFocusDefinition() {
+  return (
+    TRAINING_PLAN_LIBRARY[0] ?? {
+      key: "general-strength",
+      label: "Общая сила",
+      description: "Базовый тренировочный шаблон.",
+      sessions: [],
+      mlProfile: {},
+    }
+  );
+}
+
 function getFocusDefinition(focusKey) {
-  return FOCUS_LIBRARY.find((goal) => goal.key === focusKey) ?? FOCUS_LIBRARY[0];
+  return (
+    TRAINING_PLAN_LIBRARY.find((goal) => goal.key === focusKey) ??
+    getDefaultFocusDefinition()
+  );
 }
 
 function normalizeWorkoutsPerWeek(workoutsPerWeek) {
@@ -157,32 +191,59 @@ function createPlanId(focusKey) {
   return `plan_${Date.now()}_${focusKey}`;
 }
 
-function createDraftSession(planId, template, index, trainingLevel) {
+function createExerciseOption(exercise = {}) {
+  return {
+    name: exercise.name,
+    type: resolveTemplateExerciseType(exercise),
+    bodyPart: exercise.bodyPart ?? null,
+    movementPattern: exercise.movementPattern ?? null,
+    equipment: Array.isArray(exercise.equipment) ? exercise.equipment : [],
+    priority: exercise.priority ?? null,
+  };
+}
+
+function createDraftSession(planId, template, focusDefinition, index, trainingLevel) {
   const levelConfig = getLevelConfig(trainingLevel);
-  const defaultSelection = template.exercisePool
+  const normalizedExercisePool = Array.isArray(template.exercisePool)
+    ? template.exercisePool
+    : [];
+  const defaultSelection = normalizedExercisePool
     .slice(0, EXERCISES_PER_SESSION)
     .map((exercise) => exercise.name);
 
   return {
     id: `${planId}_session_${index + 1}`,
-    key: template.key,
+    key: template.key ?? `session-${index + 1}`,
     index: index + 1,
     dayLabel: `Тренировка ${index + 1}`,
-    title: template.title,
-    emphasis: template.emphasis,
-    estimatedDurationMin: Math.max(template.duration + levelConfig.durationOffset, 35),
+    title: template.title ?? `Сессия ${index + 1}`,
+    emphasis: template.emphasis ?? focusDefinition.description,
+    estimatedDurationMin: Math.max(
+      Number(template.duration) + levelConfig.durationOffset || 0,
+      35,
+    ),
     warmup: levelConfig.warmup,
-    availableExercises: template.exercisePool.map((exercise) => exercise.name),
-    exerciseOptions: template.exercisePool.map((exercise) => ({
-      name: exercise.name,
-      type: exercise.type,
-    })),
+    objective: template.objective ?? focusDefinition.mlProfile?.objective ?? null,
+    intensity: template.intensity ?? null,
+    recoveryDemand: template.recoveryDemand ?? null,
+    sessionBodyParts: Array.isArray(template.sessionBodyParts)
+      ? template.sessionBodyParts
+      : Array.from(
+          new Set(normalizedExercisePool.map((exercise) => exercise.bodyPart).filter(Boolean)),
+        ),
+    mlTags: Array.isArray(template.mlTags)
+      ? template.mlTags
+      : Array.isArray(focusDefinition.mlProfile?.focusTags)
+        ? focusDefinition.mlProfile.focusTags
+        : [],
+    availableExercises: normalizedExercisePool.map((exercise) => exercise.name),
+    exerciseOptions: normalizedExercisePool.map(createExerciseOption),
     selectedExerciseNames: defaultSelection,
   };
 }
 
 function buildExerciseMap(template) {
-  return template.exercisePool.reduce((map, exercise) => {
+  return (template.exercisePool ?? []).reduce((map, exercise) => {
     map.set(exercise.name, exercise);
     return map;
   }, new Map());
@@ -203,7 +264,7 @@ function normalizeSelectedExercises(selectedExerciseNames, template) {
     return validSelected.slice(0, EXERCISES_PER_SESSION);
   }
 
-  const fallbackExercises = template.exercisePool
+  const fallbackExercises = (template.exercisePool ?? [])
     .map((exercise) => exercise.name)
     .filter((exerciseName) => !validSelected.includes(exerciseName))
     .slice(0, EXERCISES_PER_SESSION - validSelected.length);
@@ -219,10 +280,19 @@ export function createTrainingPlanDraft({
   const normalizedWorkoutsPerWeek = normalizeWorkoutsPerWeek(workoutsPerWeek);
   const focusDefinition = getFocusDefinition(focusKey);
   const planId = createPlanId(focusDefinition.key);
+  const focusSessions = Array.isArray(focusDefinition.sessions)
+    ? focusDefinition.sessions
+    : [];
 
   return Array.from({ length: normalizedWorkoutsPerWeek }, (_, index) => {
-    const template = focusDefinition.sessions[index % focusDefinition.sessions.length];
-    return createDraftSession(planId, template, index, trainingLevel);
+    const template = focusSessions[index % Math.max(focusSessions.length, 1)] ?? {};
+    return createDraftSession(
+      planId,
+      template,
+      focusDefinition,
+      index,
+      trainingLevel,
+    );
   });
 }
 
@@ -240,10 +310,13 @@ export function buildTrainingPlan({
     focusKey: focusDefinition.key,
     trainingLevel: normalizedTrainingLevel,
   });
+  const focusSessions = Array.isArray(focusDefinition.sessions)
+    ? focusDefinition.sessions
+    : [];
   const levelConfig = getLevelConfig(normalizedTrainingLevel);
 
   const sessions = draftSessions.map((draftSession, index) => {
-    const template = focusDefinition.sessions[index % focusDefinition.sessions.length];
+    const template = focusSessions[index % Math.max(focusSessions.length, 1)] ?? {};
     const selectedExerciseNames = normalizeSelectedExercises(
       sessionSelections[index]?.selectedExerciseNames ??
         draftSession.selectedExerciseNames,
@@ -253,29 +326,32 @@ export function buildTrainingPlan({
 
     return {
       id: `${planId}_session_${index + 1}`,
-      key: template.key,
+      key: template.key ?? `session-${index + 1}`,
       index: index + 1,
       dayLabel: `Тренировка ${index + 1}`,
-      title: template.title,
-      emphasis: template.emphasis,
+      title: template.title ?? `Сессия ${index + 1}`,
+      emphasis: template.emphasis ?? focusDefinition.description,
       estimatedDurationMin: draftSession.estimatedDurationMin,
       warmup: levelConfig.warmup,
-      availableExercises: template.exercisePool.map((exercise) => exercise.name),
-      exerciseOptions: template.exercisePool.map((exercise) => ({
-        name: exercise.name,
-        type: exercise.type,
-      })),
+      objective: template.objective ?? focusDefinition.mlProfile?.objective ?? null,
+      intensity: template.intensity ?? null,
+      recoveryDemand: template.recoveryDemand ?? null,
+      sessionBodyParts: draftSession.sessionBodyParts,
+      mlTags: draftSession.mlTags,
+      availableExercises: (template.exercisePool ?? []).map((exercise) => exercise.name),
+      exerciseOptions: (template.exercisePool ?? []).map(createExerciseOption),
       completed: false,
       exercises: selectedExerciseNames.map((exerciseName) => {
-        const exercise = exerciseMap.get(exerciseName);
+        const exercise = exerciseMap.get(exerciseName) ?? { name: exerciseName };
+        const exerciseType = resolveTemplateExerciseType(exercise);
         const prescriptionDetails = getExercisePrescriptionDetails(
           normalizedTrainingLevel,
-          exercise.type,
+          exerciseType,
         );
 
         return {
           name: exercise.name,
-          type: exercise.type,
+          type: exerciseType,
           sets: prescriptionDetails.sets,
           repRange: prescriptionDetails.repRange,
           restSeconds: prescriptionDetails.restSeconds,
@@ -283,6 +359,10 @@ export function buildTrainingPlan({
           volumeTrend: "base",
           volumeReason:
             "Базовый объём подобран по текущему уровню подготовки и типу упражнения.",
+          bodyPart: exercise.bodyPart ?? null,
+          movementPattern: exercise.movementPattern ?? null,
+          equipment: Array.isArray(exercise.equipment) ? exercise.equipment : [],
+          priority: exercise.priority ?? null,
         };
       }),
     };
@@ -291,9 +371,11 @@ export function buildTrainingPlan({
   return {
     id: planId,
     createdAt: new Date().toISOString(),
+    sourcePlanKey: focusDefinition.key,
     focusKey: focusDefinition.key,
     focusLabel: focusDefinition.label,
     focusDescription: focusDefinition.description,
+    mlProfile: focusDefinition.mlProfile ?? {},
     workoutsPerWeek: sessions.length,
     trainingLevel: normalizedTrainingLevel,
     estimatedMinutesPerWeek: sessions.reduce(
@@ -303,4 +385,3 @@ export function buildTrainingPlan({
     sessions,
   };
 }
-

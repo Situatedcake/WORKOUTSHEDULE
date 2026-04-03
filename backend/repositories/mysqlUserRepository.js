@@ -10,6 +10,7 @@ import {
   normalizeTrainingPlanAdaptationHistory,
 } from "../services/trainingPlanAdaptationHistory.js";
 import { syncExpiredScheduledWorkouts } from "../services/expiredScheduledWorkouts.js";
+import { attachGamificationSnapshot } from "../services/gamification.js";
 import {
   buildWorkoutOutcomeFeedbackEvents,
   normalizeTrainingMlFeedbackHistory,
@@ -179,7 +180,7 @@ export const mysqlUserRepository = {
       await persistSyncedUserState(syncResult.user);
     }
 
-    return syncResult.user;
+    return attachGamificationSnapshot(syncResult.user);
   },
 
   async login({ login, password }) {

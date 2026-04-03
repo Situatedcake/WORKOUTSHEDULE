@@ -1,20 +1,34 @@
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 import { Link, Navigate, useLocation } from "react-router";
 import PageBackButton from "../../components/PageBackButton";
 import PageShell from "../../components/PageShell";
 import { ROUTES } from "../../constants/routes";
 import { useAuth } from "../../hooks/useAuth";
-import { getRecommendedTrainingSetup } from "../../shared/trainingPlanBuilder";
-import { clearTastingStart, getTastingScore } from "../../utils/tastingSession";
-import { getTrainingLevelByScore } from "../../utils/trainingLevel";
+import {
+  clearTastingStart,
+  getTastingScore,
+  getTastingScoreModel,
+} from "../../utils/tastingSession";
+import {
+  getTrainingLevelByScore,
+  normalizeTrainingScoreModel,
+} from "../../utils/trainingLevel";
 
 export default function FinishTasting() {
   const location = useLocation();
   const { currentUser, isAuthReady, updateCurrentUserTrainingResult } = useAuth();
   const totalScore = location.state?.totalScore ?? getTastingScore();
+  const scoreModel = useMemo(
+    () =>
+      normalizeTrainingScoreModel(
+        location.state?.scoreModel ?? getTastingScoreModel(),
+      ),
+    [location.state?.scoreModel],
+  );
   const trainingLevel =
-    totalScore === null ? "Не определен" : getTrainingLevelByScore(totalScore);
-  const suggestedSetup = getRecommendedTrainingSetup(trainingLevel);
+    totalScore === null
+      ? "Не определен"
+      : getTrainingLevelByScore(totalScore, scoreModel);
   const currentUserId = currentUser?.id ?? null;
 
   useEffect(() => {
@@ -52,29 +66,39 @@ export default function FinishTasting() {
 
         <div className="rounded-[28px] border border-[#2A3140] bg-[#12151C] px-6 py-8">
           <p className="text-sm text-[#8E97A8]">Суммарное количество баллов</p>
-          <p className="mt-3 text-5xl font-medium text-[#01BB96]">{totalScore}</p>
+          <p className="mt-3 text-5xl font-medium text-[#01BB96]">
+            {totalScore}
+          </p>
+          <p className="mt-2 text-sm text-[#8E97A8]">
+            Из {scoreModel.maxScore} возможных
+          </p>
           <p className="mt-4 text-sm text-[#8E97A8]">
-            Уровень подготовки: <span className="text-white">{trainingLevel}</span>
+            Уровень подготовки:{" "}
+            <span className="text-white">{trainingLevel}</span>
           </p>
         </div>
 
         <div className="rounded-[28px] border border-[#2A3140] bg-[#12151C] px-6 py-5">
           <p className="text-sm uppercase tracking-[0.2em] text-[#8E97A8]">
-            Рекомендация
+            Следующий шаг
           </p>
           <h2 className="mt-2 text-xl font-medium text-white">
-            {suggestedSetup.workoutsPerWeek} тренировки в неделю
+            Составим стартовую тренировку под твой уровень
           </h2>
           <p className="mt-2 text-sm leading-6 text-[#8E97A8]">
-            Мы уже подготовили стартовый вариант программы под ваш уровень. На
-            следующем экране его можно будет изменить перед сохранением.
+            На следующем экране backend подберет стартовую программу и отдаст
+            ее в конструктор. Ты сможешь спокойно изменить план перед
+            сохранением.
           </p>
         </div>
 
         {currentUser ? (
           <p className="text-sm leading-6 text-[#8E97A8]">
             Результат сохранен в профиль пользователя{" "}
-            <span className="text-white">{currentUser.name ?? currentUser.login}</span>.
+            <span className="text-white">
+              {currentUser.name ?? currentUser.login}
+            </span>
+            .
           </p>
         ) : !isAuthReady ? (
           <p className="text-sm leading-6 text-[#8E97A8]">
@@ -108,8 +132,8 @@ export default function FinishTasting() {
           state={{
             suggestedFromTest: true,
             suggestedTrainingLevel: trainingLevel,
-            suggestedSetup,
             totalScore,
+            scoreModel,
           }}
           className="rounded-3xl bg-[#01BB96] px-5 py-4 text-center text-base font-medium text-[#000214]"
         >

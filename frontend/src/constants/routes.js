@@ -6,6 +6,7 @@ export const ROUTES = {
   STATS: "/stats",
   USER: "/user",
   USER_EDIT: "/user/edit",
+  USER_ACHIEVEMENTS: "/user/achievements",
   CALENDAR: "/calendare",
   LIBRARY: "/library",
   CREATE_TRAINING: "/create-training",

@@ -1,11 +1,8 @@
-﻿import { TRAINING_PLAN_LIBRARY } from "../data/trainingPlanCatalog.js";
 export const WORKOUTS_PER_WEEK_OPTIONS = [2, 3, 4, 5];
 export const EXERCISES_PER_SESSION = 6;
 
 const LEVEL_CONFIGS = {
   "Не определен": {
-    warmup: "5-7 минут суставной разминки и легкого кардио",
-    durationOffset: 0,
     prescriptions: {
       compound: "3 подхода по 8-10 повторений",
       isolation: "2-3 подхода по 10-12 повторений",
@@ -14,8 +11,6 @@ const LEVEL_CONFIGS = {
     },
   },
   Начинающий: {
-    warmup: "5-7 минут ходьбы, велотренажера или орбитрека",
-    durationOffset: -5,
     prescriptions: {
       compound: "2-3 подхода по 10-12 повторений",
       isolation: "2 подхода по 12-15 повторений",
@@ -24,8 +19,6 @@ const LEVEL_CONFIGS = {
     },
   },
   Средний: {
-    warmup: "7-10 минут кардио и динамической мобилизации",
-    durationOffset: 5,
     prescriptions: {
       compound: "3-4 подхода по 8-12 повторений",
       isolation: "3 подхода по 10-15 повторений",
@@ -34,8 +27,6 @@ const LEVEL_CONFIGS = {
     },
   },
   Продвинутый: {
-    warmup: "10 минут кардио, мобилизации и разминочных подходов",
-    durationOffset: 12,
     prescriptions: {
       compound: "4-5 подходов по 6-10 повторений",
       isolation: "3-4 подхода по 10-15 повторений",
@@ -44,45 +35,6 @@ const LEVEL_CONFIGS = {
     },
   },
 };
-
-const FOCUS_LIBRARY = TRAINING_PLAN_LIBRARY;
-
-export const TRAINING_GOALS = FOCUS_LIBRARY.map(
-  ({ key, label, description }) => ({
-    key,
-    label,
-    description,
-  }),
-);
-
-/*
-const TRAINING_SETUP_RECOMMENDATIONS = {
-  "Не определен": {
-    workoutsPerWeek: 3,
-    focusKey: "general-strength",
-    reason:
-      "Сбалансированная программа для старта и подбора нагрузки.",
-  },
-  Начинающий: {
-    workoutsPerWeek: 3,
-    focusKey: "general-strength",
-    reason:
-      "Уровень подсказывает, что лучше начать с базовой и устойчивой программы.",
-  },
-  Средний: {
-    workoutsPerWeek: 4,
-    focusKey: "upper-torso",
-    reason:
-      "Можно поднять частоту тренировок и дать больше объема верху тела.",
-  },
-  Продвинутый: {
-    workoutsPerWeek: 5,
-    focusKey: "upper-torso",
-    reason:
-      "Уровень позволяет зайти в более частый сплит с большим объемом.",
-  },
-};
-*/
 
 const [
   UNDEFINED_TRAINING_LEVEL,
@@ -153,6 +105,10 @@ export function getExerciseVolumeReason(exercise) {
     return exercise.volumeReason;
   }
 
+  if (exercise?.volumeTrend === "programmed") {
+    return "Объём подстроен под задачу конкретного дня и общую логику текущего плана.";
+  }
+
   if (exercise?.volumeTrend === "progressing") {
     return "Объём усилен, потому что по упражнению уже виден рабочий прогресс.";
   }
@@ -185,6 +141,10 @@ function formatRestDelta(delta) {
 }
 
 export function getExerciseVolumeReasonTitle(exercise) {
+  if (exercise?.volumeTrend === "programmed") {
+    return "Подстроили объём под задачу дня";
+  }
+
   if (exercise?.volumeTrend === "progressing") {
     return "Добавили объём из-за прогресса";
   }
@@ -200,6 +160,28 @@ export function getExerciseVolumeReasonTitle(exercise) {
   return "Базовый объём под твой уровень";
 }
 
+export function getExercisePrescriptionDetails(trainingLevel, exerciseType) {
+  const levelDetails =
+    LEVEL_PRESCRIPTION_DETAILS[trainingLevel] ??
+    LEVEL_PRESCRIPTION_DETAILS[UNDEFINED_TRAINING_LEVEL];
+  const resolvedType = typeof exerciseType === "string" ? exerciseType : "compound";
+  const baseDetails = levelDetails[resolvedType] ?? levelDetails.compound;
+
+  return {
+    ...baseDetails,
+    prescription: formatExercisePrescription({
+      exerciseType: resolvedType,
+      sets: baseDetails.sets,
+      repRange: baseDetails.repRange,
+      restSeconds: baseDetails.restSeconds,
+    }),
+  };
+}
+
+export function getExercisePrescription(trainingLevel, exerciseType) {
+  return getExercisePrescriptionDetails(trainingLevel, exerciseType).prescription;
+}
+
 export function getExerciseVolumeChangeChips(exercise, trainingLevel) {
   const baseDetails = getExercisePrescriptionDetails(
     trainingLevel,
@@ -210,8 +192,7 @@ export function getExerciseVolumeChangeChips(exercise, trainingLevel) {
     typeof exercise?.repRange === "string" && exercise.repRange.trim()
       ? exercise.repRange
       : baseDetails.repRange;
-  const currentRestSeconds =
-    Number(exercise?.restSeconds) || baseDetails.restSeconds;
+  const currentRestSeconds = Number(exercise?.restSeconds) || baseDetails.restSeconds;
   const chips = [];
   const setDelta = currentSets - baseDetails.sets;
   const restDelta = currentRestSeconds - baseDetails.restSeconds;
@@ -236,10 +217,24 @@ export function getExerciseVolumeChangeChips(exercise, trainingLevel) {
     return ["ручная правка"];
   }
 
+  if (exercise?.volumeTrend === "programmed") {
+    return ["логика плана"];
+  }
+
   return ["базовый объём"];
 }
 
 export function getExerciseVolumeReasonMeta(exercise) {
+  if (exercise?.volumeTrend === "programmed") {
+    return {
+      label: "План",
+      iconType: "programmed",
+      surfaceClassName: "border border-[#35506D] bg-[#111B28]",
+      badgeClassName: "bg-[#17304A] text-[#BBD8FF]",
+      textClassName: "text-[#CFE1FF]",
+    };
+  }
+
   if (exercise?.volumeTrend === "progressing") {
     return {
       label: "Прогресс",
@@ -306,6 +301,7 @@ export function getTrainingPlanAdaptationHighlights(trainingPlan, limit = 4) {
 
 export function getTrainingPlanAdaptationBreakdown(trainingPlan) {
   const result = {
+    programmed: 0,
     progressing: 0,
     stalled: 0,
     manual: 0,
@@ -320,6 +316,11 @@ export function getTrainingPlanAdaptationBreakdown(trainingPlan) {
   });
 
   return [
+    {
+      key: "programmed",
+      count: result.programmed,
+      meta: getExerciseVolumeReasonMeta({ volumeTrend: "programmed" }),
+    },
     {
       key: "progressing",
       count: result.progressing,
@@ -342,232 +343,3 @@ export function getTrainingPlanAdaptationBreakdown(trainingPlan) {
     },
   ];
 }
-
-const DEFAULT_TRAINING_SETUP = {
-  workoutsPerWeek: 3,
-  focusKey: "general-strength",
-  reason:
-    "Сбалансированная программа для старта и подбора рабочей нагрузки.",
-};
-
-export function getLevelConfig(trainingLevel) {
-  return LEVEL_CONFIGS[trainingLevel] ?? LEVEL_CONFIGS["Не определен"];
-}
-
-export function getExercisePrescriptionDetails(trainingLevel, exerciseType) {
-  const levelDetails =
-    LEVEL_PRESCRIPTION_DETAILS[trainingLevel] ??
-    LEVEL_PRESCRIPTION_DETAILS[UNDEFINED_TRAINING_LEVEL];
-  const resolvedType = typeof exerciseType === "string" ? exerciseType : "compound";
-  const baseDetails = levelDetails[resolvedType] ?? levelDetails.compound;
-
-  return {
-    ...baseDetails,
-    prescription: formatExercisePrescription({
-      exerciseType: resolvedType,
-      sets: baseDetails.sets,
-      repRange: baseDetails.repRange,
-      restSeconds: baseDetails.restSeconds,
-    }),
-  };
-}
-
-export function getExercisePrescription(trainingLevel, exerciseType) {
-  return getExercisePrescriptionDetails(trainingLevel, exerciseType).prescription;
-}
-
-function getFocusDefinition(focusKey) {
-  return FOCUS_LIBRARY.find((goal) => goal.key === focusKey) ?? FOCUS_LIBRARY[0];
-}
-
-function normalizeWorkoutsPerWeek(workoutsPerWeek) {
-  return Math.min(Math.max(Number(workoutsPerWeek) || 3, 2), 5);
-}
-
-function createPlanId(focusKey) {
-  return `plan_${Date.now()}_${focusKey}`;
-}
-
-export function getRecommendedTrainingSetup(trainingLevel) {
-  if (trainingLevel === "Продвинутый") {
-    return {
-      workoutsPerWeek: 5,
-      focusKey: "upper-torso",
-      reason:
-        "Уровень позволяет зайти в более частый сплит с большим объемом работы.",
-    };
-  }
-
-  if (trainingLevel === "Средний") {
-    return {
-      workoutsPerWeek: 4,
-      focusKey: "upper-torso",
-      reason:
-        "Можно поднять частоту тренировок и дать больше объема верху тела.",
-    };
-  }
-
-  if (trainingLevel === "Начинающий") {
-    return {
-      workoutsPerWeek: 3,
-      focusKey: "general-strength",
-      reason:
-        "Лучше начать с базовой и устойчивой программы без лишнего объема.",
-    };
-  }
-
-  return DEFAULT_TRAINING_SETUP;
-/*
-  return (
-    TRAINING_SETUP_RECOMMENDATIONS[trainingLevel] ??
-    TRAINING_SETUP_RECOMMENDATIONS["Не определен"]
-  );
-*/
-}
-
-function createDraftSession(planId, template, index, trainingLevel) {
-  const levelConfig = getLevelConfig(trainingLevel);
-  const defaultSelection = template.exercisePool
-    .slice(0, EXERCISES_PER_SESSION)
-    .map((exercise) => exercise.name);
-
-  return {
-    id: `${planId}_session_${index + 1}`,
-    key: template.key,
-    index: index + 1,
-    dayLabel: `Тренировка ${index + 1}`,
-    title: template.title,
-    emphasis: template.emphasis,
-    estimatedDurationMin: Math.max(template.duration + levelConfig.durationOffset, 35),
-    warmup: levelConfig.warmup,
-    availableExercises: template.exercisePool.map((exercise) => exercise.name),
-    exerciseOptions: template.exercisePool.map((exercise) => ({
-      name: exercise.name,
-      type: exercise.type,
-    })),
-    selectedExerciseNames: defaultSelection,
-  };
-}
-
-function buildExerciseMap(template) {
-  return template.exercisePool.reduce((map, exercise) => {
-    map.set(exercise.name, exercise);
-    return map;
-  }, new Map());
-}
-
-function normalizeSelectedExercises(selectedExerciseNames, template) {
-  const exerciseMap = buildExerciseMap(template);
-  const validSelected = Array.isArray(selectedExerciseNames)
-    ? selectedExerciseNames.filter(
-        (exerciseName, index, array) =>
-          typeof exerciseName === "string" &&
-          exerciseMap.has(exerciseName) &&
-          array.indexOf(exerciseName) === index,
-      )
-    : [];
-
-  if (validSelected.length >= EXERCISES_PER_SESSION) {
-    return validSelected.slice(0, EXERCISES_PER_SESSION);
-  }
-
-  const fallbackExercises = template.exercisePool
-    .map((exercise) => exercise.name)
-    .filter((exerciseName) => !validSelected.includes(exerciseName))
-    .slice(0, EXERCISES_PER_SESSION - validSelected.length);
-
-  return [...validSelected, ...fallbackExercises];
-}
-
-export function createTrainingPlanDraft({
-  workoutsPerWeek,
-  focusKey,
-  trainingLevel,
-}) {
-  const normalizedWorkoutsPerWeek = normalizeWorkoutsPerWeek(workoutsPerWeek);
-  const focusDefinition = getFocusDefinition(focusKey);
-  const planId = createPlanId(focusDefinition.key);
-
-  return Array.from({ length: normalizedWorkoutsPerWeek }, (_, index) => {
-    const template = focusDefinition.sessions[index % focusDefinition.sessions.length];
-    return createDraftSession(planId, template, index, trainingLevel);
-  });
-}
-
-export function buildTrainingPlan({
-  workoutsPerWeek,
-  focusKey,
-  trainingLevel,
-  sessionSelections = [],
-}) {
-  const normalizedTrainingLevel = trainingLevel || "Не определен";
-  const focusDefinition = getFocusDefinition(focusKey);
-  const planId = createPlanId(focusDefinition.key);
-  const draftSessions = createTrainingPlanDraft({
-    workoutsPerWeek,
-    focusKey: focusDefinition.key,
-    trainingLevel: normalizedTrainingLevel,
-  });
-  const levelConfig = getLevelConfig(normalizedTrainingLevel);
-
-  const sessions = draftSessions.map((draftSession, index) => {
-    const template = focusDefinition.sessions[index % focusDefinition.sessions.length];
-    const selectedExerciseNames = normalizeSelectedExercises(
-      sessionSelections[index]?.selectedExerciseNames ??
-        draftSession.selectedExerciseNames,
-      template,
-    );
-    const exerciseMap = buildExerciseMap(template);
-
-    return {
-      id: `${planId}_session_${index + 1}`,
-      key: template.key,
-      index: index + 1,
-      dayLabel: `Тренировка ${index + 1}`,
-      title: template.title,
-      emphasis: template.emphasis,
-      estimatedDurationMin: draftSession.estimatedDurationMin,
-      warmup: levelConfig.warmup,
-      availableExercises: template.exercisePool.map((exercise) => exercise.name),
-      exerciseOptions: template.exercisePool.map((exercise) => ({
-        name: exercise.name,
-        type: exercise.type,
-      })),
-      completed: false,
-      exercises: selectedExerciseNames.map((exerciseName) => {
-        const exercise = exerciseMap.get(exerciseName);
-        const prescriptionDetails = getExercisePrescriptionDetails(
-          normalizedTrainingLevel,
-          exercise.type,
-        );
-        return {
-          name: exercise.name,
-          type: exercise.type,
-          sets: prescriptionDetails.sets,
-          repRange: prescriptionDetails.repRange,
-          restSeconds: prescriptionDetails.restSeconds,
-          prescription: prescriptionDetails.prescription,
-          volumeTrend: "base",
-          volumeReason:
-            "Базовый объём подобран по текущему уровню подготовки и типу упражнения.",
-        };
-      }),
-    };
-  });
-
-  return {
-    id: planId,
-    createdAt: new Date().toISOString(),
-    focusKey: focusDefinition.key,
-    focusLabel: focusDefinition.label,
-    focusDescription: focusDefinition.description,
-    workoutsPerWeek: sessions.length,
-    trainingLevel: normalizedTrainingLevel,
-    estimatedMinutesPerWeek: sessions.reduce(
-      (total, session) => total + session.estimatedDurationMin,
-      0,
-    ),
-    sessions,
-  };
-}
-

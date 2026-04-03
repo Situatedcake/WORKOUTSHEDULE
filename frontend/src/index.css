@@ -77,10 +77,59 @@ textarea {
   touch-action: manipulation;
 }
 
+@keyframes achievementToastSlide {
+  0% {
+    opacity: 0;
+    transform: translateY(calc(-100% - 1.5rem)) scale(0.96);
+  }
+
+  8%,
+  82% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+
+  100% {
+    opacity: 0;
+    transform: translateY(calc(-100% - 1.5rem)) scale(0.98);
+  }
+}
+
+@keyframes achievementToastProgress {
+  0% {
+    transform: scaleX(1);
+  }
+
+  100% {
+    transform: scaleX(0);
+  }
+}
+
+.achievement-toast {
+  transform-origin: top center;
+  animation-name: achievementToastSlide;
+  animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+  animation-fill-mode: forwards;
+}
+
+.achievement-toast-progress {
+  transform-origin: left center;
+  animation-name: achievementToastProgress;
+  animation-timing-function: linear;
+  animation-fill-mode: forwards;
+}
+
 @media (display-mode: standalone) {
   html,
   body,
   #root {
     min-height: 100dvh;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .achievement-toast,
+  .achievement-toast-progress {
+    animation-duration: 10ms !important;
   }
 }

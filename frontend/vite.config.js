@@ -14,6 +14,31 @@ export default defineConfig({
       packageJson.version ?? "0.0.0",
     ),
   },
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (!id.includes("node_modules")) {
+            return undefined;
+          }
+
+          if (id.includes("browser-image-compression")) {
+            return "image-tools";
+          }
+
+          if (id.includes("react-router")) {
+            return "router-vendor";
+          }
+
+          if (id.includes("react")) {
+            return "react-vendor";
+          }
+
+          return "vendor";
+        },
+      },
+    },
+  },
   server: {
     proxy: {
       "/api": {

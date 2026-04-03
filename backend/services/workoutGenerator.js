@@ -32,7 +32,16 @@ function getBodyPartFrequency(adaptiveSignals, bodyPart) {
 
 function scoreGoalCompatibility(exercise, user, slot = {}) {
   let score = 0;
-  const expectedGoalTags = [user.goal, user.focusKey, ...(slot.goalTags ?? [])];
+  const expectedGoalTags = [
+    user.goal,
+    user.focusKey,
+    user.objective,
+    user.adaptationPriority,
+    ...(user.focusTags ?? []),
+    ...(slot.goalTags ?? []),
+    ...(slot.sessionMlTags ?? []),
+    slot.sessionObjective,
+  ];
 
   if (normalizeTag(exercise.type) === normalizeTag(user.goal)) {
     score += 8;
@@ -42,39 +51,74 @@ function scoreGoalCompatibility(exercise, user, slot = {}) {
     score += 10;
   }
 
+  if (hasTagIntersection(expectedGoalTags, ["arms", "biceps", "triceps"])) {
+    const normalizedBodyPart = normalizeTag(exercise.bodyPart);
+    const normalizedGoalTags = normalizeTagArray(exercise.goalTags);
+
+    if (
+      normalizedBodyPart === "arms" ||
+      normalizedGoalTags.some((tag) =>
+        ["arms", "biceps", "triceps", "forearms"].includes(tag),
+      )
+    ) {
+      score += 4;
+    }
+  }
+
   return score;
 }
 
 function scoreTargetBodyParts(exercise, user, slot = {}, adaptiveSignals) {
   let score = 0;
-  const targetBodyParts = normalizeTagArray([
-    ...(user.targetBodyParts ?? []),
-    ...(slot.bodyParts ?? []),
-  ]);
+  const slotBodyParts = normalizeTagArray(slot.bodyParts);
+  const userTargetBodyParts = normalizeTagArray(user.targetBodyParts);
   const normalizedExerciseBodyPart = normalizeTag(exercise.bodyPart);
   const normalizedMuscleGroups = normalizeTagArray(exercise.muscleGroups);
+  const matchesSlotBodyPart =
+    slotBodyParts.length > 0 &&
+    (slotBodyParts.includes(normalizedExerciseBodyPart) ||
+      normalizedMuscleGroups.some((group) => slotBodyParts.includes(group)));
 
-  if (targetBodyParts.includes(normalizedExerciseBodyPart)) {
-    score += 9;
+  if (slotBodyParts.length > 0) {
+    if (slotBodyParts.includes(normalizedExerciseBodyPart)) {
+      score += 12;
+    }
+
+    if (normalizedMuscleGroups.some((group) => slotBodyParts.includes(group))) {
+      score += 8;
+    }
+
+    if (!matchesSlotBodyPart && normalizedExerciseBodyPart !== "full-body") {
+      score -= 6;
+    }
   }
 
-  if (normalizedMuscleGroups.some((group) => targetBodyParts.includes(group))) {
-    score += 7;
+  if (userTargetBodyParts.includes(normalizedExerciseBodyPart)) {
+    score += 5;
   }
 
-  if (normalizedExerciseBodyPart === "full-body" && targetBodyParts.length > 0) {
+  if (
+    normalizedMuscleGroups.some((group) => userTargetBodyParts.includes(group))
+  ) {
     score += 4;
   }
 
   if (
-    targetBodyParts.includes(normalizedExerciseBodyPart) &&
+    normalizedExerciseBodyPart === "full-body" &&
+    (slotBodyParts.length > 0 || userTargetBodyParts.length > 0)
+  ) {
+    score += 4;
+  }
+
+  if (
+    (matchesSlotBodyPart || userTargetBodyParts.includes(normalizedExerciseBodyPart)) &&
     getBodyPartFrequency(adaptiveSignals, exercise.bodyPart) <= 2
   ) {
     score += 3;
   }
 
   if (
-    targetBodyParts.includes(normalizedExerciseBodyPart) &&
+    (matchesSlotBodyPart || userTargetBodyParts.includes(normalizedExerciseBodyPart)) &&
     getBodyPartFrequency(adaptiveSignals, exercise.bodyPart) >= 8
   ) {
     score -= 3;
@@ -230,6 +274,96 @@ function scoreSlotTraits(exercise, slot = {}) {
   return score;
 }
 
+function scoreSessionContext(exercise, slot = {}, trainingFeatures) {
+  const normalizedIntensity = normalizeTag(slot.intensity);
+  const normalizedRecoveryDemand = normalizeTag(slot.recoveryDemand);
+  const normalizedSessionObjective = normalizeTag(slot.sessionObjective);
+  const sessionMlTags = normalizeTagArray(slot.sessionMlTags);
+  const normalizedGoalTags = normalizeTagArray(exercise.goalTags);
+  const normalizedBodyPart = normalizeTag(exercise.bodyPart);
+  const estimatedDurationMin = Number(slot.estimatedDurationMin) || null;
+  let score = 0;
+
+  if (
+    sessionMlTags.includes("arms-priority") ||
+    normalizedSessionObjective.includes("arms")
+  ) {
+    if (
+      normalizedBodyPart === "arms" ||
+      normalizedGoalTags.some((tag) =>
+        ["arms", "biceps", "triceps", "forearms"].includes(tag),
+      )
+    ) {
+      score += 6;
+    }
+  }
+
+  if (
+    sessionMlTags.includes("support-day") ||
+    sessionMlTags.includes("joint-balance") ||
+    normalizedSessionObjective.includes("support") ||
+    normalizedSessionObjective.includes("balance")
+  ) {
+    if (["back", "shoulders", "core"].includes(normalizedBodyPart)) {
+      score += 4;
+    }
+
+    if (normalizedBodyPart === "arms" && !exercise.compound) {
+      score -= 2;
+    }
+  }
+
+  if (normalizedIntensity === "high" || normalizedIntensity === "moderate-high") {
+    if (exercise.compound) {
+      score += 3;
+    }
+
+    if (exercise.difficulty >= 2) {
+      score += 2;
+    }
+  }
+
+  if (normalizedRecoveryDemand === "high") {
+    if (
+      trainingFeatures.history.skipRate >= 0.2 ||
+      trainingFeatures.readiness.readinessScore <= 45
+    ) {
+      if (exercise.difficulty >= 3) {
+        score -= 5;
+      }
+
+      if (exercise.compound) {
+        score -= 2;
+      }
+    } else if (exercise.compound && exercise.difficulty >= 2) {
+      score += 2;
+    }
+  }
+
+  if (
+    normalizedRecoveryDemand === "low" ||
+    normalizedRecoveryDemand === "low-moderate"
+  ) {
+    if (exercise.difficulty === 1) {
+      score += 2;
+    }
+
+    if (normalizeTag(exercise.type) === "core" || normalizedBodyPart === "core") {
+      score += 2;
+    }
+  }
+
+  if (estimatedDurationMin != null && estimatedDurationMin <= 50 && exercise.difficulty >= 3) {
+    score -= 2;
+  }
+
+  if (estimatedDurationMin != null && estimatedDurationMin >= 70 && exercise.compound) {
+    score += 2;
+  }
+
+  return score;
+}
+
 function scoreReadinessAndFeedback(exercise, trainingFeatures) {
   const { history, recovery, feedback, readiness } = trainingFeatures;
   let score = 0;
@@ -331,6 +465,7 @@ function scoreExercise(
   score += scoreContraindications(exercise, user);
   score += scoreExerciseHistory(exercise, adaptiveSignals);
   score += scoreSlotTraits(exercise, slot);
+  score += scoreSessionContext(exercise, slot, trainingFeatures);
   score += scoreReadinessAndFeedback(exercise, trainingFeatures);
 
   if (user.workoutsPerWeek >= 4 && exercise.difficulty >= 2) {

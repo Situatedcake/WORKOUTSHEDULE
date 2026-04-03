@@ -6,7 +6,6 @@ import {
   setSessionUserId,
 } from "../utils/authSession";
 import { userRepository } from "../services/database/userRepository";
-import { getTrainingLevelByScore } from "../utils/trainingLevel";
 
 function validateCredentials({ login, password }) {
   const trimmedLogin = String(login ?? "").trim();
@@ -181,10 +180,10 @@ export function AuthProvider({ children }) {
         return null;
       }
 
-      const updatedUser = await userRepository.updateTrainingResult(currentUserId, {
-        score,
-        trainingLevel: getTrainingLevelByScore(score),
-      });
+      const updatedUser = await userRepository.updateTrainingResult(
+        currentUserId,
+        { score },
+      );
 
       if (updatedUser) {
         setCurrentUser(updatedUser);
