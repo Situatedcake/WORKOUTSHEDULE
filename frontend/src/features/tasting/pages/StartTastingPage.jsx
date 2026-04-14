@@ -1,16 +1,16 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router";
 import TestImg from "/images/testingPageIMG.png";
-import NavMenu from "../../components/NavMenu";
-import { ROUTES } from "../../constants/routes";
-import { useAuth } from "../../hooks/useAuth";
-import { DATABASE_CONFIG } from "../../services/database/databaseConfig";
+import NavMenu from "../../../components/NavMenu";
+import { ROUTES } from "../../../constants/routes";
+import { useAuth } from "../../../hooks/useAuth";
+import { DATABASE_CONFIG } from "../../../services/database/databaseConfig";
 import {
   getTastingQuestionsMeta,
   getTastingScore,
   saveTastingQuestionsMeta,
   startTastingSession,
-} from "../../utils/tastingSession";
+} from "../utils/session";
 
 function getQuestionCountLabel(total) {
   if (!Number.isFinite(total) || total <= 0) {
@@ -137,8 +137,8 @@ export default function StartTastingPage() {
         </ol>
 
         {!currentUser ? (
-          <div className="mt-3 flex w-full flex-col gap-3 rounded-3xl border border-[#2A3140] bg-[#12151C] p-4">
-            <p className="text-sm leading-6 text-[#8E97A8]">
+          <div className="mt-3 flex w-full flex-col gap-3 rounded-3xl border border-[var(--border-primary)] bg-[var(--surface-primary)] p-4">
+            <p className="text-sm leading-6 text-[var(--text-muted)]">
               Тест можно пройти и без аккаунта. Но если войти или
               зарегистрироваться, мы сохраним ваш результат и уровень
               подготовки в профиль.
@@ -147,14 +147,14 @@ export default function StartTastingPage() {
             <div className="flex gap-3">
               <Link
                 to={ROUTES.LOGIN}
-                className="rounded-3xl border border-[#2A3140] px-4 py-3 text-sm text-white"
+                className="rounded-3xl border border-[var(--border-primary)] px-4 py-3 text-sm text-[var(--text-primary)]"
               >
                 Войти
               </Link>
 
               <Link
                 to={ROUTES.REGISTER}
-                className="rounded-3xl border border-[#2A3140] px-4 py-3 text-sm text-white"
+                className="rounded-3xl border border-[var(--border-primary)] px-4 py-3 text-sm text-[var(--text-primary)]"
               >
                 Регистрация
               </Link>
@@ -165,7 +165,7 @@ export default function StartTastingPage() {
 
       {hasCompletedTest ? (
         <section className="px-5">
-          <div className="mx-auto mt-4 w-full max-w-md rounded-3xl border border-[#2A3140] bg-[#12151C] p-4 text-sm leading-6 text-[#8E97A8]">
+          <div className="mx-auto mt-4 w-full max-w-md rounded-3xl border border-[var(--border-primary)] bg-[var(--surface-primary)] p-4 text-sm leading-6 text-[var(--text-muted)]">
             Тест уже пройден. Если понадобится пройти его заново, это можно
             сделать через меню профиля.
           </div>
@@ -174,7 +174,7 @@ export default function StartTastingPage() {
         <button
           type="button"
           onClick={handleStartTest}
-          className="fixed inset-x-5 bottom-[calc(7rem+env(safe-area-inset-bottom))] z-30 mx-auto w-auto max-w-md rounded-4xl bg-[#01BB96] px-6 py-4 text-xl text-white"
+          className="fixed inset-x-5 bottom-[calc(7rem+env(safe-area-inset-bottom))] z-30 mx-auto w-auto max-w-md rounded-4xl bg-[var(--accent-primary)] px-6 py-4 text-xl text-[var(--text-primary)]"
         >
           Начать тест
         </button>

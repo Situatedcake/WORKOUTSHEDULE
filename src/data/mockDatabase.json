@@ -1,0 +1,1156 @@
+{
+  "users": [
+    {
+      "id": "user_1776101234057_sahdpm",
+      "login": "smoke_user_1776101234034",
+      "name": "smoke_user_1776101234034",
+      "password": "test1234",
+      "email": "smoke_user_1776101234034@example.com",
+      "gender": "male",
+      "profilePhoto": null,
+      "trainingLevel": "Средний",
+      "lastTestScore": 55,
+      "trainingPlan": {
+        "id": "plan_1776101234090_full-body-2-days",
+        "createdAt": "2026-04-13T17:27:14.090Z",
+        "sourcePlanKey": "full-body-2-days",
+        "focusKey": "full-body-2-days",
+        "focusLabel": "Full Body (2 дня)",
+        "focusDescription": "Максимально объемный full-body сплит с равномерной нагрузкой за 2 длинные тренировки.",
+        "mlProfile": {
+          "objective": "balanced_strength_mass",
+          "recommendedTrainingLevels": [
+            "Средний",
+            "Продвинутый"
+          ],
+          "recommendedGenders": [
+            "male",
+            "female",
+            "not_specified"
+          ],
+          "recommendedWorkoutsPerWeek": [
+            2
+          ],
+          "focusTags": [
+            "full-body",
+            "strength",
+            "mass"
+          ],
+          "adaptationPriority": "high_volume"
+        },
+        "workoutsPerWeek": 3,
+        "trainingLevel": "Средний",
+        "estimatedMinutesPerWeek": 555,
+        "sessions": [
+          {
+            "id": "plan_1776101234090_full-body-2-days_session_1",
+            "key": "day-1",
+            "index": 1,
+            "dayLabel": "Тренировка 1",
+            "title": "Full Body A",
+            "emphasis": "Грудь, спина, ноги",
+            "estimatedDurationMin": 185,
+            "warmup": "7-10 минут кардио и динамической мобилизации",
+            "objective": "full_body_strength",
+            "intensity": "high",
+            "recoveryDemand": "high",
+            "sessionBodyParts": [
+              "chest",
+              "back",
+              "legs",
+              "core"
+            ],
+            "mlTags": [
+              "full-body",
+              "strength",
+              "mass"
+            ],
+            "availableExercises": [
+              "Жим лежа",
+              "Тяга штанги в наклоне",
+              "Приседания со штангой",
+              "Румынская тяга",
+              "Жим гантелей сидя",
+              "Подъем штанги на бицепс",
+              "Планка"
+            ],
+            "exerciseOptions": [
+              {
+                "name": "Жим лежа",
+                "type": "compound",
+                "bodyPart": "chest",
+                "movementPattern": "horizontal_push",
+                "equipment": [
+                  "barbell"
+                ],
+                "priority": 1
+              },
+              {
+                "name": "Тяга штанги в наклоне",
+                "type": "compound",
+                "bodyPart": "back",
+                "movementPattern": "horizontal_pull",
+                "equipment": [
+                  "barbell"
+                ],
+                "priority": 2
+              },
+              {
+                "name": "Приседания со штангой",
+                "type": "compound",
+                "bodyPart": "legs",
+                "movementPattern": "squat",
+                "equipment": [
+                  "barbell"
+                ],
+                "priority": 3
+              },
+              {
+                "name": "Румынская тяга",
+                "type": "compound",
+                "bodyPart": "legs",
+                "movementPattern": "hip_hinge",
+                "equipment": [
+                  "barbell"
+                ],
+                "priority": 4
+              },
+              {
+                "name": "Жим гантелей сидя",
+                "type": "compound",
+                "bodyPart": "shoulders",
+                "movementPattern": "vertical_push",
+                "equipment": [
+                  "dumbbell"
+                ],
+                "priority": 5
+              },
+              {
+                "name": "Подъем штанги на бицепс",
+                "type": "isolation",
+                "bodyPart": "arms",
+                "movementPattern": "elbow_flexion",
+                "equipment": [
+                  "barbell"
+                ],
+                "priority": 6
+              },
+              {
+                "name": "Планка",
+                "type": "core",
+                "bodyPart": "core",
+                "movementPattern": "anti_extension",
+                "equipment": [
+                  "bodyweight"
+                ],
+                "priority": 7
+              }
+            ],
+            "completed": false,
+            "exercises": [
+              {
+                "name": "Жим лежа",
+                "type": "compound",
+                "sets": 4,
+                "repRange": "8-12",
+                "restSeconds": 150,
+                "prescription": "4 подход. • 8-12 • отдых 2 мин 30 сек",
+                "volumeTrend": "base",
+                "volumeReason": "Базовый объём подобран по текущему уровню подготовки и типу упражнения.",
+                "bodyPart": "chest",
+                "movementPattern": "horizontal_push",
+                "equipment": [
+                  "barbell"
+                ],
+                "priority": 1
+              },
+              {
+                "name": "Тяга штанги в наклоне",
+                "type": "compound",
+                "sets": 4,
+                "repRange": "8-12",
+                "restSeconds": 150,
+                "prescription": "4 подход. • 8-12 • отдых 2 мин 30 сек",
+                "volumeTrend": "base",
+                "volumeReason": "Базовый объём подобран по текущему уровню подготовки и типу упражнения.",
+                "bodyPart": "back",
+                "movementPattern": "horizontal_pull",
+                "equipment": [
+                  "barbell"
+                ],
+                "priority": 2
+              },
+              {
+                "name": "Приседания со штангой",
+                "type": "compound",
+                "sets": 4,
+                "repRange": "8-12",
+                "restSeconds": 150,
+                "prescription": "4 подход. • 8-12 • отдых 2 мин 30 сек",
+                "volumeTrend": "base",
+                "volumeReason": "Базовый объём подобран по текущему уровню подготовки и типу упражнения.",
+                "bodyPart": "legs",
+                "movementPattern": "squat",
+                "equipment": [
+                  "barbell"
+                ],
+                "priority": 3
+              },
+              {
+                "name": "Румынская тяга",
+                "type": "compound",
+                "sets": 4,
+                "repRange": "8-12",
+                "restSeconds": 150,
+                "prescription": "4 подход. • 8-12 • отдых 2 мин 30 сек",
+                "volumeTrend": "base",
+                "volumeReason": "Базовый объём подобран по текущему уровню подготовки и типу упражнения.",
+                "bodyPart": "legs",
+                "movementPattern": "hip_hinge",
+                "equipment": [
+                  "barbell"
+                ],
+                "priority": 4
+              },
+              {
+                "name": "Жим гантелей сидя",
+                "type": "compound",
+                "sets": 4,
+                "repRange": "8-12",
+                "restSeconds": 150,
+                "prescription": "4 подход. • 8-12 • отдых 2 мин 30 сек",
+                "volumeTrend": "base",
+                "volumeReason": "Базовый объём подобран по текущему уровню подготовки и типу упражнения.",
+                "bodyPart": "shoulders",
+                "movementPattern": "vertical_push",
+                "equipment": [
+                  "dumbbell"
+                ],
+                "priority": 5
+              },
+              {
+                "name": "Подъем штанги на бицепс",
+                "type": "isolation",
+                "sets": 3,
+                "repRange": "10-15",
+                "restSeconds": 75,
+                "prescription": "3 подход. • 10-15 • отдых 1 мин 15 сек",
+                "volumeTrend": "base",
+                "volumeReason": "Базовый объём подобран по текущему уровню подготовки и типу упражнения.",
+                "bodyPart": "arms",
+                "movementPattern": "elbow_flexion",
+                "equipment": [
+                  "barbell"
+                ],
+                "priority": 6
+              }
+            ]
+          },
+          {
+            "id": "plan_1776101234090_full-body-2-days_session_2",
+            "key": "day-2",
+            "index": 2,
+            "dayLabel": "Тренировка 2",
+            "title": "Full Body B",
+            "emphasis": "Баланс и добивка всех мышц",
+            "estimatedDurationMin": 185,
+            "warmup": "7-10 минут кардио и динамической мобилизации",
+            "objective": "full_body_volume",
+            "intensity": "high",
+            "recoveryDemand": "high",
+            "sessionBodyParts": [
+              "chest",
+              "back",
+              "legs",
+              "arms",
+              "core"
+            ],
+            "mlTags": [
+              "full-body",
+              "strength",
+              "mass"
+            ],
+            "availableExercises": [
+              "Жим гантелей на наклонной скамье",
+              "Тяга верхнего блока к груди",
+              "Жим ногами",
+              "Выпады в ходьбе",
+              "Махи гантелями в стороны",
+              "Разгибание рук на блоке с канатом",
+              "Подъем ног лежа"
+            ],
+            "exerciseOptions": [
+              {
+                "name": "Жим гантелей на наклонной скамье",
+                "type": "compound",
+                "bodyPart": "upper_chest",
+                "movementPattern": "incline_push",
+                "equipment": [
+                  "dumbbell"
+                ],
+                "priority": 1
+              },
+              {
+                "name": "Тяга верхнего блока к груди",
+                "type": "compound",
+                "bodyPart": "back",
+                "movementPattern": "vertical_pull",
+                "equipment": [
+                  "machine"
+                ],
+                "priority": 2
+              },
+              {
+                "name": "Жим ногами",
+                "type": "compound",
+                "bodyPart": "legs",
+                "movementPattern": "squat",
+                "equipment": [
+                  "machine"
+                ],
+                "priority": 3
+              },
+              {
+                "name": "Выпады в ходьбе",
+                "type": "compound",
+                "bodyPart": "legs",
+                "movementPattern": "lunge",
+                "equipment": [
+                  "dumbbell"
+                ],
+                "priority": 4
+              },
+              {
+                "name": "Махи гантелями в стороны",
+                "type": "isolation",
+                "bodyPart": "shoulders",
+                "movementPattern": "shoulder_abduction",
+                "equipment": [
+                  "dumbbell"
+                ],
+                "priority": 5
+              },
+              {
+                "name": "Разгибание рук на блоке с канатом",
+                "type": "isolation",
+                "bodyPart": "arms",
+                "movementPattern": "elbow_extension",
+                "equipment": [
+                  "rope"
+                ],
+                "priority": 6
+              },
+              {
+                "name": "Подъем ног лежа",
+                "type": "core",
+                "bodyPart": "core",
+                "movementPattern": "hip_flexion",
+                "equipment": [
+                  "bodyweight"
+                ],
+                "priority": 7
+              }
+            ],
+            "completed": false,
+            "exercises": [
+              {
+                "name": "Жим гантелей на наклонной скамье",
+                "type": "compound",
+                "sets": 4,
+                "repRange": "8-12",
+                "restSeconds": 150,
+                "prescription": "4 подход. • 8-12 • отдых 2 мин 30 сек",
+                "volumeTrend": "base",
+                "volumeReason": "Базовый объём подобран по текущему уровню подготовки и типу упражнения.",
+                "bodyPart": "upper_chest",
+                "movementPattern": "incline_push",
+                "equipment": [
+                  "dumbbell"
+                ],
+                "priority": 1
+              },
+              {
+                "name": "Тяга верхнего блока к груди",
+                "type": "compound",
+                "sets": 4,
+                "repRange": "8-12",
+                "restSeconds": 150,
+                "prescription": "4 подход. • 8-12 • отдых 2 мин 30 сек",
+                "volumeTrend": "base",
+                "volumeReason": "Базовый объём подобран по текущему уровню подготовки и типу упражнения.",
+                "bodyPart": "back",
+                "movementPattern": "vertical_pull",
+                "equipment": [
+                  "machine"
+                ],
+                "priority": 2
+              },
+              {
+                "name": "Жим ногами",
+                "type": "compound",
+                "sets": 4,
+                "repRange": "8-12",
+                "restSeconds": 150,
+                "prescription": "4 подход. • 8-12 • отдых 2 мин 30 сек",
+                "volumeTrend": "base",
+                "volumeReason": "Базовый объём подобран по текущему уровню подготовки и типу упражнения.",
+                "bodyPart": "legs",
+                "movementPattern": "squat",
+                "equipment": [
+                  "machine"
+                ],
+                "priority": 3
+              },
+              {
+                "name": "Выпады в ходьбе",
+                "type": "compound",
+                "sets": 4,
+                "repRange": "8-12",
+                "restSeconds": 150,
+                "prescription": "4 подход. • 8-12 • отдых 2 мин 30 сек",
+                "volumeTrend": "base",
+                "volumeReason": "Базовый объём подобран по текущему уровню подготовки и типу упражнения.",
+                "bodyPart": "legs",
+                "movementPattern": "lunge",
+                "equipment": [
+                  "dumbbell"
+                ],
+                "priority": 4
+              },
+              {
+                "name": "Махи гантелями в стороны",
+                "type": "isolation",
+                "sets": 3,
+                "repRange": "10-15",
+                "restSeconds": 75,
+                "prescription": "3 подход. • 10-15 • отдых 1 мин 15 сек",
+                "volumeTrend": "base",
+                "volumeReason": "Базовый объём подобран по текущему уровню подготовки и типу упражнения.",
+                "bodyPart": "shoulders",
+                "movementPattern": "shoulder_abduction",
+                "equipment": [
+                  "dumbbell"
+                ],
+                "priority": 5
+              },
+              {
+                "name": "Разгибание рук на блоке с канатом",
+                "type": "isolation",
+                "sets": 3,
+                "repRange": "10-15",
+                "restSeconds": 75,
+                "prescription": "3 подход. • 10-15 • отдых 1 мин 15 сек",
+                "volumeTrend": "base",
+                "volumeReason": "Базовый объём подобран по текущему уровню подготовки и типу упражнения.",
+                "bodyPart": "arms",
+                "movementPattern": "elbow_extension",
+                "equipment": [
+                  "rope"
+                ],
+                "priority": 6
+              }
+            ]
+          },
+          {
+            "id": "plan_1776101234090_full-body-2-days_session_3",
+            "key": "day-1",
+            "index": 3,
+            "dayLabel": "Тренировка 3",
+            "title": "Full Body A",
+            "emphasis": "Грудь, спина, ноги",
+            "estimatedDurationMin": 185,
+            "warmup": "7-10 минут кардио и динамической мобилизации",
+            "objective": "full_body_strength",
+            "intensity": "high",
+            "recoveryDemand": "high",
+            "sessionBodyParts": [
+              "chest",
+              "back",
+              "legs",
+              "core"
+            ],
+            "mlTags": [
+              "full-body",
+              "strength",
+              "mass"
+            ],
+            "availableExercises": [
+              "Жим лежа",
+              "Тяга штанги в наклоне",
+              "Приседания со штангой",
+              "Румынская тяга",
+              "Жим гантелей сидя",
+              "Подъем штанги на бицепс",
+              "Планка"
+            ],
+            "exerciseOptions": [
+              {
+                "name": "Жим лежа",
+                "type": "compound",
+                "bodyPart": "chest",
+                "movementPattern": "horizontal_push",
+                "equipment": [
+                  "barbell"
+                ],
+                "priority": 1
+              },
+              {
+                "name": "Тяга штанги в наклоне",
+                "type": "compound",
+                "bodyPart": "back",
+                "movementPattern": "horizontal_pull",
+                "equipment": [
+                  "barbell"
+                ],
+                "priority": 2
+              },
+              {
+                "name": "Приседания со штангой",
+                "type": "compound",
+                "bodyPart": "legs",
+                "movementPattern": "squat",
+                "equipment": [
+                  "barbell"
+                ],
+                "priority": 3
+              },
+              {
+                "name": "Румынская тяга",
+                "type": "compound",
+                "bodyPart": "legs",
+                "movementPattern": "hip_hinge",
+                "equipment": [
+                  "barbell"
+                ],
+                "priority": 4
+              },
+              {
+                "name": "Жим гантелей сидя",
+                "type": "compound",
+                "bodyPart": "shoulders",
+                "movementPattern": "vertical_push",
+                "equipment": [
+                  "dumbbell"
+                ],
+                "priority": 5
+              },
+              {
+                "name": "Подъем штанги на бицепс",
+                "type": "isolation",
+                "bodyPart": "arms",
+                "movementPattern": "elbow_flexion",
+                "equipment": [
+                  "barbell"
+                ],
+                "priority": 6
+              },
+              {
+                "name": "Планка",
+                "type": "core",
+                "bodyPart": "core",
+                "movementPattern": "anti_extension",
+                "equipment": [
+                  "bodyweight"
+                ],
+                "priority": 7
+              }
+            ],
+            "completed": false,
+            "exercises": [
+              {
+                "name": "Жим лежа",
+                "type": "compound",
+                "sets": 4,
+                "repRange": "8-12",
+                "restSeconds": 150,
+                "prescription": "4 подход. • 8-12 • отдых 2 мин 30 сек",
+                "volumeTrend": "base",
+                "volumeReason": "Базовый объём подобран по текущему уровню подготовки и типу упражнения.",
+                "bodyPart": "chest",
+                "movementPattern": "horizontal_push",
+                "equipment": [
+                  "barbell"
+                ],
+                "priority": 1
+              },
+              {
+                "name": "Тяга штанги в наклоне",
+                "type": "compound",
+                "sets": 4,
+                "repRange": "8-12",
+                "restSeconds": 150,
+                "prescription": "4 подход. • 8-12 • отдых 2 мин 30 сек",
+                "volumeTrend": "base",
+                "volumeReason": "Базовый объём подобран по текущему уровню подготовки и типу упражнения.",
+                "bodyPart": "back",
+                "movementPattern": "horizontal_pull",
+                "equipment": [
+                  "barbell"
+                ],
+                "priority": 2
+              },
+              {
+                "name": "Приседания со штангой",
+                "type": "compound",
+                "sets": 4,
+                "repRange": "8-12",
+                "restSeconds": 150,
+                "prescription": "4 подход. • 8-12 • отдых 2 мин 30 сек",
+                "volumeTrend": "base",
+                "volumeReason": "Базовый объём подобран по текущему уровню подготовки и типу упражнения.",
+                "bodyPart": "legs",
+                "movementPattern": "squat",
+                "equipment": [
+                  "barbell"
+                ],
+                "priority": 3
+              },
+              {
+                "name": "Румынская тяга",
+                "type": "compound",
+                "sets": 4,
+                "repRange": "8-12",
+                "restSeconds": 150,
+                "prescription": "4 подход. • 8-12 • отдых 2 мин 30 сек",
+                "volumeTrend": "base",
+                "volumeReason": "Базовый объём подобран по текущему уровню подготовки и типу упражнения.",
+                "bodyPart": "legs",
+                "movementPattern": "hip_hinge",
+                "equipment": [
+                  "barbell"
+                ],
+                "priority": 4
+              },
+              {
+                "name": "Жим гантелей сидя",
+                "type": "compound",
+                "sets": 4,
+                "repRange": "8-12",
+                "restSeconds": 150,
+                "prescription": "4 подход. • 8-12 • отдых 2 мин 30 сек",
+                "volumeTrend": "base",
+                "volumeReason": "Базовый объём подобран по текущему уровню подготовки и типу упражнения.",
+                "bodyPart": "shoulders",
+                "movementPattern": "vertical_push",
+                "equipment": [
+                  "dumbbell"
+                ],
+                "priority": 5
+              },
+              {
+                "name": "Подъем штанги на бицепс",
+                "type": "isolation",
+                "sets": 3,
+                "repRange": "10-15",
+                "restSeconds": 75,
+                "prescription": "3 подход. • 10-15 • отдых 1 мин 15 сек",
+                "volumeTrend": "base",
+                "volumeReason": "Базовый объём подобран по текущему уровню подготовки и типу упражнения.",
+                "bodyPart": "arms",
+                "movementPattern": "elbow_flexion",
+                "equipment": [
+                  "barbell"
+                ],
+                "priority": 6
+              }
+            ]
+          }
+        ],
+        "version": 2,
+        "updatedAt": "2026-04-13T17:27:14.090Z",
+        "previousPlanId": "plan_1776101234083_full-body-2-days",
+        "adaptiveMetadata": {
+          "versionTrigger": "manual_builder"
+        }
+      },
+      "trainingPlanAdaptationHistory": [
+        {
+          "id": "adaptation_496396f0-cd2f-478a-ad17-efdd4a1e89dd",
+          "createdAt": "2026-04-13T17:27:14.083Z",
+          "trigger": "post_test",
+          "previousPlanId": null,
+          "nextPlanId": "plan_1776101234083_full-body-2-days",
+          "focusKey": "full-body-2-days",
+          "focusLabel": "Full Body (2 дня)",
+          "workoutsPerWeek": 3,
+          "trainingLevel": "Средний",
+          "changedExercisesCount": 18,
+          "totalExercises": 18,
+          "volumeBreakdown": {
+            "progressing": 0,
+            "stalled": 0,
+            "manual": 0,
+            "base": 18
+          },
+          "adaptationSummary": [],
+          "autoUpdated": false
+        },
+        {
+          "id": "adaptation_864db393-6342-4755-a67b-9f4d19b9f8f6",
+          "createdAt": "2026-04-13T17:27:14.090Z",
+          "trigger": "manual_builder",
+          "previousPlanId": "plan_1776101234083_full-body-2-days",
+          "nextPlanId": "plan_1776101234090_full-body-2-days",
+          "focusKey": "full-body-2-days",
+          "focusLabel": "Full Body (2 дня)",
+          "workoutsPerWeek": 3,
+          "trainingLevel": "Средний",
+          "changedExercisesCount": 18,
+          "totalExercises": 18,
+          "volumeBreakdown": {
+            "progressing": 0,
+            "stalled": 0,
+            "manual": 0,
+            "base": 18
+          },
+          "adaptationSummary": [],
+          "autoUpdated": false
+        }
+      ],
+      "trainingMlFeedbackHistory": [
+        {
+          "id": "ml_feedback_33ef26fe-3587-4672-abd9-6861c8da0dbc",
+          "createdAt": "2026-04-13T17:27:14.113Z",
+          "type": "workout_skipped",
+          "source": "workout_result",
+          "trainingPlanId": "plan_1776101234090_full-body-2-days",
+          "scheduledWorkoutId": "scheduled_1776101234103_h2clqy",
+          "sessionId": "plan_1776101234090_full-body-2-days_session_1",
+          "sessionIndex": 1,
+          "exerciseId": null,
+          "sourceExerciseId": null,
+          "exerciseName": null,
+          "nextExerciseId": null,
+          "nextSourceExerciseId": null,
+          "nextExerciseName": null,
+          "previousSets": 0,
+          "nextSets": 0,
+          "metadata": {
+            "title": "Full Body A",
+            "date": "2026-04-14",
+            "completedSetsCount": 0,
+            "plannedSetsCount": 23
+          }
+        },
+        {
+          "id": "ml_feedback_291fcfd3-5a46-4990-b341-c9aa5ebefa65",
+          "createdAt": "2026-04-13T17:27:14.135Z",
+          "type": "workout_partial",
+          "source": "training_plan",
+          "trainingPlanId": null,
+          "scheduledWorkoutId": null,
+          "sessionId": null,
+          "sessionIndex": 0,
+          "exerciseId": null,
+          "sourceExerciseId": null,
+          "exerciseName": null,
+          "nextExerciseId": null,
+          "nextSourceExerciseId": null,
+          "nextExerciseName": null,
+          "previousSets": 0,
+          "nextSets": 0,
+          "metadata": {}
+        }
+      ],
+      "scheduledWorkouts": [
+        {
+          "id": "scheduled_1776101234103_h2clqy",
+          "date": "2026-04-14",
+          "time": "11:00",
+          "status": "skipped",
+          "createdAt": "2026-04-13T17:27:14.103Z",
+          "sessionId": "plan_1776101234090_full-body-2-days_session_1",
+          "sessionIndex": 1,
+          "title": "Full Body A",
+          "emphasis": "Грудь, спина, ноги",
+          "estimatedDurationMin": 185,
+          "exercises": [
+            {
+              "name": "Жим лежа",
+              "type": "compound",
+              "sets": 4,
+              "repRange": "8-12",
+              "restSeconds": 150,
+              "prescription": "4 подход. • 8-12 • отдых 2 мин 30 сек",
+              "volumeTrend": "base",
+              "volumeReason": "Базовый объём подобран по текущему уровню подготовки и типу упражнения.",
+              "bodyPart": "chest",
+              "movementPattern": "horizontal_push",
+              "equipment": [
+                "barbell"
+              ],
+              "priority": 1
+            },
+            {
+              "name": "Тяга штанги в наклоне",
+              "type": "compound",
+              "sets": 4,
+              "repRange": "8-12",
+              "restSeconds": 150,
+              "prescription": "4 подход. • 8-12 • отдых 2 мин 30 сек",
+              "volumeTrend": "base",
+              "volumeReason": "Базовый объём подобран по текущему уровню подготовки и типу упражнения.",
+              "bodyPart": "back",
+              "movementPattern": "horizontal_pull",
+              "equipment": [
+                "barbell"
+              ],
+              "priority": 2
+            },
+            {
+              "name": "Приседания со штангой",
+              "type": "compound",
+              "sets": 4,
+              "repRange": "8-12",
+              "restSeconds": 150,
+              "prescription": "4 подход. • 8-12 • отдых 2 мин 30 сек",
+              "volumeTrend": "base",
+              "volumeReason": "Базовый объём подобран по текущему уровню подготовки и типу упражнения.",
+              "bodyPart": "legs",
+              "movementPattern": "squat",
+              "equipment": [
+                "barbell"
+              ],
+              "priority": 3
+            },
+            {
+              "name": "Румынская тяга",
+              "type": "compound",
+              "sets": 4,
+              "repRange": "8-12",
+              "restSeconds": 150,
+              "prescription": "4 подход. • 8-12 • отдых 2 мин 30 сек",
+              "volumeTrend": "base",
+              "volumeReason": "Базовый объём подобран по текущему уровню подготовки и типу упражнения.",
+              "bodyPart": "legs",
+              "movementPattern": "hip_hinge",
+              "equipment": [
+                "barbell"
+              ],
+              "priority": 4
+            },
+            {
+              "name": "Жим гантелей сидя",
+              "type": "compound",
+              "sets": 4,
+              "repRange": "8-12",
+              "restSeconds": 150,
+              "prescription": "4 подход. • 8-12 • отдых 2 мин 30 сек",
+              "volumeTrend": "base",
+              "volumeReason": "Базовый объём подобран по текущему уровню подготовки и типу упражнения.",
+              "bodyPart": "shoulders",
+              "movementPattern": "vertical_push",
+              "equipment": [
+                "dumbbell"
+              ],
+              "priority": 5
+            },
+            {
+              "name": "Подъем штанги на бицепс",
+              "type": "isolation",
+              "sets": 3,
+              "repRange": "10-15",
+              "restSeconds": 75,
+              "prescription": "3 подход. • 10-15 • отдых 1 мин 15 сек",
+              "volumeTrend": "base",
+              "volumeReason": "Базовый объём подобран по текущему уровню подготовки и типу упражнения.",
+              "bodyPart": "arms",
+              "movementPattern": "elbow_flexion",
+              "equipment": [
+                "barbell"
+              ],
+              "priority": 6
+            }
+          ],
+          "updatedAt": "2026-04-13T17:27:14.108Z",
+          "completedAt": "2026-04-13T17:27:14.113Z",
+          "result": {
+            "id": "workout_history_1776101234113_73x3dx",
+            "scheduledWorkoutId": "scheduled_1776101234103_h2clqy",
+            "trainingPlanId": "plan_1776101234090_full-body-2-days",
+            "sessionId": "plan_1776101234090_full-body-2-days_session_1",
+            "sessionIndex": 1,
+            "title": "Full Body A",
+            "emphasis": "Грудь, спина, ноги",
+            "date": "2026-04-14",
+            "time": "11:00",
+            "status": "skipped",
+            "startedAt": "2026-04-13T17:27:14.113Z",
+            "finishedAt": "2026-04-13T17:27:14.113Z",
+            "completedAt": "2026-04-13T17:27:14.113Z",
+            "plannedDurationSeconds": 11100,
+            "actualDurationSeconds": 0,
+            "durationSeconds": 0,
+            "completedExercisesCount": 0,
+            "completedSetsCount": 0,
+            "exerciseSetWeights": [],
+            "summary": {
+              "plannedExercisesCount": 6,
+              "completedExercisesCount": 0,
+              "plannedSetsCount": 23,
+              "completedSetsCount": 0
+            },
+            "metrics": {
+              "weightKg": 0,
+              "burnedCalories": 0,
+              "energyLevel": 0,
+              "effortLevel": 0,
+              "sleepQuality": 0
+            }
+          }
+        },
+        {
+          "id": "scheduled_1776101234117_8zwwrj",
+          "date": "2026-04-15",
+          "time": "12:00",
+          "status": "completed",
+          "createdAt": "2026-04-13T17:27:14.117Z",
+          "sessionId": "plan_1776101234090_full-body-2-days_session_2",
+          "sessionIndex": 2,
+          "title": "Full Body B",
+          "emphasis": "Баланс и добивка всех мышц",
+          "estimatedDurationMin": 185,
+          "exercises": [
+            {
+              "name": "Жим гантелей на наклонной скамье",
+              "type": "compound",
+              "sets": 4,
+              "repRange": "8-12",
+              "restSeconds": 150,
+              "prescription": "4 подход. • 8-12 • отдых 2 мин 30 сек",
+              "volumeTrend": "base",
+              "volumeReason": "Базовый объём подобран по текущему уровню подготовки и типу упражнения.",
+              "bodyPart": "upper_chest",
+              "movementPattern": "incline_push",
+              "equipment": [
+                "dumbbell"
+              ],
+              "priority": 1
+            },
+            {
+              "name": "Тяга верхнего блока к груди",
+              "type": "compound",
+              "sets": 4,
+              "repRange": "8-12",
+              "restSeconds": 150,
+              "prescription": "4 подход. • 8-12 • отдых 2 мин 30 сек",
+              "volumeTrend": "base",
+              "volumeReason": "Базовый объём подобран по текущему уровню подготовки и типу упражнения.",
+              "bodyPart": "back",
+              "movementPattern": "vertical_pull",
+              "equipment": [
+                "machine"
+              ],
+              "priority": 2
+            },
+            {
+              "name": "Жим ногами",
+              "type": "compound",
+              "sets": 4,
+              "repRange": "8-12",
+              "restSeconds": 150,
+              "prescription": "4 подход. • 8-12 • отдых 2 мин 30 сек",
+              "volumeTrend": "base",
+              "volumeReason": "Базовый объём подобран по текущему уровню подготовки и типу упражнения.",
+              "bodyPart": "legs",
+              "movementPattern": "squat",
+              "equipment": [
+                "machine"
+              ],
+              "priority": 3
+            },
+            {
+              "name": "Выпады в ходьбе",
+              "type": "compound",
+              "sets": 4,
+              "repRange": "8-12",
+              "restSeconds": 150,
+              "prescription": "4 подход. • 8-12 • отдых 2 мин 30 сек",
+              "volumeTrend": "base",
+              "volumeReason": "Базовый объём подобран по текущему уровню подготовки и типу упражнения.",
+              "bodyPart": "legs",
+              "movementPattern": "lunge",
+              "equipment": [
+                "dumbbell"
+              ],
+              "priority": 4
+            },
+            {
+              "name": "Махи гантелями в стороны",
+              "type": "isolation",
+              "sets": 3,
+              "repRange": "10-15",
+              "restSeconds": 75,
+              "prescription": "3 подход. • 10-15 • отдых 1 мин 15 сек",
+              "volumeTrend": "base",
+              "volumeReason": "Базовый объём подобран по текущему уровню подготовки и типу упражнения.",
+              "bodyPart": "shoulders",
+              "movementPattern": "shoulder_abduction",
+              "equipment": [
+                "dumbbell"
+              ],
+              "priority": 5
+            },
+            {
+              "name": "Разгибание рук на блоке с канатом",
+              "type": "isolation",
+              "sets": 3,
+              "repRange": "10-15",
+              "restSeconds": 75,
+              "prescription": "3 подход. • 10-15 • отдых 1 мин 15 сек",
+              "volumeTrend": "base",
+              "volumeReason": "Базовый объём подобран по текущему уровню подготовки и типу упражнения.",
+              "bodyPart": "arms",
+              "movementPattern": "elbow_extension",
+              "equipment": [
+                "rope"
+              ],
+              "priority": 6
+            }
+          ],
+          "completedAt": "2026-04-13T17:27:14.122Z",
+          "result": {
+            "id": "workout_history_1776101234122_ak6mkw",
+            "scheduledWorkoutId": "scheduled_1776101234117_8zwwrj",
+            "trainingPlanId": "plan_1776101234090_full-body-2-days",
+            "sessionId": "plan_1776101234090_full-body-2-days_session_2",
+            "sessionIndex": 2,
+            "title": "Full Body B",
+            "emphasis": "Баланс и добивка всех мышц",
+            "date": "2026-04-15",
+            "time": "12:00",
+            "status": "completed",
+            "startedAt": "2026-04-13T17:27:14.122Z",
+            "finishedAt": "2026-04-13T17:27:14.122Z",
+            "completedAt": "2026-04-13T17:27:14.122Z",
+            "plannedDurationSeconds": 2400,
+            "actualDurationSeconds": 1800,
+            "durationSeconds": 1800,
+            "completedExercisesCount": 2,
+            "completedSetsCount": 6,
+            "exerciseSetWeights": [],
+            "summary": {
+              "plannedExercisesCount": 6,
+              "completedExercisesCount": 2,
+              "plannedSetsCount": 22,
+              "completedSetsCount": 6
+            },
+            "metrics": {
+              "weightKg": 0,
+              "burnedCalories": 0,
+              "energyLevel": 0,
+              "effortLevel": 0,
+              "sleepQuality": 0
+            }
+          }
+        }
+      ],
+      "workoutHistory": [
+        {
+          "id": "workout_history_1776101234113_73x3dx",
+          "scheduledWorkoutId": "scheduled_1776101234103_h2clqy",
+          "trainingPlanId": "plan_1776101234090_full-body-2-days",
+          "sessionId": "plan_1776101234090_full-body-2-days_session_1",
+          "sessionIndex": 1,
+          "title": "Full Body A",
+          "emphasis": "Грудь, спина, ноги",
+          "date": "2026-04-14",
+          "time": "11:00",
+          "status": "skipped",
+          "startedAt": "2026-04-13T17:27:14.113Z",
+          "finishedAt": "2026-04-13T17:27:14.113Z",
+          "completedAt": "2026-04-13T17:27:14.113Z",
+          "plannedDurationSeconds": 11100,
+          "actualDurationSeconds": 0,
+          "durationSeconds": 0,
+          "completedExercisesCount": 0,
+          "completedSetsCount": 0,
+          "exerciseSetWeights": [],
+          "summary": {
+            "plannedExercisesCount": 6,
+            "completedExercisesCount": 0,
+            "plannedSetsCount": 23,
+            "completedSetsCount": 0
+          },
+          "metrics": {
+            "weightKg": 0,
+            "burnedCalories": 0,
+            "energyLevel": 0,
+            "effortLevel": 0,
+            "sleepQuality": 0
+          }
+        },
+        {
+          "id": "workout_history_1776101234122_ak6mkw",
+          "scheduledWorkoutId": "scheduled_1776101234117_8zwwrj",
+          "trainingPlanId": "plan_1776101234090_full-body-2-days",
+          "sessionId": "plan_1776101234090_full-body-2-days_session_2",
+          "sessionIndex": 2,
+          "title": "Full Body B",
+          "emphasis": "Баланс и добивка всех мышц",
+          "date": "2026-04-15",
+          "time": "12:00",
+          "status": "completed",
+          "startedAt": "2026-04-13T17:27:14.122Z",
+          "finishedAt": "2026-04-13T17:27:14.122Z",
+          "completedAt": "2026-04-13T17:27:14.122Z",
+          "plannedDurationSeconds": 2400,
+          "actualDurationSeconds": 1800,
+          "durationSeconds": 1800,
+          "completedExercisesCount": 2,
+          "completedSetsCount": 6,
+          "exerciseSetWeights": [],
+          "summary": {
+            "plannedExercisesCount": 6,
+            "completedExercisesCount": 2,
+            "plannedSetsCount": 22,
+            "completedSetsCount": 6
+          },
+          "metrics": {
+            "weightKg": 0,
+            "burnedCalories": 0,
+            "energyLevel": 0,
+            "effortLevel": 0,
+            "sleepQuality": 0
+          }
+        },
+        {
+          "id": "workout_history_1776101234131_t22hsd",
+          "scheduledWorkoutId": "scheduled_1776101234126_45qrke",
+          "trainingPlanId": "plan_1776101234090_full-body-2-days",
+          "sessionId": "plan_1776101234090_full-body-2-days_session_3",
+          "sessionIndex": 3,
+          "title": "Full Body A",
+          "emphasis": "Грудь, спина, ноги",
+          "date": "2026-04-16",
+          "time": "13:00",
+          "status": "canceled",
+          "startedAt": "2026-04-13T17:27:14.131Z",
+          "finishedAt": "2026-04-13T17:27:14.131Z",
+          "completedAt": "2026-04-13T17:27:14.131Z",
+          "plannedDurationSeconds": 11100,
+          "actualDurationSeconds": 0,
+          "durationSeconds": 0,
+          "completedExercisesCount": 0,
+          "completedSetsCount": 0,
+          "exerciseSetWeights": [],
+          "summary": {
+            "plannedExercisesCount": 6,
+            "completedExercisesCount": 0,
+            "plannedSetsCount": 23,
+            "completedSetsCount": 0
+          },
+          "metrics": {
+            "weightKg": 0,
+            "burnedCalories": 0,
+            "energyLevel": 0,
+            "effortLevel": 0,
+            "sleepQuality": 0
+          }
+        }
+      ],
+      "createdAt": "2026-04-13T17:27:14.057Z",
+      "updatedAt": "2026-04-13T17:27:14.137Z"
+    }
+  ]
+}

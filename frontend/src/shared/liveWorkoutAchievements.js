@@ -94,14 +94,11 @@ function getBestTrackedWeightInSession(
   }, 0);
 }
 
-function willUnlockStreakThree(currentUser, referenceDate) {
-  const currentStreakDays =
-    Number(currentUser?.gamification?.summary?.streakDays) || 0;
-
-  if (currentStreakDays >= 3) {
-    return false;
-  }
-
+function getProjectedStreakDays({
+  currentUser,
+  referenceDate,
+  willAddProductiveWorkout,
+}) {
   const productiveDates = Array.from(
     new Set(
       (currentUser?.workoutHistory ?? [])
@@ -109,41 +106,126 @@ function willUnlockStreakThree(currentUser, referenceDate) {
         .map((workout) => normalizeDateKey(workout.date))
         .filter(Boolean),
     ),
-  ).sort((left, right) => right.localeCompare(left));
-
-  if (!productiveDates.length) {
-    return false;
-  }
-
+  );
   const todayDateKey = formatDateKey(referenceDate);
 
-  if (productiveDates.includes(todayDateKey)) {
-    return false;
+  if (willAddProductiveWorkout) {
+    productiveDates.push(todayDateKey);
   }
 
-  return (
-    currentStreakDays >= 2 &&
-    calculateDayDifference(todayDateKey, productiveDates[0]) === 1
+  const uniqueDates = Array.from(new Set(productiveDates)).sort((left, right) =>
+    right.localeCompare(left),
   );
+
+  if (!uniqueDates.length) {
+    return 0;
+  }
+
+  const latestDateKey = uniqueDates[0];
+  const canUseLatestAsReference =
+    latestDateKey === todayDateKey ||
+    calculateDayDifference(todayDateKey, latestDateKey) === 1;
+
+  if (!canUseLatestAsReference) {
+    return 0;
+  }
+
+  let streak = 1;
+
+  for (let index = 1; index < uniqueDates.length; index += 1) {
+    const previousDateKey = uniqueDates[index - 1];
+    const currentDateKey = uniqueDates[index];
+
+    if (calculateDayDifference(previousDateKey, currentDateKey) !== 1) {
+      break;
+    }
+
+    streak += 1;
+  }
+
+  return streak;
 }
 
-function buildAchievementMeta({
-  id,
-  iconKey,
-  title,
-  description,
-  accentColor,
-  rarityKey = "common",
-  rarityLabel = "Обычное",
-}) {
+function getNumberMetric(value) {
+  const numericValue = Number(value);
+  return Number.isFinite(numericValue) ? Math.max(numericValue, 0) : 0;
+}
+
+function resolveMetricKey(achievement = {}) {
+  if (typeof achievement.metricKey === "string" && achievement.metricKey.trim()) {
+    return achievement.metricKey.trim();
+  }
+
+  // Backward compatibility for old snapshots without metricKey
+  const fallbackById = {
+    tracked_sets_12: "trackedSetsCount",
+    best_weight_50: "bestSetWeightKg",
+    first_workout: "productiveWorkoutsCount",
+    workouts_10: "productiveWorkoutsCount",
+    workouts_25: "productiveWorkoutsCount",
+    streak_3: "streakDays",
+  };
+
+  return fallbackById[achievement.id] ?? "";
+}
+
+function buildAchievementMeta(definition = {}) {
   return {
-    id,
-    iconKey,
-    title,
-    description,
-    accentColor,
-    rarityKey,
-    rarityLabel,
+    id: definition.id,
+    iconKey: definition.iconKey,
+    title: definition.title,
+    description: definition.description,
+    accentColor: definition.accentColor,
+    rarityKey: definition.rarityKey ?? "common",
+    rarityLabel: definition.rarityLabel ?? "Обычное",
+  };
+}
+
+function buildProjectedMetrics({
+  currentUser,
+  metrics,
+  completedSetsByExercise,
+  setWeightsByExercise,
+  willCompleteWorkout,
+  workoutStatus,
+  referenceDate,
+}) {
+  const willBeProductive =
+    willCompleteWorkout && isProductiveWorkoutStatus(workoutStatus);
+  const trackedSetsInSession = countCompletedTrackedSets(
+    completedSetsByExercise,
+    setWeightsByExercise,
+  );
+  const bestTrackedWeightInSession = getBestTrackedWeightInSession(
+    completedSetsByExercise,
+    setWeightsByExercise,
+  );
+
+  return {
+    completedTestCount: getNumberMetric(metrics.completedTestCount),
+    trainingPlanCount: getNumberMetric(metrics.trainingPlanCount),
+    totalScheduledCount: getNumberMetric(metrics.totalScheduledCount),
+    productiveWorkoutsCount:
+      getNumberMetric(metrics.productiveWorkoutsCount) + (willBeProductive ? 1 : 0),
+    partialWorkoutsCount:
+      getNumberMetric(metrics.partialWorkoutsCount) +
+      (willCompleteWorkout && workoutStatus === "partial" ? 1 : 0),
+    completedWorkoutsCount:
+      getNumberMetric(metrics.completedWorkoutsCount) +
+      (willCompleteWorkout && workoutStatus === "completed" ? 1 : 0),
+    streakDays: getProjectedStreakDays({
+      currentUser,
+      referenceDate,
+      willAddProductiveWorkout: willBeProductive,
+    }),
+    trackedSetsCount: getNumberMetric(metrics.trackedSetsCount) + trackedSetsInSession,
+    bestSetWeightKg: Math.max(
+      getNumberMetric(metrics.bestSetWeightKg),
+      bestTrackedWeightInSession,
+    ),
+    adaptationEventsCount: getNumberMetric(metrics.adaptationEventsCount),
+    feedbackEventsCount: getNumberMetric(metrics.feedbackEventsCount),
+    adaptiveMindsetProgress: getNumberMetric(metrics.adaptiveMindsetProgress),
   };
 }
 
@@ -164,115 +246,42 @@ export function buildLiveWorkoutAchievementUnlocks({
   referenceDate = new Date(),
 }) {
   const gamification = currentUser?.gamification;
+  const achievements = gamification?.achievements?.items ?? [];
 
-  if (!currentUser || !gamification) {
+  if (!currentUser || !gamification || achievements.length === 0) {
     return [];
   }
 
   const unlockedIds = getUnlockedAchievementIds(gamification);
-  const summary = gamification.summary ?? {};
+  const metrics = gamification.metrics ?? gamification.summary ?? {};
+  const projectedMetrics = buildProjectedMetrics({
+    currentUser,
+    metrics,
+    completedSetsByExercise,
+    setWeightsByExercise,
+    willCompleteWorkout,
+    workoutStatus,
+    referenceDate,
+  });
+
   const unlocks = [];
 
-  const trackedSetsCount =
-    (Number(summary.trackedSetsCount) || 0) +
-    countCompletedTrackedSets(completedSetsByExercise, setWeightsByExercise);
-  const bestTrackedWeightKg = Math.max(
-    Number(summary.bestSetWeightKg) || 0,
-    getBestTrackedWeightInSession(completedSetsByExercise, setWeightsByExercise),
-  );
+  for (const achievement of achievements) {
+    if (!achievement?.id || unlockedIds.has(achievement.id) || achievement.unlocked) {
+      continue;
+    }
 
-  if (!unlockedIds.has("tracked_sets_12") && trackedSetsCount >= 12) {
-    unlocks.push(
-      buildAchievementMeta({
-        id: "tracked_sets_12",
-        iconKey: "dumbbell",
-        title: "Вес под контролем",
-        description: "Записано 12 подходов с рабочим весом.",
-        accentColor: "#C084FC",
-        rarityKey: "epic",
-        rarityLabel: "Эпичное",
-      }),
-    );
-  }
+    const metricKey = resolveMetricKey(achievement);
+    const target = Math.max(getNumberMetric(achievement.target), 1);
+    const currentValue = metricKey
+      ? getNumberMetric(projectedMetrics[metricKey])
+      : getNumberMetric(achievement.current);
 
-  if (!unlockedIds.has("best_weight_50") && bestTrackedWeightKg >= 50) {
-    unlocks.push(
-      buildAchievementMeta({
-        id: "best_weight_50",
-        iconKey: "dumbbell",
-        title: "Первая тяжёлая отметка",
-        description: "В одном из подходов уже зафиксировано 50 кг и выше.",
-        accentColor: "#FB7185",
-        rarityKey: "legendary",
-        rarityLabel: "Легендарное",
-      }),
-    );
-  }
+    if (currentValue < target) {
+      continue;
+    }
 
-  const willBeProductive =
-    willCompleteWorkout && isProductiveWorkoutStatus(workoutStatus);
-
-  if (!willBeProductive) {
-    return unlocks;
-  }
-
-  const productiveWorkoutsCount =
-    (Number(summary.productiveWorkoutsCount) || 0) + 1;
-
-  if (!unlockedIds.has("first_workout") && productiveWorkoutsCount >= 1) {
-    unlocks.push(
-      buildAchievementMeta({
-        id: "first_workout",
-        iconKey: "flag",
-        title: "Первый финиш",
-        description: "Ты довёл первую тренировку до результата.",
-        accentColor: "#34D399",
-        rarityKey: "rare",
-        rarityLabel: "Редкое",
-      }),
-    );
-  }
-
-  if (!unlockedIds.has("workouts_10") && productiveWorkoutsCount >= 10) {
-    unlocks.push(
-      buildAchievementMeta({
-        id: "workouts_10",
-        iconKey: "trophy",
-        title: "10 тренировок",
-        description: "В истории уже 10 продуктивных сессий.",
-        accentColor: "#FACC15",
-        rarityKey: "epic",
-        rarityLabel: "Эпичное",
-      }),
-    );
-  }
-
-  if (!unlockedIds.has("workouts_25") && productiveWorkoutsCount >= 25) {
-    unlocks.push(
-      buildAchievementMeta({
-        id: "workouts_25",
-        iconKey: "trophy",
-        title: "25 тренировок",
-        description: "Уже накоплено 25 продуктивных тренировок.",
-        accentColor: "#F97316",
-        rarityKey: "legendary",
-        rarityLabel: "Легендарное",
-      }),
-    );
-  }
-
-  if (!unlockedIds.has("streak_3") && willUnlockStreakThree(currentUser, referenceDate)) {
-    unlocks.push(
-      buildAchievementMeta({
-        id: "streak_3",
-        iconKey: "flame",
-        title: "Серия 3 дня",
-        description: "Собрана серия из трёх продуктивных дней подряд.",
-        accentColor: "#F59E0B",
-        rarityKey: "epic",
-        rarityLabel: "Эпичное",
-      }),
-    );
+    unlocks.push(buildAchievementMeta(achievement));
   }
 
   return unlocks;

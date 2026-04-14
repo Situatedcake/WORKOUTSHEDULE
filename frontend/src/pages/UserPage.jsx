@@ -51,7 +51,7 @@ export default function UserPage() {
   if (!isAuthReady) {
     return (
       <PageShell className="pt-5">
-        <section className="mx-auto w-full max-w-md rounded-[28px] border border-[#2A3140] bg-[#12151C] p-6 text-[#8E97A8]">
+        <section className="mx-auto w-full max-w-md rounded-[28px] border border-[var(--border-primary)] bg-[var(--surface-primary)] p-6 text-[var(--text-muted)]">
           Загрузка профиля...
         </section>
       </PageShell>
@@ -61,11 +61,11 @@ export default function UserPage() {
   if (authError) {
     return (
       <PageShell className="pt-5">
-        <section className="mx-auto flex w-full max-w-md flex-col gap-5 rounded-[28px] border border-[#2A3140] bg-[#12151C] p-6">
+        <section className="mx-auto flex w-full max-w-md flex-col gap-5 rounded-[28px] border border-[var(--border-primary)] bg-[var(--surface-primary)] p-6">
           <div className="space-y-2">
-            <h1 className="text-3xl font-medium text-white">Профиль</h1>
+            <h1 className="text-3xl font-medium text-[var(--text-primary)]">Профиль</h1>
             <p className="text-sm leading-6 text-[#FF9F9F]">{authError}</p>
-            <p className="text-sm leading-6 text-[#8E97A8]">
+            <p className="text-sm leading-6 text-[var(--text-muted)]">
               Проверьте, запущен ли backend и доступен ли MySQL. После этого
               обновите страницу.
             </p>
@@ -73,7 +73,7 @@ export default function UserPage() {
 
           <Link
             to={ROUTES.HOME}
-            className="rounded-3xl border border-[#2A3140] px-5 py-4 text-center text-base font-medium text-white"
+            className="rounded-3xl border border-[var(--border-primary)] px-5 py-4 text-center text-base font-medium text-[var(--text-primary)]"
           >
             На главную
           </Link>
@@ -85,10 +85,10 @@ export default function UserPage() {
   if (!currentUser) {
     return (
       <PageShell className="pt-5">
-        <section className="mx-auto flex w-full max-w-md flex-col gap-5 rounded-[28px] border border-[#2A3140] bg-[#12151C] p-6">
+        <section className="mx-auto flex w-full max-w-md flex-col gap-5 rounded-[28px] border border-[var(--border-primary)] bg-[var(--surface-primary)] p-6">
           <div className="space-y-2">
-            <h1 className="text-3xl font-medium text-white">Профиль</h1>
-            <p className="text-sm leading-6 text-[#8E97A8]">
+            <h1 className="text-3xl font-medium text-[var(--text-primary)]">Профиль</h1>
+            <p className="text-sm leading-6 text-[var(--text-muted)]">
               Войдите или зарегистрируйтесь, чтобы сохранять результаты теста,
               план тренировок и календарь.
             </p>
@@ -96,14 +96,14 @@ export default function UserPage() {
 
           <Link
             to={ROUTES.LOGIN}
-            className="rounded-3xl bg-[#01BB96] px-5 py-4 text-center text-base font-medium text-[#000214]"
+            className="rounded-3xl bg-[var(--accent-primary)] px-5 py-4 text-center text-base font-medium text-[var(--accent-contrast)]"
           >
             Войти
           </Link>
 
           <Link
             to={ROUTES.REGISTER}
-            className="rounded-3xl border border-[#2A3140] px-5 py-4 text-center text-base font-medium text-white"
+            className="rounded-3xl border border-[var(--border-primary)] px-5 py-4 text-center text-base font-medium text-[var(--text-primary)]"
           >
             Зарегистрироваться
           </Link>
@@ -114,11 +114,11 @@ export default function UserPage() {
 
   return (
     <PageShell className="pt-5">
-      <section className="relative mx-auto flex w-full max-w-md flex-col gap-5 rounded-[28px] border border-[#2A3140] bg-[#12151C] p-6">
+      <section className="relative mx-auto flex w-full max-w-md flex-col gap-5 rounded-[28px] border border-[var(--border-primary)] bg-[var(--surface-primary)] p-6">
         <Link
           to={ROUTES.USER_EDIT}
           aria-label="Редактировать профиль"
-          className="absolute right-2 top-2 rounded-2xl border border-[#2A3140] bg-[#0B0E15] p-2.5 text-white transition active:scale-[0.97]"
+          className="absolute right-2 top-2 rounded-2xl border border-[var(--border-primary)] bg-[var(--surface-secondary)] p-2.5 text-[var(--text-primary)] transition active:scale-[0.97]"
         >
           <SettingsIcon />
         </Link>
@@ -133,7 +133,7 @@ export default function UserPage() {
                   className="h-full w-full object-cover"
                 />
               ) : (
-                <div className="flex h-full w-full items-center justify-center text-2xl font-medium text-white">
+                <div className="flex h-full w-full items-center justify-center text-2xl font-medium text-[var(--text-primary)]">
                   {(currentUser.name ?? currentUser.login ?? "Г")
                     .slice(0, 1)
                     .toUpperCase()}
@@ -142,13 +142,13 @@ export default function UserPage() {
             </div>
 
             <div className="min-w-0 space-y-2 pr-12">
-              <p className="text-sm uppercase tracking-[0.2em] text-[#8E97A8]">
+              <p className="text-sm uppercase tracking-[0.2em] text-[var(--text-muted)]">
                 Профиль
               </p>
-              <h1 className="break-words text-3xl font-medium leading-9 text-white">
+              <h1 className="break-words text-3xl font-medium leading-9 text-[var(--text-primary)]">
                 {currentUser.name ?? currentUser.login}
               </h1>
-              <p className="break-words text-sm leading-6 text-[#8E97A8]">
+              <p className="break-words text-sm leading-6 text-[var(--text-muted)]">
                 {currentUser.email || "Почта пока не добавлена"}
               </p>
             </div>
@@ -156,18 +156,18 @@ export default function UserPage() {
         </div>
 
         <div className="grid grid-cols-2 gap-3">
-          <div className="min-w-0 rounded-2xl bg-[#0B0E15] px-3 py-4 text-center">
-            <p className="text-xs leading-5 text-[#8E97A8]">
+          <div className="min-w-0 rounded-2xl bg-[var(--surface-secondary)] px-3 py-4 text-center">
+            <p className="text-xs leading-5 text-[var(--text-muted)]">
               Уровень подготовки
             </p>
-            <p className="mt-2 break-words text-center text-lg font-medium text-white">
+            <p className="mt-2 break-words text-center text-lg font-medium text-[var(--text-primary)]">
               {currentUser.trainingLevel}
             </p>
           </div>
 
-          <div className="min-w-0 rounded-2xl bg-[#0B0E15] px-3 py-4 text-center">
-            <p className="text-xs leading-5 text-[#8E97A8]">Последний тест</p>
-            <p className="mt-2 break-words text-lg font-medium text-white">
+          <div className="min-w-0 rounded-2xl bg-[var(--surface-secondary)] px-3 py-4 text-center">
+            <p className="text-xs leading-5 text-[var(--text-muted)]">Последний тест</p>
+            <p className="mt-2 break-words text-lg font-medium text-[var(--text-primary)]">
               {currentUser.lastTestScore ?? "Нет"}
             </p>
           </div>
@@ -179,10 +179,10 @@ export default function UserPage() {
               <div
                 className={`min-w-0 rounded-2xl border px-4 py-4 ${tierMeta.panelClassName}`}
               >
-                <p className="text-xs uppercase tracking-[0.16em] text-[#8E97A8]">
+                <p className="text-xs uppercase tracking-[0.16em] text-[var(--text-muted)]">
                   Рейтинг
                 </p>
-                <p className="mt-2 break-words text-2xl font-medium text-white">
+                <p className="mt-2 break-words text-2xl font-medium text-[var(--text-primary)]">
                   {gamification.rating.score}
                 </p>
                 <p className={`mt-1 text-sm ${tierMeta.accentClassName}`}>
@@ -196,22 +196,22 @@ export default function UserPage() {
                     }}
                   />
                 </div>
-                <p className="mt-2 text-xs leading-5 text-[#8E97A8]">
+                <p className="mt-2 text-xs leading-5 text-[var(--text-muted)]">
                   {gamification.rating.nextTierLabel
                     ? `До ${gamification.rating.nextTierLabel}: ${gamification.rating.pointsToNextTier}`
                     : "Максимальный ранг открыт"}
                 </p>
               </div>
 
-              <div className="min-w-0 rounded-2xl bg-[#0B0E15] px-4 py-4">
-                <p className="text-xs uppercase tracking-[0.16em] text-[#8E97A8]">
+              <div className="min-w-0 rounded-2xl bg-[var(--surface-secondary)] px-4 py-4">
+                <p className="text-xs uppercase tracking-[0.16em] text-[var(--text-muted)]">
                   Достижения
                 </p>
-                <p className="mt-2 break-words text-2xl font-medium text-white">
+                <p className="mt-2 break-words text-2xl font-medium text-[var(--text-primary)]">
                   {gamification.achievements.unlockedCount}/
                   {gamification.achievements.totalCount}
                 </p>
-                <p className="mt-1 text-sm text-[#8E97A8]">
+                <p className="mt-1 text-sm text-[var(--text-muted)]">
                   Открыто {gamification.achievements.completionPercent}%
                 </p>
                 <div className="mt-3 h-2 overflow-hidden rounded-full bg-[#1D222D]">
@@ -222,22 +222,22 @@ export default function UserPage() {
                     }}
                   />
                 </div>
-                <p className="mt-2 text-xs leading-5 text-[#8E97A8]">
+                <p className="mt-2 text-xs leading-5 text-[var(--text-muted)]">
                   Серия: {gamification.summary.streakDays} дн.
                 </p>
               </div>
             </div>
 
-            <div className="rounded-2xl bg-[#0B0E15] px-4 py-4">
+            <div className="rounded-2xl bg-[var(--surface-secondary)] px-4 py-4">
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
-                  <p className="text-xs uppercase tracking-[0.16em] text-[#8E97A8]">
+                  <p className="text-xs uppercase tracking-[0.16em] text-[var(--text-muted)]">
                     Импульс
                   </p>
                   <p className={`mt-2 text-lg font-medium ${momentumMeta.accentClassName}`}>
                     {gamification.momentum?.label ?? momentumMeta.label}
                   </p>
-                  <p className="mt-1 break-words text-xs leading-5 text-[#8E97A8]">
+                  <p className="mt-1 break-words text-xs leading-5 text-[var(--text-muted)]">
                     {gamification.momentum?.description}
                   </p>
                 </div>
@@ -249,15 +249,15 @@ export default function UserPage() {
               </div>
             </div>
 
-            <div className="rounded-2xl bg-[#0B0E15] px-4 py-4">
+            <div className="rounded-2xl bg-[var(--surface-secondary)] px-4 py-4">
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
-                  <p className="text-sm text-[#8E97A8]">Зачатки прогресса</p>
-                  <p className="mt-1 text-xl font-medium text-white">
+                  <p className="text-sm text-[var(--text-muted)]">Зачатки прогресса</p>
+                  <p className="mt-1 text-xl font-medium text-[var(--text-primary)]">
                     Достижения и рейтинг
                   </p>
                 </div>
-                <span className="rounded-full bg-[#12151C] px-3 py-1 text-xs text-[#8E97A8]">
+                <span className="rounded-full bg-[var(--surface-primary)] px-3 py-1 text-xs text-[var(--text-muted)]">
                   beta
                 </span>
               </div>
@@ -266,14 +266,14 @@ export default function UserPage() {
                 {featuredAchievements.map((achievement) => (
                   <div
                     key={achievement.id}
-                    className="rounded-2xl border border-[#2A3140] bg-[#12151C] px-4 py-3"
+                    className="rounded-2xl border border-[var(--border-primary)] bg-[var(--surface-primary)] px-4 py-3"
                   >
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0">
-                        <p className="break-words text-sm font-medium text-white">
+                        <p className="break-words text-sm font-medium text-[var(--text-primary)]">
                           {achievement.title}
                         </p>
-                        <p className="mt-1 break-words text-xs leading-5 text-[#8E97A8]">
+                        <p className="mt-1 break-words text-xs leading-5 text-[var(--text-muted)]">
                           {achievement.description}
                         </p>
                       </div>
@@ -305,14 +305,14 @@ export default function UserPage() {
               </div>
 
               {nextAchievement ? (
-                <div className="mt-4 rounded-2xl border border-dashed border-[#2A3140] px-4 py-3">
-                  <p className="text-xs uppercase tracking-[0.14em] text-[#8E97A8]">
+                <div className="mt-4 rounded-2xl border border-dashed border-[var(--border-primary)] px-4 py-3">
+                  <p className="text-xs uppercase tracking-[0.14em] text-[var(--text-muted)]">
                     Следующая цель
                   </p>
-                  <p className="mt-2 text-sm font-medium text-white">
+                  <p className="mt-2 text-sm font-medium text-[var(--text-primary)]">
                     {nextAchievement.title}
                   </p>
-                  <p className="mt-1 text-xs leading-5 text-[#8E97A8]">
+                  <p className="mt-1 text-xs leading-5 text-[var(--text-muted)]">
                     {nextAchievement.description}
                   </p>
                 </div>
@@ -320,7 +320,7 @@ export default function UserPage() {
 
               <Link
                 to={ROUTES.USER_ACHIEVEMENTS}
-                className="mt-4 block w-full min-w-0 rounded-3xl border border-[#2A3140] px-5 py-4 text-center text-sm font-medium leading-5 text-white"
+                className="mt-4 block w-full min-w-0 rounded-3xl border border-[var(--border-primary)] px-5 py-4 text-center text-sm font-medium leading-5 text-[var(--text-primary)]"
               >
                 Открыть экран достижений
               </Link>
@@ -331,40 +331,40 @@ export default function UserPage() {
         {currentUser.lastTestScore == null ? (
           <Link
             to={ROUTES.START_TASTING}
-            className="rounded-3xl bg-[#01BB96] px-5 py-4 text-center text-base font-medium text-[#000214]"
+            className="rounded-3xl bg-[var(--accent-primary)] px-5 py-4 text-center text-base font-medium text-[var(--accent-contrast)]"
           >
             Пройти тест
           </Link>
         ) : null}
 
-        <div className="rounded-2xl bg-[#0B0E15] px-4 py-4">
-          <p className="text-sm text-[#8E97A8]">Активная программа</p>
+        <div className="rounded-2xl bg-[var(--surface-secondary)] px-4 py-4">
+          <p className="text-sm text-[var(--text-muted)]">Активная программа</p>
           {currentUser.trainingPlan ? (
             <div className="mt-2 space-y-2">
-              <p className="text-xl font-medium text-white">
+              <p className="text-xl font-medium text-[var(--text-primary)]">
                 {currentUser.trainingPlan.focusLabel}
               </p>
-              <p className="break-words text-sm leading-6 text-[#8E97A8]">
+              <p className="break-words text-sm leading-6 text-[var(--text-muted)]">
                 {currentUser.trainingPlan.workoutsPerWeek} тренировки в неделю
               </p>
-              <p className="break-words text-sm leading-6 text-[#8E97A8]">
+              <p className="break-words text-sm leading-6 text-[var(--text-muted)]">
                 {currentUser.trainingPlan.estimatedMinutesPerWeek} минут
                 нагрузки в неделю
               </p>
             </div>
           ) : (
-            <p className="mt-2 break-words text-sm leading-6 text-[#8E97A8]">
+            <p className="mt-2 break-words text-sm leading-6 text-[var(--text-muted)]">
               Программа еще не составлена.
             </p>
           )}
         </div>
 
-        <div className="rounded-2xl bg-[#0B0E15] px-4 py-4">
-          <p className="text-sm text-[#8E97A8]">Ближайшее занятие</p>
-          <p className="mt-2 text-xl font-medium text-white">
+        <div className="rounded-2xl bg-[var(--surface-secondary)] px-4 py-4">
+          <p className="text-sm text-[var(--text-muted)]">Ближайшее занятие</p>
+          <p className="mt-2 text-xl font-medium text-[var(--text-primary)]">
             {formatWorkoutRelativeLabel(nextWorkout)}
           </p>
-          <p className="mt-2 break-words text-sm leading-6 text-[#8E97A8]">
+          <p className="mt-2 break-words text-sm leading-6 text-[var(--text-muted)]">
             {nextWorkout
               ? `${nextWorkout.title}, ${nextWorkout.time}`
               : "Расписание пока пустое."}

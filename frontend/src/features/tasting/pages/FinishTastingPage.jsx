@@ -1,18 +1,18 @@
 import { useEffect, useMemo } from "react";
 import { Link, Navigate, useLocation } from "react-router";
-import PageBackButton from "../../components/PageBackButton";
-import PageShell from "../../components/PageShell";
-import { ROUTES } from "../../constants/routes";
-import { useAuth } from "../../hooks/useAuth";
+import PageBackButton from "../../../components/PageBackButton";
+import PageShell from "../../../components/PageShell";
+import { ROUTES } from "../../../constants/routes";
+import { useAuth } from "../../../hooks/useAuth";
 import {
   clearTastingStart,
   getTastingScore,
   getTastingScoreModel,
-} from "../../utils/tastingSession";
+} from "../utils/session";
 import {
   getTrainingLevelByScore,
   normalizeTrainingScoreModel,
-} from "../../utils/trainingLevel";
+} from "../utils/trainingLevel";
 
 export default function FinishTasting() {
   const location = useLocation();
@@ -56,36 +56,36 @@ export default function FinishTasting() {
       <section className="mx-auto flex w-full max-w-md flex-col gap-5">
         <PageBackButton fallbackTo={ROUTES.START_TASTING} />
 
-        <p className="text-sm uppercase tracking-[0.24em] text-[#8E97A8]">
+        <p className="text-sm uppercase tracking-[0.24em] text-[var(--text-muted)]">
           Тест завершен
         </p>
 
-        <h1 className="text-3xl font-medium leading-tight text-white">
+        <h1 className="text-3xl font-medium leading-tight text-[var(--text-primary)]">
           Ваш результат
         </h1>
 
-        <div className="rounded-[28px] border border-[#2A3140] bg-[#12151C] px-6 py-8">
-          <p className="text-sm text-[#8E97A8]">Суммарное количество баллов</p>
-          <p className="mt-3 text-5xl font-medium text-[#01BB96]">
+        <div className="rounded-[28px] border border-[var(--border-primary)] bg-[var(--surface-primary)] px-6 py-8">
+          <p className="text-sm text-[var(--text-muted)]">Суммарное количество баллов</p>
+          <p className="mt-3 text-5xl font-medium text-[var(--accent-primary)]">
             {totalScore}
           </p>
-          <p className="mt-2 text-sm text-[#8E97A8]">
+          <p className="mt-2 text-sm text-[var(--text-muted)]">
             Из {scoreModel.maxScore} возможных
           </p>
-          <p className="mt-4 text-sm text-[#8E97A8]">
+          <p className="mt-4 text-sm text-[var(--text-muted)]">
             Уровень подготовки:{" "}
-            <span className="text-white">{trainingLevel}</span>
+            <span className="text-[var(--text-primary)]">{trainingLevel}</span>
           </p>
         </div>
 
-        <div className="rounded-[28px] border border-[#2A3140] bg-[#12151C] px-6 py-5">
-          <p className="text-sm uppercase tracking-[0.2em] text-[#8E97A8]">
+        <div className="rounded-[28px] border border-[var(--border-primary)] bg-[var(--surface-primary)] px-6 py-5">
+          <p className="text-sm uppercase tracking-[0.2em] text-[var(--text-muted)]">
             Следующий шаг
           </p>
-          <h2 className="mt-2 text-xl font-medium text-white">
+          <h2 className="mt-2 text-xl font-medium text-[var(--text-primary)]">
             Составим стартовую тренировку под твой уровень
           </h2>
-          <p className="mt-2 text-sm leading-6 text-[#8E97A8]">
+          <p className="mt-2 text-sm leading-6 text-[var(--text-muted)]">
             На следующем экране backend подберет стартовую программу и отдаст
             ее в конструктор. Ты сможешь спокойно изменить план перед
             сохранением.
@@ -93,33 +93,33 @@ export default function FinishTasting() {
         </div>
 
         {currentUser ? (
-          <p className="text-sm leading-6 text-[#8E97A8]">
+          <p className="text-sm leading-6 text-[var(--text-muted)]">
             Результат сохранен в профиль пользователя{" "}
-            <span className="text-white">
+            <span className="text-[var(--text-primary)]">
               {currentUser.name ?? currentUser.login}
             </span>
             .
           </p>
         ) : !isAuthReady ? (
-          <p className="text-sm leading-6 text-[#8E97A8]">
+          <p className="text-sm leading-6 text-[var(--text-muted)]">
             Подготавливаем профиль для сохранения результата...
           </p>
         ) : (
           <div className="flex flex-col gap-3">
-            <p className="text-sm leading-6 text-[#8E97A8]">
+            <p className="text-sm leading-6 text-[var(--text-muted)]">
               Тест можно пройти и без аккаунта, но чтобы сохранить уровень
               подготовки и программу в профиль, войдите или зарегистрируйтесь.
             </p>
             <div className="flex flex-col gap-3 sm:flex-row">
               <Link
                 to={ROUTES.LOGIN}
-                className="rounded-3xl border border-[#2A3140] px-5 py-4 text-center text-base font-medium text-white"
+                className="rounded-3xl border border-[var(--border-primary)] px-5 py-4 text-center text-base font-medium text-[var(--text-primary)]"
               >
                 Войти
               </Link>
               <Link
                 to={ROUTES.REGISTER}
-                className="rounded-3xl bg-[#01BB96] px-5 py-4 text-center text-base font-medium text-[#000214]"
+                className="rounded-3xl bg-[var(--accent-primary)] px-5 py-4 text-center text-base font-medium text-[var(--accent-contrast)]"
               >
                 Зарегистрироваться
               </Link>
@@ -135,7 +135,7 @@ export default function FinishTasting() {
             totalScore,
             scoreModel,
           }}
-          className="rounded-3xl bg-[#01BB96] px-5 py-4 text-center text-base font-medium text-[#000214]"
+          className="rounded-3xl bg-[var(--accent-primary)] px-5 py-4 text-center text-base font-medium text-[var(--accent-contrast)]"
         >
           Составить тренировку
         </Link>

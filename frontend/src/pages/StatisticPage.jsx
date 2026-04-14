@@ -140,7 +140,7 @@ function getStatusMeta(status) {
     default:
       return {
         label: "Без статуса",
-        textClassName: "text-[#8E97A8]",
+        textClassName: "text-[var(--text-muted)]",
         pillClassName: "bg-[#1A1F2A] text-[#B9C1CF]",
         barClassName: "bg-[#546074]",
       };
@@ -159,11 +159,11 @@ function MetricCard({
   label,
   value,
   caption,
-  accentClassName = "text-white",
+  accentClassName = "text-[var(--text-primary)]",
 }) {
   return (
-    <div className="min-w-0 overflow-hidden rounded-2xl bg-[#0B0E15] px-4 py-4">
-      <p className="break-words text-xs uppercase tracking-[0.14em] text-[#667085]">
+    <div className="min-w-0 overflow-hidden rounded-2xl bg-[var(--surface-secondary)] px-4 py-4">
+      <p className="break-words text-xs uppercase tracking-[0.14em] text-[var(--text-subtle)]">
         {label}
       </p>
       <p
@@ -172,7 +172,7 @@ function MetricCard({
         {value}
       </p>
       {caption ? (
-        <p className="mt-1 break-words text-sm leading-5 text-[#8E97A8]">
+        <p className="mt-1 break-words text-sm leading-5 text-[var(--text-muted)]">
           {caption}
         </p>
       ) : null}
@@ -184,14 +184,14 @@ function SectionHeading({ eyebrow, title, description, action }) {
   return (
     <div className="flex min-w-0 items-start justify-between gap-4">
       <div className="min-w-0 space-y-1">
-        <p className="break-words text-xs uppercase tracking-[0.18em] text-[#667085]">
+        <p className="break-words text-xs uppercase tracking-[0.18em] text-[var(--text-subtle)]">
           {eyebrow}
         </p>
-        <h2 className="break-words text-xl font-medium leading-6 text-white">
+        <h2 className="break-words text-xl font-medium leading-6 text-[var(--text-primary)]">
           {title}
         </h2>
         {description ? (
-          <p className="break-words text-sm leading-6 text-[#8E97A8]">
+          <p className="break-words text-sm leading-6 text-[var(--text-muted)]">
             {description}
           </p>
         ) : null}
@@ -203,7 +203,7 @@ function SectionHeading({ eyebrow, title, description, action }) {
 
 function GraphPanel({ eyebrow, title, description, children, footer }) {
   return (
-    <div className="min-w-0 rounded-[24px] bg-[#0B0E15] px-5 py-5">
+    <div className="min-w-0 rounded-[24px] bg-[var(--surface-secondary)] px-5 py-5">
       <SectionHeading
         eyebrow={eyebrow}
         title={title}
@@ -320,14 +320,14 @@ export default function StatisticPage() {
 
   return (
     <PageShell className="pt-5">
-      <section className="mx-auto flex w-full max-w-md flex-col gap-5 rounded-[28px] border border-[#2A3140] bg-[#12151C] p-5">
+      <section className="mx-auto flex w-full max-w-md flex-col gap-5 rounded-[28px] border border-[var(--border-primary)] bg-[var(--surface-primary)] p-5">
         <div className="space-y-3">
           <div className="space-y-2">
-            <p className="text-xs uppercase tracking-[0.18em] text-[#667085]">
+            <p className="text-xs uppercase tracking-[0.18em] text-[var(--text-subtle)]">
               Статистика
             </p>
-            <h1 className="text-3xl font-medium text-white">Прогресс по плану</h1>
-            <p className="break-words text-sm leading-6 text-[#8E97A8]">
+            <h1 className="text-3xl font-medium text-[var(--text-primary)]">Прогресс по плану</h1>
+            <p className="break-words text-sm leading-6 text-[var(--text-muted)]">
               Здесь видно, как ты выполняешь программу {selectedRange.scopeLabel},
               где растёт нагрузка и как меняется план под твои тренировки.
             </p>
@@ -345,7 +345,7 @@ export default function StatisticPage() {
                   className={`rounded-full px-4 py-2 text-sm transition ${
                     isActive
                       ? "bg-[#7CC7FF] text-[#08111F]"
-                      : "bg-[#0B0E15] text-[#B9C1CF]"
+                      : "bg-[var(--surface-secondary)] text-[#B9C1CF]"
                   }`}
                 >
                   {option.label}
@@ -356,7 +356,7 @@ export default function StatisticPage() {
 
           <Link
             to={ROUTES.WORKOUT_HISTORY}
-            className="inline-flex w-full justify-center rounded-full border border-[#2A3140] px-4 py-2 text-sm text-white sm:w-fit"
+            className="inline-flex w-full justify-center rounded-full border border-[var(--border-primary)] px-4 py-2 text-sm text-[var(--text-primary)] sm:w-fit"
           >
             Открыть историю тренировок
           </Link>
@@ -364,7 +364,7 @@ export default function StatisticPage() {
 
         {trainingPlanRefreshed ? (
           <div className="rounded-2xl border border-[#1D5E4F] bg-[#0D2E28] px-4 py-4">
-            <p className="text-sm font-medium text-white">
+            <p className="text-sm font-medium text-[var(--text-primary)]">
               Программа обновлена по последним тренировкам
             </p>
             {adaptationSummary.length > 0 ? (
@@ -393,10 +393,10 @@ export default function StatisticPage() {
           <div className={`rounded-[24px] border px-5 py-5 ${tierMeta.panelClassName}`}>
             <div className="flex items-start justify-between gap-4">
               <div className="min-w-0">
-                <p className="text-xs uppercase tracking-[0.18em] text-[#667085]">
+                <p className="text-xs uppercase tracking-[0.18em] text-[var(--text-subtle)]">
                   Рейтинг
                 </p>
-                <h2 className="mt-1 text-xl font-medium text-white">
+                <h2 className="mt-1 text-xl font-medium text-[var(--text-primary)]">
                   {gamification.rating.score} очков
                 </h2>
                 <p className={`mt-1 text-sm ${tierMeta.accentClassName}`}>
@@ -420,40 +420,40 @@ export default function StatisticPage() {
             </div>
 
             <div className="mt-4 grid grid-cols-2 gap-3">
-              <div className="rounded-2xl bg-[#12151C] px-4 py-3">
-                <p className="text-xs uppercase tracking-[0.14em] text-[#667085]">
+              <div className="rounded-2xl bg-[var(--surface-primary)] px-4 py-3">
+                <p className="text-xs uppercase tracking-[0.14em] text-[var(--text-subtle)]">
                   До следующего ранга
                 </p>
-                <p className="mt-2 text-lg font-medium text-white">
+                <p className="mt-2 text-lg font-medium text-[var(--text-primary)]">
                   {gamification.rating.nextTierLabel
                     ? gamification.rating.pointsToNextTier
                     : 0}
                 </p>
-                <p className="mt-1 text-xs text-[#8E97A8]">
+                <p className="mt-1 text-xs text-[var(--text-muted)]">
                   {gamification.rating.nextTierLabel ?? "Максимальный ранг"}
                 </p>
               </div>
 
-              <div className="rounded-2xl bg-[#12151C] px-4 py-3">
-                <p className="text-xs uppercase tracking-[0.14em] text-[#667085]">
+              <div className="rounded-2xl bg-[var(--surface-primary)] px-4 py-3">
+                <p className="text-xs uppercase tracking-[0.14em] text-[var(--text-subtle)]">
                   Следующая цель
                 </p>
-                <p className="mt-2 break-words text-sm font-medium leading-5 text-white">
+                <p className="mt-2 break-words text-sm font-medium leading-5 text-[var(--text-primary)]">
                   {gamification.achievements.nextUp?.title ?? "Все ключевые цели уже открыты"}
                 </p>
               </div>
             </div>
 
-            <div className="mt-4 rounded-2xl bg-[#12151C] px-4 py-3">
+            <div className="mt-4 rounded-2xl bg-[var(--surface-primary)] px-4 py-3">
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
-                  <p className="text-xs uppercase tracking-[0.14em] text-[#667085]">
+                  <p className="text-xs uppercase tracking-[0.14em] text-[var(--text-subtle)]">
                     Импульс
                   </p>
                   <p className={`mt-2 text-sm font-medium ${momentumMeta.accentClassName}`}>
                     {gamification.momentum?.label ?? momentumMeta.label}
                   </p>
-                  <p className="mt-1 break-words text-xs leading-5 text-[#8E97A8]">
+                  <p className="mt-1 break-words text-xs leading-5 text-[var(--text-muted)]">
                     {gamification.momentum?.description}
                   </p>
                 </div>
@@ -467,38 +467,38 @@ export default function StatisticPage() {
 
             <Link
               to={ROUTES.USER_ACHIEVEMENTS}
-              className="mt-4 inline-flex w-full justify-center rounded-2xl border border-[#2A3140] px-4 py-3 text-sm font-medium text-white"
+              className="mt-4 inline-flex w-full justify-center rounded-2xl border border-[var(--border-primary)] px-4 py-3 text-sm font-medium text-[var(--text-primary)]"
             >
               Открыть достижения
             </Link>
           </div>
         ) : null}
 
-        <div className="rounded-[24px] bg-[#0B0E15] px-5 py-5">
+        <div className="rounded-[24px] bg-[var(--surface-secondary)] px-5 py-5">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
             <div className="min-w-0 flex-1">
-              <p className="text-xs uppercase tracking-[0.18em] text-[#667085]">
+              <p className="text-xs uppercase tracking-[0.18em] text-[var(--text-subtle)]">
                 Выполнение плана
               </p>
-              <h2 className="mt-2 text-2xl font-medium text-white">
+              <h2 className="mt-2 text-2xl font-medium text-[var(--text-primary)]">
                 {stats.completionRate ?? 0}%
               </h2>
             </div>
 
-            <div className="rounded-2xl bg-[#12151C] px-4 py-3 text-center sm:min-w-[7.25rem] sm:shrink-0">
-              <p className="text-xs uppercase tracking-[0.14em] text-[#667085]">
+            <div className="rounded-2xl bg-[var(--surface-primary)] px-4 py-3 text-center sm:min-w-[7.25rem] sm:shrink-0">
+              <p className="text-xs uppercase tracking-[0.14em] text-[var(--text-subtle)]">
                 В периоде
               </p>
-              <p className="mt-2 text-xl font-medium text-white">
+              <p className="mt-2 text-xl font-medium text-[var(--text-primary)]">
                 {productiveCount}
               </p>
-              <p className="mt-1 break-words text-xs leading-4 text-[#8E97A8]">
+              <p className="mt-1 break-words text-xs leading-4 text-[var(--text-muted)]">
                 полезных сессий
               </p>
             </div>
           </div>
 
-          <p className="mt-3 break-words text-sm leading-6 text-[#8E97A8]">
+          <p className="mt-3 break-words text-sm leading-6 text-[var(--text-muted)]">
             {totalLogged > 0
               ? `${productiveCount} из ${totalLogged} тренировок дали полезный объём ${selectedRange.scopeLabel}.`
               : "Как только появятся завершённые тренировки, здесь соберётся общая картина по выполнению плана."}
@@ -527,9 +527,9 @@ export default function StatisticPage() {
               return (
                 <div
                   key={item.key}
-                  className="min-w-0 rounded-2xl bg-[#12151C] px-4 py-3"
+                  className="min-w-0 rounded-2xl bg-[var(--surface-primary)] px-4 py-3"
                 >
-                  <p className="break-words text-sm text-[#8E97A8]">
+                  <p className="break-words text-sm text-[var(--text-muted)]">
                     {meta.label}
                   </p>
                   <div className="mt-2 flex min-w-0 items-end justify-between gap-3">
@@ -538,7 +538,7 @@ export default function StatisticPage() {
                     >
                       {item.count}
                     </p>
-                    <p className="shrink-0 text-xs text-[#667085]">
+                    <p className="shrink-0 text-xs text-[var(--text-subtle)]">
                       {totalLogged
                         ? `${Math.round((item.count / totalLogged) * 100)}%`
                         : "0%"}
@@ -560,7 +560,7 @@ export default function StatisticPage() {
                 {ADAPTATION_LEGEND.map((item) => (
                   <div
                     key={item.key}
-                    className="flex min-w-0 items-center gap-2 rounded-full bg-[#12151C] px-3 py-1.5 text-xs text-[#B9C1CF]"
+                    className="flex min-w-0 items-center gap-2 rounded-full bg-[var(--surface-primary)] px-3 py-1.5 text-xs text-[#B9C1CF]"
                   >
                     <span className={`h-2.5 w-2.5 rounded-full ${item.dotClassName}`} />
                     <span className="truncate">{item.label}</span>
@@ -569,21 +569,21 @@ export default function StatisticPage() {
               </div>
 
               {latestAdaptationPoint ? (
-                <div className="min-w-0 rounded-2xl bg-[#12151C] px-4 py-3">
+                <div className="min-w-0 rounded-2xl bg-[var(--surface-primary)] px-4 py-3">
                   <div className="flex min-w-0 items-center justify-between gap-3">
-                    <p className="min-w-0 break-words text-sm font-medium text-white">
+                    <p className="min-w-0 break-words text-sm font-medium text-[var(--text-primary)]">
                       Последняя адаптация
                     </p>
-                    <span className="shrink-0 text-xs uppercase tracking-[0.14em] text-[#8E97A8]">
+                    <span className="shrink-0 text-xs uppercase tracking-[0.14em] text-[var(--text-muted)]">
                       {getAdaptationTriggerLabel(latestAdaptationPoint.trigger)}
                     </span>
                   </div>
-                  <p className="mt-2 break-words text-sm leading-6 text-[#8E97A8]">
+                  <p className="mt-2 break-words text-sm leading-6 text-[var(--text-muted)]">
                     {latestAdaptationPoint.changedExercisesCount} изменений в упражнениях и объёме.
                   </p>
                 </div>
               ) : (
-                <p className="break-words text-sm leading-6 text-[#8E97A8]">
+                <p className="break-words text-sm leading-6 text-[var(--text-muted)]">
                   Как только план начнёт обновляться, здесь появится история его изменений по циклам.
                 </p>
               )}
@@ -628,21 +628,21 @@ export default function StatisticPage() {
           description={`Линия показывает последний доступный маркер прогресса ${selectedRange.scopeLabel}: лучший вес в подходе, суммарный вес или вес тела.`}
           footer={
             latestProgressPoint ? (
-              <div className="min-w-0 rounded-2xl bg-[#12151C] px-4 py-3">
+              <div className="min-w-0 rounded-2xl bg-[var(--surface-primary)] px-4 py-3">
                 <div className="flex min-w-0 items-center justify-between gap-3">
-                  <p className="min-w-0 break-words text-sm font-medium text-white">
+                  <p className="min-w-0 break-words text-sm font-medium text-[var(--text-primary)]">
                     Последняя точка
                   </p>
-                  <span className="shrink-0 text-xs uppercase tracking-[0.14em] text-[#8E97A8]">
+                  <span className="shrink-0 text-xs uppercase tracking-[0.14em] text-[var(--text-muted)]">
                     {getProgressMetricLabel(latestProgressPoint.metric)}
                   </span>
                 </div>
-                <p className="mt-2 break-words text-sm leading-6 text-[#8E97A8]">
+                <p className="mt-2 break-words text-sm leading-6 text-[var(--text-muted)]">
                   {formatProgressValue(latestProgressPoint)} на {latestProgressPoint.label}
                 </p>
               </div>
             ) : (
-              <p className="break-words text-sm leading-6 text-[#8E97A8]">
+              <p className="break-words text-sm leading-6 text-[var(--text-muted)]">
                 Как только в истории накопятся веса по подходам или данные по весу тела,
                 здесь появится наглядный тренд.
               </p>
@@ -656,7 +656,7 @@ export default function StatisticPage() {
         </GraphPanel>
 
         {trainingPlan ? (
-          <div className="rounded-[24px] bg-[#0B0E15] px-5 py-5">
+          <div className="rounded-[24px] bg-[var(--surface-secondary)] px-5 py-5">
             <SectionHeading
               eyebrow="Адаптация"
               title="Почему план выглядит именно так"
@@ -667,14 +667,14 @@ export default function StatisticPage() {
               {planAdaptationBreakdown.map((item) => (
                 <div
                   key={item.key}
-                  className="min-w-0 rounded-2xl bg-[#12151C] px-4 py-3"
+                  className="min-w-0 rounded-2xl bg-[var(--surface-primary)] px-4 py-3"
                 >
                   <div className="flex items-center gap-2">
                     <VolumeTrendIcon
                       iconType={item.meta.iconType}
                       className={`h-4 w-4 ${item.meta.textClassName}`}
                     />
-                    <p className="break-words text-sm text-[#8E97A8]">
+                    <p className="break-words text-sm text-[var(--text-muted)]">
                       {item.meta.label}
                     </p>
                   </div>
@@ -707,10 +707,10 @@ export default function StatisticPage() {
                             {item.reasonTitle}
                           </p>
                         </div>
-                        <p className="mt-2 break-words text-sm font-medium text-white">
+                        <p className="mt-2 break-words text-sm font-medium text-[var(--text-primary)]">
                           {item.exercise.name}
                         </p>
-                        <p className="mt-1 break-words text-xs text-[#8E97A8]">
+                        <p className="mt-1 break-words text-xs text-[var(--text-muted)]">
                           {item.sessionTitle}
                         </p>
                       </div>
@@ -733,14 +733,14 @@ export default function StatisticPage() {
                       ))}
                     </div>
 
-                    <p className="mt-3 break-words text-sm leading-6 text-[#8E97A8]">
+                    <p className="mt-3 break-words text-sm leading-6 text-[var(--text-muted)]">
                       {item.exercise.volumeReason}
                     </p>
                   </div>
                 ))}
               </div>
             ) : (
-              <p className="mt-4 break-words text-sm leading-6 text-[#8E97A8]">
+              <p className="mt-4 break-words text-sm leading-6 text-[var(--text-muted)]">
                 Пока активная программа идёт по базовому объёму. Как только появятся
                 прогресс по весам, плато или ручные правки, здесь будет видно, что именно поменялось.
               </p>
@@ -777,21 +777,21 @@ export default function StatisticPage() {
           />
         </div>
 
-        <div className="rounded-[24px] bg-[#0B0E15] px-5 py-5">
+        <div className="rounded-[24px] bg-[var(--surface-secondary)] px-5 py-5">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
             <SectionHeading
               eyebrow="Ближайшее"
               title={formatWorkoutRelativeLabel(nextWorkout)}
               description={nextWorkoutDescription}
             />
-            <div className="rounded-2xl bg-[#12151C] px-4 py-3 text-center sm:min-w-[6.5rem] sm:shrink-0">
-              <p className="text-xs uppercase tracking-[0.14em] text-[#667085]">
+            <div className="rounded-2xl bg-[var(--surface-primary)] px-4 py-3 text-center sm:min-w-[6.5rem] sm:shrink-0">
+              <p className="text-xs uppercase tracking-[0.14em] text-[var(--text-subtle)]">
                 В календаре
               </p>
-              <p className="mt-2 text-xl font-medium text-white">
+              <p className="mt-2 text-xl font-medium text-[var(--text-primary)]">
                 {remoteStats?.scheduledWorkoutsCount ?? scheduledWorkouts.length}
               </p>
-              <p className="mt-1 text-xs text-[#8E97A8]">занятий</p>
+              <p className="mt-1 text-xs text-[var(--text-muted)]">занятий</p>
             </div>
           </div>
         </div>
@@ -820,7 +820,7 @@ export default function StatisticPage() {
           />
         </div>
 
-        <div className="rounded-[24px] bg-[#0B0E15] px-5 py-5">
+        <div className="rounded-[24px] bg-[var(--surface-secondary)] px-5 py-5">
           <SectionHeading
             eyebrow="Лидеры"
             title="Топ упражнений по весам"
@@ -832,14 +832,14 @@ export default function StatisticPage() {
               {stats.topExercises.map((exercise, index) => (
                 <div
                   key={exercise.exerciseName}
-                  className="min-w-0 rounded-2xl bg-[#12151C] px-4 py-4"
+                  className="min-w-0 rounded-2xl bg-[var(--surface-primary)] px-4 py-4"
                 >
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
-                      <p className="break-words text-sm font-medium text-white">
+                      <p className="break-words text-sm font-medium text-[var(--text-primary)]">
                         {exercise.exerciseName}
                       </p>
-                      <p className="mt-1 break-words text-sm text-[#8E97A8]">
+                      <p className="mt-1 break-words text-sm text-[var(--text-muted)]">
                         {exercise.trackedSets} подходов с весом
                       </p>
                     </div>
@@ -848,8 +848,8 @@ export default function StatisticPage() {
                     </div>
                   </div>
                   <div className="mt-3 flex items-center justify-between gap-3 text-sm">
-                    <span className="text-[#8E97A8]">Лучший подход</span>
-                    <span className="shrink-0 font-medium text-white">
+                    <span className="text-[var(--text-muted)]">Лучший подход</span>
+                    <span className="shrink-0 font-medium text-[var(--text-primary)]">
                       {exercise.bestSetWeight} кг
                     </span>
                   </div>
@@ -857,14 +857,14 @@ export default function StatisticPage() {
               ))}
             </div>
           ) : (
-            <p className="mt-3 break-words text-sm leading-6 text-[#8E97A8]">
+            <p className="mt-3 break-words text-sm leading-6 text-[var(--text-muted)]">
               Как только начнёшь записывать веса по подходам, здесь появятся упражнения-лидеры
               и станет видно, где идёт лучший рост.
             </p>
           )}
         </div>
 
-        <div className="rounded-[24px] bg-[#0B0E15] px-5 py-5">
+        <div className="rounded-[24px] bg-[var(--surface-secondary)] px-5 py-5">
           <SectionHeading
             eyebrow="История"
             title="Последние тренировки"
@@ -879,14 +879,14 @@ export default function StatisticPage() {
                 return (
                   <div
                     key={workout.id}
-                    className="min-w-0 rounded-2xl bg-[#12151C] px-4 py-4"
+                    className="min-w-0 rounded-2xl bg-[var(--surface-primary)] px-4 py-4"
                   >
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0">
-                        <p className="break-words text-sm font-medium text-white">
+                        <p className="break-words text-sm font-medium text-[var(--text-primary)]">
                           {workout.title}
                         </p>
-                        <p className="mt-1 break-words text-xs text-[#8E97A8]">
+                        <p className="mt-1 break-words text-xs text-[var(--text-muted)]">
                           {workout.date}, {workout.time}
                         </p>
                       </div>
@@ -900,10 +900,10 @@ export default function StatisticPage() {
 
                     <div className="mt-3 grid grid-cols-3 gap-2 text-center">
                       <div className="min-w-0 rounded-xl bg-[#0F131B] px-2 py-2">
-                        <p className="text-[11px] uppercase tracking-[0.12em] text-[#667085]">
+                        <p className="text-[11px] uppercase tracking-[0.12em] text-[var(--text-subtle)]">
                           Время
                         </p>
-                        <p className="mt-1 break-words text-sm font-medium text-white">
+                        <p className="mt-1 break-words text-sm font-medium text-[var(--text-primary)]">
                           {formatDurationMinutes(
                             Math.round(
                               (workout.actualDurationSeconds ??
@@ -914,18 +914,18 @@ export default function StatisticPage() {
                         </p>
                       </div>
                       <div className="min-w-0 rounded-xl bg-[#0F131B] px-2 py-2">
-                        <p className="text-[11px] uppercase tracking-[0.12em] text-[#667085]">
+                        <p className="text-[11px] uppercase tracking-[0.12em] text-[var(--text-subtle)]">
                           Подходы
                         </p>
-                        <p className="mt-1 break-words text-sm font-medium text-white">
+                        <p className="mt-1 break-words text-sm font-medium text-[var(--text-primary)]">
                           {workout.completedSetsCount ?? 0}
                         </p>
                       </div>
                       <div className="min-w-0 rounded-xl bg-[#0F131B] px-2 py-2">
-                        <p className="text-[11px] uppercase tracking-[0.12em] text-[#667085]">
+                        <p className="text-[11px] uppercase tracking-[0.12em] text-[var(--text-subtle)]">
                           Калории
                         </p>
-                        <p className="mt-1 break-words text-sm font-medium text-white">
+                        <p className="mt-1 break-words text-sm font-medium text-[var(--text-primary)]">
                           {workout.metrics?.burnedCalories ?? 0}
                         </p>
                       </div>
@@ -935,7 +935,7 @@ export default function StatisticPage() {
               })}
             </div>
           ) : (
-            <p className="mt-3 break-words text-sm leading-6 text-[#8E97A8]">
+            <p className="mt-3 break-words text-sm leading-6 text-[var(--text-muted)]">
               После первой завершённой тренировки здесь появится история по сессиям и статусам выполнения.
             </p>
           )}

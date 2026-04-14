@@ -103,16 +103,15 @@
   background:
     radial-gradient(circle at top, rgba(124, 199, 255, 0.16), transparent 32%),
     radial-gradient(circle at bottom, rgba(1, 187, 150, 0.14), transparent 34%),
-    #000214;
+    var(--app-bg);
 }
 
 .app-loading-screen__card {
   width: min(100%, 26rem);
   padding: 2rem 1.5rem;
-  border: 1px solid rgba(42, 49, 64, 0.96);
+  border: 1px solid var(--border-primary);
   border-radius: 2rem;
-  background:
-    linear-gradient(180deg, rgba(18, 21, 28, 0.98), rgba(11, 14, 21, 0.98));
+  background: linear-gradient(180deg, var(--surface-primary), var(--surface-secondary));
   box-shadow:
     0 1.25rem 3rem rgba(0, 0, 0, 0.38),
     inset 0 1px 0 rgba(255, 255, 255, 0.04);
@@ -124,8 +123,8 @@
   gap: 0.5rem;
   padding: 0.45rem 0.8rem;
   border-radius: 9999px;
-  background: rgba(11, 14, 21, 0.8);
-  color: #8e97a8;
+  background: var(--surface-secondary-80);
+  color: var(--text-muted);
   font-size: 0.75rem;
   letter-spacing: 0.18em;
   text-transform: uppercase;
@@ -143,14 +142,14 @@
   font-size: 2rem;
   line-height: 1.15;
   font-weight: 500;
-  color: #ffffff;
+  color: var(--text-primary);
 }
 
 .app-loading-screen__text {
   margin-top: 0.8rem;
   font-size: 0.95rem;
   line-height: 1.65;
-  color: #8e97a8;
+  color: var(--text-muted);
 }
 
 .app-loading-screen__bars {
@@ -163,9 +162,9 @@
   gap: 1rem;
   width: 100%;
   padding: 1.1rem 1rem;
-  border: 1px solid rgba(42, 49, 64, 0.96);
+  border: 1px solid var(--border-primary);
   border-radius: 1.5rem;
-  background: rgba(11, 14, 21, 0.95);
+  background: var(--surface-secondary-95);
 }
 
 .loading-card--centered {
@@ -174,14 +173,14 @@
 }
 
 .loading-card__title {
-  color: #ffffff;
+  color: var(--text-primary);
   font-size: 1rem;
   font-weight: 500;
   line-height: 1.45;
 }
 
 .loading-card__text {
-  color: #8e97a8;
+  color: var(--text-muted);
   font-size: 0.9rem;
   line-height: 1.6;
 }

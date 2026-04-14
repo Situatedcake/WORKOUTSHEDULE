@@ -265,15 +265,15 @@ export default function WorkoutPlanPage() {
   if (!currentUser.trainingPlan || !nearestWorkout || !workoutDraft) {
     return (
       <PageShell className="pt-5" showNavMenu={false}>
-        <section className="mx-auto flex w-full max-w-md flex-col gap-5 rounded-[28px] border border-[#2A3140] bg-[#12151C] p-6">
+        <section className="mx-auto flex w-full max-w-md flex-col gap-5 rounded-[28px] border border-[var(--border-primary)] bg-[var(--surface-primary)] p-6">
           <div className="space-y-2">
-            <p className="text-sm uppercase tracking-[0.2em] text-[#8E97A8]">
+            <p className="text-sm uppercase tracking-[0.2em] text-[var(--text-muted)]">
               Тренировка
             </p>
-            <h1 className="text-3xl font-medium text-white">
+            <h1 className="text-3xl font-medium text-[var(--text-primary)]">
               Активная тренировка не найдена
             </h1>
-            <p className="text-sm leading-6 text-[#8E97A8]">
+            <p className="text-sm leading-6 text-[var(--text-muted)]">
               Сначала поставь тренировку в календарь, и после этого кнопка
               &quot;Приступить&quot; откроет план занятия.
             </p>
@@ -281,7 +281,7 @@ export default function WorkoutPlanPage() {
 
           <Link
             to={ROUTES.CALENDAR}
-            className="rounded-3xl bg-[#01BB96] px-5 py-4 text-center text-base font-medium text-[#000214]"
+            className="rounded-3xl bg-[var(--accent-primary)] px-5 py-4 text-center text-base font-medium text-[var(--accent-contrast)]"
           >
             Открыть календарь
           </Link>
@@ -437,17 +437,17 @@ export default function WorkoutPlanPage() {
         <header className="flex items-center justify-between gap-3">
           <Link
             to={ROUTES.HOME}
-            className="rounded-2xl border border-[#2A3140] p-3 text-white"
+            className="rounded-2xl border border-[var(--border-primary)] p-3 text-[var(--text-primary)]"
             aria-label="Назад"
           >
             <BackIcon />
           </Link>
 
           <div className="min-w-0 flex-1 text-center">
-            <p className="text-sm uppercase tracking-[0.2em] text-[#8E97A8]">
+            <p className="text-sm uppercase tracking-[0.2em] text-[var(--text-muted)]">
               План тренировки
             </p>
-            <h1 className="mt-1 break-words text-xl font-medium leading-7 text-white">
+            <h1 className="mt-1 break-words text-xl font-medium leading-7 text-[var(--text-primary)]">
               {workoutDraft.title}
             </h1>
           </div>
@@ -457,7 +457,7 @@ export default function WorkoutPlanPage() {
 
         {hasRuntimeForCurrentWorkout ? (
           <div className="rounded-[20px] border border-[#27455C] bg-[#102338] px-4 py-4">
-            <p className="text-[11px] uppercase tracking-[0.16em] text-[#8E97A8]">
+            <p className="text-[11px] uppercase tracking-[0.16em] text-[var(--text-muted)]">
               Активная сессия
             </p>
             <p className="mt-2 text-sm leading-6 text-[#D6E6F8]">
@@ -484,7 +484,7 @@ export default function WorkoutPlanPage() {
             return (
               <section
                 key={`${exercise.id}_${exerciseIndex}`}
-                className="overflow-hidden rounded-[20px] border border-[#2A3140] bg-[#12151C]"
+                className="overflow-hidden rounded-[20px] border border-[var(--border-primary)] bg-[var(--surface-primary)]"
               >
                 <button
                   type="button"
@@ -494,7 +494,7 @@ export default function WorkoutPlanPage() {
                 >
                   <div className="min-w-0 flex-1">
                     <h2
-                      className="overflow-hidden text-sm font-medium leading-5 text-white"
+                      className="overflow-hidden text-sm font-medium leading-5 text-[var(--text-primary)]"
                       style={{
                         display: "-webkit-box",
                         WebkitBoxOrient: "vertical",
@@ -507,18 +507,18 @@ export default function WorkoutPlanPage() {
                       <span className="inline-flex rounded-full bg-[#0D3A33] px-3 py-1 text-[10px] text-[#B5F7DF]">
                         {exercise.difficultyLabel}
                       </span>
-                      <span className="inline-flex rounded-full bg-[#0B0E15] px-3 py-1 text-[10px] text-white">
+                      <span className="inline-flex rounded-full bg-[var(--surface-secondary)] px-3 py-1 text-[10px] text-[var(--text-primary)]">
                         {exercise.sets} подход.
                       </span>
                     </div>
                     {Number.isFinite(latestExerciseWeight) ? (
-                      <p className="mt-2 text-xs text-[#8E97A8]">
+                      <p className="mt-2 text-xs text-[var(--text-muted)]">
                         В прошлый раз: {formatTrackedWeight(latestExerciseWeight)}
                       </p>
                     ) : null}
                   </div>
 
-                  <span className="shrink-0 text-[#8E97A8]">
+                  <span className="shrink-0 text-[var(--text-muted)]">
                     <ChevronIcon
                       isExpanded={expandedExerciseIndex === exerciseIndex}
                     />
@@ -526,12 +526,12 @@ export default function WorkoutPlanPage() {
                 </button>
 
                 {expandedExerciseIndex === exerciseIndex ? (
-                  <div className="border-t border-[#2A3140] px-4 py-4">
+                  <div className="border-t border-[var(--border-primary)] px-4 py-4">
                     <div className="flex items-center gap-2">
                       <button
                         type="button"
                         onClick={() => handleDecreaseSets(exerciseIndex)}
-                        className="rounded-2xl border border-[#2A3140] p-2 text-[#D9E1EE]"
+                        className="rounded-2xl border border-[var(--border-primary)] p-2 text-[#D9E1EE]"
                         aria-label="Уменьшить количество подходов"
                       >
                         <MinusIcon />
@@ -539,7 +539,7 @@ export default function WorkoutPlanPage() {
                       <button
                         type="button"
                         onClick={() => handleIncreaseSets(exerciseIndex)}
-                        className="rounded-2xl border border-[#2A3140] p-2 text-[#D9E1EE]"
+                        className="rounded-2xl border border-[var(--border-primary)] p-2 text-[#D9E1EE]"
                         aria-label="Увеличить количество подходов"
                       >
                         <PlusIcon />
@@ -548,7 +548,7 @@ export default function WorkoutPlanPage() {
                         type="button"
                         onClick={() => handleRemoveExercise(exerciseIndex)}
                         disabled={workoutDraft.exercises.length === 1}
-                        className="ml-auto rounded-2xl border border-[#2A3140] p-2 text-[#FF9B9B] disabled:opacity-40"
+                        className="ml-auto rounded-2xl border border-[var(--border-primary)] p-2 text-[#FF9B9B] disabled:opacity-40"
                         aria-label="Удалить упражнение"
                       >
                         <TrashIcon />
@@ -556,7 +556,7 @@ export default function WorkoutPlanPage() {
                     </div>
 
                     <label className="mt-4 flex flex-col gap-2">
-                      <span className="text-[11px] uppercase tracking-[0.16em] text-[#8E97A8]">
+                      <span className="text-[11px] uppercase tracking-[0.16em] text-[var(--text-muted)]">
                         Замена
                       </span>
                       <select
@@ -564,7 +564,7 @@ export default function WorkoutPlanPage() {
                         onChange={(event) =>
                           handleExerciseReplace(exerciseIndex, event.target.value)
                         }
-                        className="rounded-2xl border border-[#2A3140] bg-[#0B0E15] px-4 py-3 text-sm text-white outline-none"
+                        className="rounded-2xl border border-[var(--border-primary)] bg-[var(--surface-secondary)] px-4 py-3 text-sm text-[var(--text-primary)] outline-none"
                       >
                         {workoutDraft.exerciseOptions.map((option, optionIndex) => (
                           <option
@@ -577,15 +577,15 @@ export default function WorkoutPlanPage() {
                       </select>
                     </label>
 
-                    <div className="mt-4 rounded-2xl bg-[#0B0E15] px-4 py-3">
-                      <p className="text-[11px] uppercase tracking-[0.16em] text-[#8E97A8]">
+                    <div className="mt-4 rounded-2xl bg-[var(--surface-secondary)] px-4 py-3">
+                      <p className="text-[11px] uppercase tracking-[0.16em] text-[var(--text-muted)]">
                         Рекомендация
                       </p>
-                      <p className="mt-2 text-sm leading-6 text-white">
+                      <p className="mt-2 text-sm leading-6 text-[var(--text-primary)]">
                         {exercise.prescription}
                       </p>
                       {Number.isFinite(latestExerciseWeight) ? (
-                        <p className="mt-2 text-xs leading-5 text-[#8E97A8]">
+                        <p className="mt-2 text-xs leading-5 text-[var(--text-muted)]">
                           Последний рабочий вес: {formatTrackedWeight(latestExerciseWeight)}
                         </p>
                       ) : null}
@@ -596,7 +596,7 @@ export default function WorkoutPlanPage() {
                     >
                       <div className="flex items-start justify-between gap-3">
                         <div className="min-w-0">
-                          <p className="text-[11px] uppercase tracking-[0.16em] text-[#8E97A8]">
+                          <p className="text-[11px] uppercase tracking-[0.16em] text-[var(--text-muted)]">
                             Причина адаптации
                           </p>
                           <div className="mt-2 flex items-center gap-2">
@@ -630,7 +630,7 @@ export default function WorkoutPlanPage() {
                         ))}
                       </div>
 
-                      <p className="mt-3 text-sm leading-6 text-[#8E97A8]">
+                      <p className="mt-3 text-sm leading-6 text-[var(--text-muted)]">
                         {getExerciseVolumeReason(exercise)}
                       </p>
                     </div>
@@ -643,20 +643,20 @@ export default function WorkoutPlanPage() {
 
         {addableExerciseOptions.length > 0 ? (
           <>
-            <section className="rounded-[20px] border border-dashed border-[#2A3140] bg-[#12151C] p-3">
+            <section className="rounded-[20px] border border-dashed border-[var(--border-primary)] bg-[var(--surface-primary)] p-3">
               <button
                 type="button"
                 onClick={handleAddExercise}
                 aria-label="Добавить лучшее рекомендованное упражнение"
-                className="flex min-h-[88px] w-full items-center justify-center rounded-[16px] border border-[#2A3140] bg-[#0B0E15] text-white transition active:scale-[0.98]"
+                className="flex min-h-[88px] w-full items-center justify-center rounded-[16px] border border-[var(--border-primary)] bg-[var(--surface-secondary)] text-[var(--text-primary)] transition active:scale-[0.98]"
               >
                 <span className="text-5xl font-light leading-none">+</span>
               </button>
-              <p className="mt-2 text-center text-[11px] leading-4 text-[#8E97A8]">
+              <p className="mt-2 text-center text-[11px] leading-4 text-[var(--text-muted)]">
                 Добавим лучшее упражнение из рекомендаций ML
               </p>
             </section>
-          <section className="hidden rounded-[16px] border border-[#2A3140] bg-[#12151C] px-3 py-2.5">
+          <section className="hidden rounded-[16px] border border-[var(--border-primary)] bg-[var(--surface-primary)] px-3 py-2.5">
             <p className="hidden">
               Добавить из рекомендаций
             </p>
@@ -664,10 +664,10 @@ export default function WorkoutPlanPage() {
               Можно расширить тренировку упражнениями из рекомендованного
               системой списка.
             </p>
-            <p className="text-[9px] uppercase tracking-[0.16em] text-[#8E97A8]">
+            <p className="text-[9px] uppercase tracking-[0.16em] text-[var(--text-muted)]">
               Добавить из рекомендаций
             </p>
-            <p className="mt-1 text-[11px] leading-4 text-[#8E97A8]">
+            <p className="mt-1 text-[11px] leading-4 text-[var(--text-muted)]">
               Можно расширить тренировку упражнениями из рекомендованного
               системой списка.
             </p>
@@ -676,7 +676,7 @@ export default function WorkoutPlanPage() {
               <select
                 value={addableExerciseOptions[0]?.name ?? ""}
                 onChange={() => {}}
-                className="rounded-[16px] border border-[#2A3140] bg-[#0B0E15] px-3 py-2 text-sm leading-5 text-white outline-none"
+                className="rounded-[16px] border border-[var(--border-primary)] bg-[var(--surface-secondary)] px-3 py-2 text-sm leading-5 text-[var(--text-primary)] outline-none"
               >
                 {addableExerciseOptions.map((exerciseOption, optionIndex) => (
                   <option
@@ -693,7 +693,7 @@ export default function WorkoutPlanPage() {
                 onClick={handleAddExercise}
                 data-label="Добавить упражнение"
                 aria-label="Добавить упражнение"
-                className="relative overflow-hidden rounded-[16px] border border-[#2A3140] bg-[#0B0E15] px-3 py-2 text-sm font-medium leading-5 text-transparent after:absolute after:inset-0 after:flex after:items-center after:justify-center after:text-white after:content-[attr(data-label)]"
+                className="relative overflow-hidden rounded-[16px] border border-[var(--border-primary)] bg-[var(--surface-secondary)] px-3 py-2 text-sm font-medium leading-5 text-transparent after:absolute after:inset-0 after:flex after:items-center after:justify-center after:text-[var(--text-primary)] after:content-[attr(data-label)]"
               >
                 Добавить упражнение
               </button>
@@ -717,7 +717,7 @@ export default function WorkoutPlanPage() {
               ? `Продолжить тренировку • ${formatDuration(workoutDraft.totalEstimatedSeconds)}`
               : `Начать тренировку • ${formatDuration(workoutDraft.totalEstimatedSeconds)}`
           }
-          className="pointer-events-auto relative w-full max-w-md overflow-hidden rounded-3xl bg-[#01BB96] px-5 py-4 text-base font-medium text-transparent after:absolute after:inset-0 after:flex after:items-center after:justify-center after:px-5 after:text-center after:text-[#000214] after:content-[attr(data-label)]"
+          className="pointer-events-auto relative w-full max-w-md overflow-hidden rounded-3xl bg-[var(--accent-primary)] px-5 py-4 text-base font-medium text-transparent after:absolute after:inset-0 after:flex after:items-center after:justify-center after:px-5 after:text-center after:text-[var(--accent-contrast)] after:content-[attr(data-label)]"
         >
           {hasRuntimeForCurrentWorkout
             ? `Продолжить тренировку • ${formatDuration(workoutDraft.totalEstimatedSeconds)}`

@@ -50,7 +50,7 @@ function AchievementUnlockOverlay({ achievement, celebration }) {
       <div
         className={`achievement-toast relative w-full max-w-md overflow-hidden rounded-[28px] border px-4 py-4 shadow-[0_24px_60px_rgba(0,0,0,0.35)] ${
           tierMeta?.panelClassName ??
-          `${rarityMeta?.ringClassName ?? "border-[#2A3140]"} bg-[linear-gradient(180deg,#151925_0%,#0B0E15_100%)]`
+          `${rarityMeta?.ringClassName ?? "border-[var(--border-primary)]"} bg-[linear-gradient(180deg,#151925_0%,var(--surface-secondary)_100%)]`
         }`}
         style={{ animationDuration: `${timeoutMs}ms` }}
       >
@@ -68,8 +68,8 @@ function AchievementUnlockOverlay({ achievement, celebration }) {
 
         <div className="relative flex items-start gap-4">
           <div
-            className={`relative flex h-14 w-14 shrink-0 items-center justify-center rounded-[18px] border bg-[#0F131B]/90 text-white ${
-              rarityMeta?.ringClassName ?? tierMeta?.borderClassName ?? "border-[#2A3140]"
+            className={`relative flex h-14 w-14 shrink-0 items-center justify-center rounded-[18px] border bg-[#0F131B]/90 text-[var(--text-primary)] ${
+              rarityMeta?.ringClassName ?? tierMeta?.borderClassName ?? "border-[var(--border-primary)]"
             }`}
           >
             <div
@@ -85,10 +85,10 @@ function AchievementUnlockOverlay({ achievement, celebration }) {
           <div className="min-w-0 flex-1">
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0">
-                <p className="text-[11px] uppercase tracking-[0.2em] text-[#8E97A8]">
+                <p className="text-[11px] uppercase tracking-[0.2em] text-[var(--text-muted)]">
                   {eyebrowText}
                 </p>
-                <h3 className="mt-1 break-words text-lg font-medium leading-6 text-white">
+                <h3 className="mt-1 break-words text-lg font-medium leading-6 text-[var(--text-primary)]">
                   {payload.title}
                 </h3>
               </div>

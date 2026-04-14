@@ -29,7 +29,7 @@ export function BarTrendChart({
 }) {
   if (!items.length) {
     return (
-      <div className="flex h-28 items-center justify-center rounded-2xl bg-[#0F131B] text-sm text-[#667085]">
+      <div className="flex h-28 items-center justify-center rounded-2xl bg-[#0F131B] text-sm text-[var(--text-subtle)]">
         Пока не хватает данных
       </div>
     );
@@ -55,7 +55,7 @@ export function BarTrendChart({
                   style={{ height: `${height}%` }}
                 />
               </div>
-              <span className="text-[10px] uppercase tracking-[0.12em] text-[#667085]">
+              <span className="text-[10px] uppercase tracking-[0.12em] text-[var(--text-subtle)]">
                 {item.label}
               </span>
             </div>
@@ -74,7 +74,7 @@ export function LineTrendChart({
 }) {
   if (!items.length) {
     return (
-      <div className="flex h-28 items-center justify-center rounded-2xl bg-[#0F131B] text-sm text-[#667085]">
+      <div className="flex h-28 items-center justify-center rounded-2xl bg-[#0F131B] text-sm text-[var(--text-subtle)]">
         Пока не хватает данных
       </div>
     );
@@ -110,7 +110,7 @@ export function LineTrendChart({
           />
         </svg>
       </div>
-      <div className="flex justify-between gap-2 text-[10px] uppercase tracking-[0.12em] text-[#667085]">
+      <div className="flex justify-between gap-2 text-[10px] uppercase tracking-[0.12em] text-[var(--text-subtle)]">
         {items.map((item) => (
           <span key={item.label} className="min-w-0 truncate">
             {item.label}
@@ -136,7 +136,7 @@ export function AdaptationTrendChart({ items = [] }) {
 
   if (!items.length) {
     return (
-      <div className="flex h-28 items-center justify-center rounded-2xl bg-[#0F131B] text-sm text-[#667085]">
+      <div className="flex h-28 items-center justify-center rounded-2xl bg-[#0F131B] text-sm text-[var(--text-subtle)]">
         Пока не хватает данных
       </div>
     );
@@ -189,7 +189,7 @@ export function AdaptationTrendChart({ items = [] }) {
                   ) : null}
                 </div>
               </div>
-              <span className="text-[10px] uppercase tracking-[0.12em] text-[#667085]">
+              <span className="text-[10px] uppercase tracking-[0.12em] text-[var(--text-subtle)]">
                 {item.label}
               </span>
             </div>

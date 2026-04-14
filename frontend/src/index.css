@@ -8,10 +8,59 @@
 :root {
   color-scheme: dark;
   --app-bg: #000214;
+  --surface-primary: #12151c;
+  --surface-primary-92: rgba(18, 21, 28, 0.92);
+  --surface-secondary: #0b0e15;
+  --surface-secondary-80: rgba(11, 14, 21, 0.8);
+  --surface-secondary-95: rgba(11, 14, 21, 0.95);
+  --border-primary: #2a3140;
+  --border-soft: #383838;
+  --text-primary: #ffffff;
+  --text-muted: #8e97a8;
+  --text-subtle: #667085;
+  --tooltip-text: #d8e0ee;
+  --hero-muted: #a2acbd;
+  --hero-foreground: #ffffff;
+  --accent-primary: #01bb96;
+  --accent-contrast: #000214;
+  --accent-hero: #3cffb9;
+  --accent-hero-contrast: #000000;
+  --button-muted-bg: #5f6674;
+  --button-muted-text: #dbe0e8;
+  --danger-surface: #2b1717;
+  --danger-border: #603838;
+  --danger-text: #ffb3b3;
   --safe-area-top: env(safe-area-inset-top, 0px);
   --safe-area-right: env(safe-area-inset-right, 0px);
   --safe-area-bottom: env(safe-area-inset-bottom, 0px);
   --safe-area-left: env(safe-area-inset-left, 0px);
+}
+
+:root[data-theme="light"] {
+  color-scheme: light;
+  --app-bg: #f3f6fb;
+  --surface-primary: #ffffff;
+  --surface-primary-92: rgba(255, 255, 255, 0.94);
+  --surface-secondary: #eef3f8;
+  --surface-secondary-80: rgba(238, 243, 248, 0.88);
+  --surface-secondary-95: rgba(238, 243, 248, 0.96);
+  --border-primary: #d6dee8;
+  --border-soft: #cfd7e2;
+  --text-primary: #122033;
+  --text-muted: #617287;
+  --text-subtle: #7b889a;
+  --tooltip-text: #445366;
+  --hero-muted: #6d7f93;
+  --hero-foreground: #ffffff;
+  --accent-primary: #00a98a;
+  --accent-contrast: #ffffff;
+  --accent-hero: #18c58e;
+  --accent-hero-contrast: #ffffff;
+  --button-muted-bg: #ccd5df;
+  --button-muted-text: #546273;
+  --danger-surface: #fff1f1;
+  --danger-border: #f0c3c3;
+  --danger-text: #b94c4c;
 }
 
 html {
@@ -35,12 +84,15 @@ body {
   padding-left: var(--safe-area-left);
   overflow-x: hidden;
   background-color: var(--app-bg);
-  color: white;
+  color: var(--text-primary);
   -webkit-tap-highlight-color: transparent;
   -webkit-touch-callout: none;
   -webkit-user-select: none;
   user-select: none;
   overscroll-behavior-y: contain;
+  transition:
+    background-color 180ms ease,
+    color 180ms ease;
 }
 
 #root {
@@ -59,6 +111,24 @@ img {
   max-width: 100%;
   -webkit-user-drag: none;
   user-drag: none;
+}
+
+a,
+button,
+input,
+select,
+textarea,
+main,
+section,
+article,
+div,
+header,
+nav {
+  transition:
+    background-color 180ms ease,
+    border-color 180ms ease,
+    color 180ms ease,
+    box-shadow 180ms ease;
 }
 
 button,

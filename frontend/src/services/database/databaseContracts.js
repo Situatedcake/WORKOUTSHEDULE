@@ -12,4 +12,5 @@ export const USER_STORAGE_METHODS = [
   "skipWorkout",
   "completeWorkout",
   "getWorkoutStats",
+  "getGamificationCatalog",
 ];

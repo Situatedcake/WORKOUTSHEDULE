@@ -1176,4 +1176,8 @@ export const mockUserStorage = {
         : 0,
     };
   },
+
+  async getGamificationCatalog() {
+    return null;
+  },
 };

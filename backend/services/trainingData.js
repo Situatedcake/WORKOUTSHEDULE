@@ -1,10 +1,7 @@
-import { questions } from "../data/questions.js";
 import { TRAINING_PLAN_LIBRARY } from "../data/trainingPlanCatalog.js";
 import { normalizeTag, normalizeTagArray } from "./exerciseCatalogUtils.js";
-import {
-  buildTastingScoreModel,
-  estimateTastingDurationMinutes,
-} from "./tastingScore.js";
+
+export { buildTastingQuestionsPayload } from "../features/tasting/services/questionsPayload.js";
 
 export const WORKOUTS_PER_WEEK_OPTIONS = [2, 3, 4, 5];
 
@@ -413,18 +410,5 @@ export function buildTrainingConfigPayload() {
       result[trainingLevel] = buildLevelSuggestedSetups(trainingLevel);
       return result;
     }, {}),
-  };
-}
-
-export function buildTastingQuestionsPayload() {
-  const normalizedQuestions = Array.isArray(questions) ? questions : [];
-
-  return {
-    questions: normalizedQuestions,
-    total: normalizedQuestions.length,
-    estimatedDurationMinutes: estimateTastingDurationMinutes(
-      normalizedQuestions.length,
-    ),
-    scoreModel: buildTastingScoreModel(normalizedQuestions),
   };
 }

@@ -268,7 +268,7 @@ export function getExerciseVolumeReasonMeta(exercise) {
   return {
     label: "База",
     iconType: "base",
-    surfaceClassName: "border border-[#2A3140] bg-[#0B0E15]",
+    surfaceClassName: "border border-[var(--border-primary)] bg-[var(--surface-secondary)]",
     badgeClassName: "bg-[#1D222D] text-[#D7DEEA]",
     textClassName: "text-[#B8C1D1]",
   };

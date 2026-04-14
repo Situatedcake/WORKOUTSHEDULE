@@ -1,17 +1,13 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router";
 import "./MainPage.css";
-import libraryIcon from "/icons/library.svg";
-import menuIcon from "/menu.svg";
-import questionIcon from "/icons/quastion.svg";
-import trainingIcon from "/icons/addTraning.svg";
-import triangleIcon from "/icons/triangle.svg";
-import arrowIcon from "/icons/arrowRight.svg";
 import trainingHero from "/images/Traning.png";
 import NavMenu from "../../components/NavMenu";
 import { ROUTES } from "../../constants/routes";
 import { useAuth } from "../../hooks/useAuth";
 import { useInstallPrompt } from "../../hooks/useInstallPrompt";
+import { useTheme } from "../../hooks/useTheme";
+import { getThemeIcon } from "../../shared/themeIcons";
 import {
   formatDateKey,
   formatWorkoutRelativeLabel,
@@ -20,7 +16,7 @@ import {
 
 const APP_VERSION = import.meta.env.VITE_APP_VERSION ?? "0.0.0";
 
-function InstallIcon() {
+function MenuGlyph() {
   return (
     <svg
       width="22"
@@ -31,20 +27,19 @@ function InstallIcon() {
       aria-hidden="true"
     >
       <path
-        d="M12 4V14"
+        d="M5 7H19"
         stroke="currentColor"
         strokeWidth="1.8"
         strokeLinecap="round"
       />
       <path
-        d="M8.5 10.5L12 14L15.5 10.5"
+        d="M5 12H19"
         stroke="currentColor"
         strokeWidth="1.8"
         strokeLinecap="round"
-        strokeLinejoin="round"
       />
       <path
-        d="M5 16.5V17.5C5 18.6046 5.89543 19.5 7 19.5H17C18.1046 19.5 19 18.6046 19 17.5V16.5"
+        d="M5 17H14"
         stroke="currentColor"
         strokeWidth="1.8"
         strokeLinecap="round"
@@ -56,11 +51,17 @@ function InstallIcon() {
 export default function MainPage() {
   const navigate = useNavigate();
   const { currentUser } = useAuth();
+  const { theme, setTheme } = useTheme();
   const { canPrompt, isInstalled, isIosSafari, promptInstall } =
     useInstallPrompt();
   const [startHint, setStartHint] = useState("");
   const [installHint, setInstallHint] = useState("");
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const libraryIcon = getThemeIcon(theme, "library");
+  const questionIcon = getThemeIcon(theme, "question");
+  const trainingIcon = getThemeIcon(theme, "training");
+  const triangleIcon = getThemeIcon(theme, "triangle");
+  const arrowIcon = getThemeIcon(theme, "arrowRight");
 
   const nextWorkout = getNearestScheduledWorkout(
     currentUser?.scheduledWorkouts ?? [],
@@ -146,6 +147,8 @@ export default function MainPage() {
 
       if (result.outcome !== "accepted") {
         setInstallHint("Установку можно повторить позже.");
+      } else {
+        setInstallHint("");
       }
 
       return;
@@ -162,12 +165,7 @@ export default function MainPage() {
   }
 
   function handleMenuButtonClick() {
-    if (isInstalled) {
-      setIsMenuOpen((previousValue) => !previousValue);
-      return;
-    }
-
-    void handleInstallApp();
+    setIsMenuOpen((previousValue) => !previousValue);
   }
 
   useEffect(() => {
@@ -200,7 +198,7 @@ export default function MainPage() {
 
   return (
     <main className="pb-[calc(7rem+env(safe-area-inset-bottom))]">
-      {isInstalled && isMenuOpen ? (
+      {isMenuOpen ? (
         <button
           type="button"
           onClick={() => setIsMenuOpen(false)}
@@ -211,52 +209,94 @@ export default function MainPage() {
 
       <header className="relative z-20 mx-auto flex w-full max-w-md items-center justify-between gap-4 px-5 pt-5">
         <div className="relative">
-          {!isInstalled && installHint ? (
-            <div className="absolute left-0 top-full z-20 mt-3 w-52 rounded-2xl bg-[#12151C] px-3 py-2 text-xs leading-5 text-[#D8E0EE] shadow-lg">
-              {installHint}
-            </div>
-          ) : null}
-
-          {isInstalled && isMenuOpen ? (
-            <div className="absolute left-0 top-full z-20 mt-3 w-56 rounded-3xl border border-[#2A3140] bg-[#12151C] p-3 shadow-lg">
-              <p className="text-[11px] uppercase tracking-[0.18em] text-[#8E97A8]">
+          {isMenuOpen ? (
+            <div className="absolute left-0 top-full z-20 mt-3 w-64 rounded-3xl border border-[var(--border-primary)] bg-[var(--surface-primary)] p-3 shadow-lg">
+              <p className="text-[11px] uppercase tracking-[0.18em] text-[var(--text-muted)]">
                 Приложение
               </p>
-              <div className="mt-3 rounded-2xl bg-[#0B0E15] px-3 py-3">
-                <p className="text-xs text-[#8E97A8]">Текущая версия</p>
-                <p className="mt-1 text-base font-medium text-white">
+
+              <div className="mt-3 rounded-2xl bg-[var(--surface-secondary)] px-3 py-3">
+                <p className="text-xs text-[var(--text-muted)]">
+                  Текущая версия
+                </p>
+                <p className="mt-1 text-base font-medium text-[var(--text-primary)]">
                   v{APP_VERSION}
                 </p>
               </div>
-              <div className="mt-2 rounded-2xl bg-[#0B0E15] px-3 py-3">
-                <p className="text-xs text-[#8E97A8]">Режим</p>
-                <p className="mt-1 text-sm text-white">
-                  Установлено как приложение
+
+              <div className="mt-2 rounded-2xl bg-[var(--surface-secondary)] px-3 py-3">
+                <p className="text-xs text-[var(--text-muted)]">Режим</p>
+                <p className="mt-1 text-sm text-[var(--text-primary)]">
+                  {isInstalled
+                    ? "Установлено как приложение"
+                    : "Открыто в браузере"}
                 </p>
               </div>
+
+              <div className="mt-2 rounded-2xl bg-[var(--surface-secondary)] px-3 py-3">
+                <p className="text-xs text-[var(--text-muted)]">Тема</p>
+                <div className="mt-3 grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setTheme("dark")}
+                    className={`rounded-2xl px-3 py-2 text-sm font-medium ${
+                      theme === "dark"
+                        ? "bg-[var(--accent-primary)] text-[var(--accent-contrast)]"
+                        : "border border-[var(--border-primary)] text-[var(--text-primary)]"
+                    }`}
+                  >
+                    Тёмная
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setTheme("light")}
+                    className={`rounded-2xl px-3 py-2 text-sm font-medium ${
+                      theme === "light"
+                        ? "bg-[var(--accent-primary)] text-[var(--accent-contrast)]"
+                        : "border border-[var(--border-primary)] text-[var(--text-primary)]"
+                    }`}
+                  >
+                    Светлая
+                  </button>
+                </div>
+              </div>
+
+              {!isInstalled ? (
+                <div className="mt-2 rounded-2xl bg-[var(--surface-secondary)] px-3 py-3">
+                  <p className="text-xs text-[var(--text-muted)]">PWA</p>
+                  <button
+                    type="button"
+                    onClick={() => void handleInstallApp()}
+                    className="mt-3 w-full rounded-2xl bg-[var(--accent-primary)] px-3 py-3 text-sm font-medium text-[var(--accent-contrast)]"
+                  >
+                    Установить приложение
+                  </button>
+                  {installHint ? (
+                    <p className="mt-3 text-xs leading-5 text-[var(--tooltip-text)]">
+                      {installHint}
+                    </p>
+                  ) : null}
+                </div>
+              ) : null}
             </div>
           ) : null}
 
           <button
             type="button"
             onClick={handleMenuButtonClick}
-            className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-[#2A3140] bg-[#12151C] text-white"
-            aria-label="Установить приложение"
+            className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-[var(--border-primary)] bg-[var(--surface-primary)] text-[var(--text-primary)]"
+            aria-label="Открыть меню приложения"
           >
-            {isInstalled ? (
-              <img src={menuIcon} alt="" aria-hidden="true" className="h-5 w-5" />
-            ) : (
-              <InstallIcon />
-            )}
+            <MenuGlyph />
           </button>
         </div>
 
-        <span className="min-w-0 flex-1 truncate px-2 text-center text-2xl">
+        <span className="min-w-0 flex-1 truncate px-2 text-center text-2xl text-[var(--text-primary)]">
           Привет, {currentUser?.name ?? currentUser?.login ?? "гость"}!
         </span>
 
         <div
-          className="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-3xl bg-white"
+          className="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-3xl bg-[var(--surface-secondary)]"
           id="userCard"
         >
           {currentUser?.profilePhoto ? (
@@ -266,7 +306,7 @@ export default function MainPage() {
               className="h-full w-full object-cover"
             />
           ) : (
-            <span className="text-lg font-medium text-black">
+            <span className="text-lg font-medium text-[var(--text-primary)]">
               {(currentUser?.name ?? currentUser?.login ?? "Г")
                 .slice(0, 1)
                 .toUpperCase()}
@@ -286,49 +326,49 @@ export default function MainPage() {
 
           <div className="training-card-content">
             <div className="training-card-copy">
-              <h1 className="max-w-[13rem] text-3xl font-medium leading-10 [text-shadow:0_2px_10px_rgba(0,0,0,0.45)]">
+              <h1 className="max-w-[13rem] text-3xl font-medium leading-10 text-[var(--hero-foreground)] [text-shadow:0_2px_10px_rgba(0,0,0,0.45)]">
                 {nextWorkoutLabel}
               </h1>
 
               {nextWorkout?.time ? (
-                <h3 className="text-2xl font-light [text-shadow:0_2px_10px_rgba(0,0,0,0.45)]">
+                <h3 className="text-2xl font-light text-[var(--hero-foreground)] [text-shadow:0_2px_10px_rgba(0,0,0,0.45)]">
                   {nextWorkout.time}
                 </h3>
               ) : null}
 
               {nextWorkout ? (
-                <p className="training-card-description text-sm leading-6 text-[#A2ACBD] [text-shadow:0_2px_10px_rgba(0,0,0,0.45)]">
+                <p className="training-card-description text-sm leading-6 text-[var(--hero-muted)] [text-shadow:0_2px_10px_rgba(0,0,0,0.45)]">
                   {nextWorkout.title}. {nextWorkout.emphasis}.
                 </p>
               ) : null}
             </div>
 
             <div className="training-card-action">
-            {startHint ? (
-              <div className="absolute bottom-full left-1/2 z-10 mb-3 w-56 -translate-x-1/2 rounded-2xl bg-[#12151C] px-3 py-2 text-xs leading-5 text-[#D8E0EE] shadow-lg">
-                {startHint}
-                <div className="absolute left-1/2 top-full h-3 w-3 -translate-x-1/2 rotate-45 bg-[#12151C]" />
-              </div>
-            ) : null}
+              {startHint ? (
+                <div className="absolute bottom-full left-1/2 z-10 mb-3 w-56 -translate-x-1/2 rounded-2xl bg-[var(--surface-primary)] px-3 py-2 text-xs leading-5 text-[var(--tooltip-text)] shadow-lg">
+                  {startHint}
+                  <div className="absolute left-1/2 top-full h-3 w-3 -translate-x-1/2 rotate-45 bg-[var(--surface-primary)]" />
+                </div>
+              ) : null}
 
-            <button
-              type="button"
-              onClick={handleStartWorkout}
-              className={`flex items-center rounded-4xl px-10 py-4 text-2xl font-medium ${
-                canStartWorkout
-                  ? "bg-[#3CFFB9] text-black active:bg-[#3CFFB9]/80"
-                  : "bg-[#5F6674] text-[#DBE0E8]"
-              }`}
-            >
-              <img
-                src={triangleIcon}
-                alt=""
-                aria-hidden="true"
-                className="mx-4"
-              />
-              Приступить
-            </button>
-          </div>
+              <button
+                type="button"
+                onClick={handleStartWorkout}
+                className={`flex items-center rounded-4xl px-10 py-4 text-2xl font-medium ${
+                  canStartWorkout
+                    ? "bg-[var(--accent-hero)] text-[var(--accent-hero-contrast)] active:opacity-90"
+                    : "bg-[var(--button-muted-bg)] text-[var(--button-muted-text)]"
+                }`}
+              >
+                <img
+                  src={triangleIcon}
+                  alt=""
+                  aria-hidden="true"
+                  className="mx-4"
+                />
+                Приступить
+              </button>
+            </div>
           </div>
         </section>
       </section>
@@ -338,7 +378,7 @@ export default function MainPage() {
           <Link
             key={item.url}
             to={item.url}
-            className="mt-3 flex w-full items-center gap-5 rounded-3xl border border-[#383838] bg-[#12151C] p-4 text-xl font-light"
+            className="mt-3 flex w-full items-center gap-5 rounded-3xl border border-[var(--border-soft)] bg-[var(--surface-primary)] p-4 text-xl font-light text-[var(--text-primary)]"
           >
             <img src={item.img} alt={item.alt} />
             {item.text}

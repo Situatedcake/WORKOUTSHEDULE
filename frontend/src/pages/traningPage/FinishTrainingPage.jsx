@@ -24,13 +24,13 @@ function formatWeightValue(value) {
 
 function SummaryCard({ label, value, caption }) {
   return (
-    <div className="rounded-2xl bg-[#0B0E15] px-4 py-4">
-      <p className="text-xs uppercase tracking-[0.18em] text-[#8E97A8]">
+    <div className="rounded-2xl bg-[var(--surface-secondary)] px-4 py-4">
+      <p className="text-xs uppercase tracking-[0.18em] text-[var(--text-muted)]">
         {label}
       </p>
-      <p className="mt-2 text-2xl font-medium text-white">{value}</p>
+      <p className="mt-2 text-2xl font-medium text-[var(--text-primary)]">{value}</p>
       {caption ? (
-        <p className="mt-1 text-sm leading-5 text-[#8E97A8]">{caption}</p>
+        <p className="mt-1 text-sm leading-5 text-[var(--text-muted)]">{caption}</p>
       ) : null}
     </div>
   );
@@ -130,17 +130,17 @@ export default function FinishTrainingPage() {
 
   return (
     <PageShell className="pt-5" showNavMenu={false}>
-      <section className="mx-auto flex w-full max-w-md flex-col gap-5 rounded-[28px] border border-[#2A3140] bg-[#12151C] p-6">
+      <section className="mx-auto flex w-full max-w-md flex-col gap-5 rounded-[28px] border border-[var(--border-primary)] bg-[var(--surface-primary)] p-6">
         <PageBackButton fallbackTo={ROUTES.WORKOUT_ACTIVE} />
 
         <div className="space-y-2">
-          <p className="text-sm uppercase tracking-[0.2em] text-[#8E97A8]">
+          <p className="text-sm uppercase tracking-[0.2em] text-[var(--text-muted)]">
             Тренировка завершена
           </p>
-          <h1 className="text-3xl font-medium text-white">
+          <h1 className="text-3xl font-medium text-[var(--text-primary)]">
             {resultDraft.title}
           </h1>
-          <p className="text-sm leading-6 text-[#8E97A8]">
+          <p className="text-sm leading-6 text-[var(--text-muted)]">
             {resultDraft.date}, {resultDraft.time}
           </p>
         </div>
@@ -176,10 +176,10 @@ export default function FinishTrainingPage() {
         {exerciseStats.length > 0 ? (
           <section className="flex flex-col gap-3">
             <div className="space-y-1">
-              <p className="text-xs uppercase tracking-[0.18em] text-[#8E97A8]">
+              <p className="text-xs uppercase tracking-[0.18em] text-[var(--text-muted)]">
                 Статистика по тренировке
               </p>
-              <h2 className="text-lg font-medium text-white">
+              <h2 className="text-lg font-medium text-[var(--text-primary)]">
                 Упражнения и рабочие веса
               </h2>
             </div>
@@ -188,9 +188,9 @@ export default function FinishTrainingPage() {
               {exerciseStats.map((exercise, exerciseIndex) => (
                 <article
                   key={`${exercise.exerciseId ?? exercise.exerciseName}_${exerciseIndex}`}
-                  className="rounded-2xl bg-[#0B0E15] px-4 py-4"
+                  className="rounded-2xl bg-[var(--surface-secondary)] px-4 py-4"
                 >
-                  <h3 className="text-base font-medium text-white">
+                  <h3 className="text-base font-medium text-[var(--text-primary)]">
                     {exercise.exerciseName}
                   </h3>
 
@@ -198,12 +198,12 @@ export default function FinishTrainingPage() {
                     {exercise.weightsKg.map((weightValue, setIndex) => (
                       <div
                         key={`${exercise.exerciseId ?? exercise.exerciseName}_${setIndex + 1}`}
-                        className="flex items-center justify-between rounded-xl border border-[#2A3140] bg-[#12151C] px-3 py-3"
+                        className="flex items-center justify-between rounded-xl border border-[var(--border-primary)] bg-[var(--surface-primary)] px-3 py-3"
                       >
-                        <span className="text-sm text-[#8E97A8]">
+                        <span className="text-sm text-[var(--text-muted)]">
                           Подход {setIndex + 1}
                         </span>
-                        <span className="text-sm font-medium text-white">
+                        <span className="text-sm font-medium text-[var(--text-primary)]">
                           {formatWeightValue(weightValue)}
                         </span>
                       </div>
@@ -217,35 +217,35 @@ export default function FinishTrainingPage() {
 
         <div className="grid grid-cols-2 gap-3">
           <label className="flex flex-col gap-2">
-            <span className="text-sm text-[#8E97A8]">Вес, кг</span>
+            <span className="text-sm text-[var(--text-muted)]">Вес, кг</span>
             <input
               value={weightKg}
               onChange={(event) => setWeightKg(event.target.value)}
               inputMode="decimal"
               placeholder="Например, 72.5"
-              className="rounded-2xl border border-[#2A3140] bg-[#0B0E15] px-4 py-3 text-white outline-none"
+              className="rounded-2xl border border-[var(--border-primary)] bg-[var(--surface-secondary)] px-4 py-3 text-[var(--text-primary)] outline-none"
             />
           </label>
 
           <label className="flex flex-col gap-2">
-            <span className="text-sm text-[#8E97A8]">Сожжено калорий</span>
+            <span className="text-sm text-[var(--text-muted)]">Сожжено калорий</span>
             <input
               value={burnedCalories}
               onChange={(event) => setBurnedCalories(event.target.value)}
               inputMode="numeric"
               placeholder="Например, 410"
-              className="rounded-2xl border border-[#2A3140] bg-[#0B0E15] px-4 py-3 text-white outline-none"
+              className="rounded-2xl border border-[var(--border-primary)] bg-[var(--surface-secondary)] px-4 py-3 text-[var(--text-primary)] outline-none"
             />
           </label>
         </div>
 
         <div className="grid grid-cols-3 gap-3">
           <label className="flex flex-col gap-2">
-            <span className="text-sm text-[#8E97A8]">Энергия</span>
+            <span className="text-sm text-[var(--text-muted)]">Энергия</span>
             <select
               value={energyLevel}
               onChange={(event) => setEnergyLevel(event.target.value)}
-              className="rounded-2xl border border-[#2A3140] bg-[#0B0E15] px-3 py-3 text-white outline-none"
+              className="rounded-2xl border border-[var(--border-primary)] bg-[var(--surface-secondary)] px-3 py-3 text-[var(--text-primary)] outline-none"
             >
               <option value="1">1/5</option>
               <option value="2">2/5</option>
@@ -256,11 +256,11 @@ export default function FinishTrainingPage() {
           </label>
 
           <label className="flex flex-col gap-2">
-            <span className="text-sm text-[#8E97A8]">Усилие</span>
+            <span className="text-sm text-[var(--text-muted)]">Усилие</span>
             <select
               value={effortLevel}
               onChange={(event) => setEffortLevel(event.target.value)}
-              className="rounded-2xl border border-[#2A3140] bg-[#0B0E15] px-3 py-3 text-white outline-none"
+              className="rounded-2xl border border-[var(--border-primary)] bg-[var(--surface-secondary)] px-3 py-3 text-[var(--text-primary)] outline-none"
             >
               <option value="1">1/5</option>
               <option value="2">2/5</option>
@@ -271,11 +271,11 @@ export default function FinishTrainingPage() {
           </label>
 
           <label className="flex flex-col gap-2">
-            <span className="text-sm text-[#8E97A8]">Сон</span>
+            <span className="text-sm text-[var(--text-muted)]">Сон</span>
             <select
               value={sleepQuality}
               onChange={(event) => setSleepQuality(event.target.value)}
-              className="rounded-2xl border border-[#2A3140] bg-[#0B0E15] px-3 py-3 text-white outline-none"
+              className="rounded-2xl border border-[var(--border-primary)] bg-[var(--surface-secondary)] px-3 py-3 text-[var(--text-primary)] outline-none"
             >
               <option value="1">1/5</option>
               <option value="2">2/5</option>
@@ -296,7 +296,7 @@ export default function FinishTrainingPage() {
           type="button"
           onClick={() => void handleCloseWorkout()}
           disabled={isSaving}
-          className="rounded-3xl bg-[#01BB96] px-5 py-4 text-base font-medium text-[#000214] disabled:opacity-60"
+          className="rounded-3xl bg-[var(--accent-primary)] px-5 py-4 text-base font-medium text-[var(--accent-contrast)] disabled:opacity-60"
         >
           {isSaving ? "Сохраняем тренировку..." : "Закрыть тренировку"}
         </button>

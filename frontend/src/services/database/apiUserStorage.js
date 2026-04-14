@@ -179,4 +179,9 @@ export const apiUserStorage = {
     );
     return payload.stats ?? null;
   },
+
+  async getGamificationCatalog() {
+    const payload = await requestJson("/gamification/catalog");
+    return payload ?? null;
+  },
 };

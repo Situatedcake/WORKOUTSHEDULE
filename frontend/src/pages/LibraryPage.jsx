@@ -119,8 +119,8 @@ function ExerciseDetailBlock({ title, items }) {
   }
 
   return (
-    <div className="rounded-2xl bg-[#12151C] px-3 py-3">
-      <p className="text-xs uppercase tracking-[0.14em] text-[#667085]">
+    <div className="rounded-2xl bg-[var(--surface-primary)] px-3 py-3">
+      <p className="text-xs uppercase tracking-[0.14em] text-[var(--text-subtle)]">
         {title}
       </p>
       <div className="mt-2 flex flex-wrap gap-2">
@@ -156,16 +156,16 @@ function ExerciseCard({ exercise, exerciseNameMap }) {
     : [];
 
   return (
-    <article className="rounded-[22px] border border-[#2A3140] bg-[#0B0E15] p-3">
+    <article className="rounded-[22px] border border-[var(--border-primary)] bg-[var(--surface-secondary)] p-3">
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0">
-          <p className="text-[11px] uppercase tracking-[0.14em] text-[#667085]">
+          <p className="text-[11px] uppercase tracking-[0.14em] text-[var(--text-subtle)]">
             {getBodyPartLabel(exercise.bodyPart)}
           </p>
-          <h2 className="mt-1 text-[17px] font-medium leading-5 text-white">
+          <h2 className="mt-1 text-[17px] font-medium leading-5 text-[var(--text-primary)]">
             {exercise.name}
           </h2>
-          <p className="mt-1 text-[13px] leading-5 text-[#8E97A8]">
+          <p className="mt-1 text-[13px] leading-5 text-[var(--text-muted)]">
             {getEquipmentLabel(exercise.equipment)} · {getTypeLabel(exercise.type)}
           </p>
         </div>
@@ -178,10 +178,10 @@ function ExerciseCard({ exercise, exerciseNameMap }) {
       </div>
 
       <div className="mt-3 flex flex-wrap gap-2">
-        <span className="rounded-full bg-[#12151C] px-2.5 py-1 text-[11px] text-[#B9C1CF]">
+        <span className="rounded-full bg-[var(--surface-primary)] px-2.5 py-1 text-[11px] text-[#B9C1CF]">
           {getEquipmentLabel(exercise.equipment)}
         </span>
-        <span className="rounded-full bg-[#12151C] px-2.5 py-1 text-[11px] text-[#B9C1CF]">
+        <span className="rounded-full bg-[var(--surface-primary)] px-2.5 py-1 text-[11px] text-[#B9C1CF]">
           {getTypeLabel(exercise.type)}
         </span>
       </div>
@@ -189,7 +189,7 @@ function ExerciseCard({ exercise, exerciseNameMap }) {
       <button
         type="button"
         onClick={() => setIsExpanded((currentValue) => !currentValue)}
-        className="mt-3 w-full rounded-2xl bg-[#12151C] px-3 py-2 text-sm text-white transition active:scale-[0.99]"
+        className="mt-3 w-full rounded-2xl bg-[var(--surface-primary)] px-3 py-2 text-sm text-[var(--text-primary)] transition active:scale-[0.99]"
       >
         {isExpanded ? "Скрыть" : "Детали"}
       </button>
@@ -197,19 +197,19 @@ function ExerciseCard({ exercise, exerciseNameMap }) {
       {isExpanded ? (
         <div className="mt-4 flex flex-col gap-3">
           <div className="grid grid-cols-1 gap-3 text-sm sm:grid-cols-2">
-            <div className="rounded-2xl bg-[#12151C] px-3 py-3">
-              <p className="text-xs uppercase tracking-[0.14em] text-[#667085]">
+            <div className="rounded-2xl bg-[var(--surface-primary)] px-3 py-3">
+              <p className="text-xs uppercase tracking-[0.14em] text-[var(--text-subtle)]">
                 Формат
               </p>
-              <p className="mt-2 text-sm font-medium text-white">
+              <p className="mt-2 text-sm font-medium text-[var(--text-primary)]">
                 {exercise.compound ? "Базовое" : "Изоляция"}
               </p>
             </div>
-            <div className="rounded-2xl bg-[#12151C] px-3 py-3">
-              <p className="text-xs uppercase tracking-[0.14em] text-[#667085]">
+            <div className="rounded-2xl bg-[var(--surface-primary)] px-3 py-3">
+              <p className="text-xs uppercase tracking-[0.14em] text-[var(--text-subtle)]">
                 Паттерн
               </p>
-              <p className="mt-2 text-sm font-medium text-white">
+              <p className="mt-2 text-sm font-medium text-[var(--text-primary)]">
                 {getMovementPatternLabel(exercise.movementPattern)}
               </p>
             </div>
@@ -224,19 +224,19 @@ function ExerciseCard({ exercise, exerciseNameMap }) {
           <ExerciseDetailBlock title="Альтернативы" items={alternatives} />
 
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            <div className="rounded-2xl bg-[#12151C] px-3 py-3">
-              <p className="text-xs uppercase tracking-[0.14em] text-[#667085]">
+            <div className="rounded-2xl bg-[var(--surface-primary)] px-3 py-3">
+              <p className="text-xs uppercase tracking-[0.14em] text-[var(--text-subtle)]">
                 Сторона
               </p>
-              <p className="mt-2 text-sm font-medium text-white">
+              <p className="mt-2 text-sm font-medium text-[var(--text-primary)]">
                 {exercise.unilateral ? "Одностороннее" : "Двустороннее"}
               </p>
             </div>
-            <div className="rounded-2xl bg-[#12151C] px-3 py-3">
-              <p className="text-xs uppercase tracking-[0.14em] text-[#667085]">
+            <div className="rounded-2xl bg-[var(--surface-primary)] px-3 py-3">
+              <p className="text-xs uppercase tracking-[0.14em] text-[var(--text-subtle)]">
                 Id
               </p>
-              <p className="mt-2 truncate text-sm font-medium text-white">
+              <p className="mt-2 truncate text-sm font-medium text-[var(--text-primary)]">
                 {exercise.id}
               </p>
             </div>
@@ -306,44 +306,44 @@ export default function LibraryPage() {
 
   return (
     <PageShell className="pt-5">
-      <section className="mx-auto flex w-full max-w-md flex-col gap-5 rounded-[28px] border border-[#2A3140] bg-[#12151C] p-5">
+      <section className="mx-auto flex w-full max-w-md flex-col gap-5 rounded-[28px] border border-[var(--border-primary)] bg-[var(--surface-primary)] p-5">
         <PageBackButton />
 
         <div className="space-y-2">
-          <p className="text-sm uppercase tracking-[0.2em] text-[#8E97A8]">
+          <p className="text-sm uppercase tracking-[0.2em] text-[var(--text-muted)]">
             Библиотека
           </p>
-          <h1 className="text-3xl font-medium text-white">
+          <h1 className="text-3xl font-medium text-[var(--text-primary)]">
             Каталог упражнений
           </h1>
-          <p className="text-base leading-6 text-[#8E97A8]">
+          <p className="text-base leading-6 text-[var(--text-muted)]">
             Пока показываем всю базу сплошным списком. Следующим этапом сюда
             можно будет добавить поиск, группы мышц и фильтры.
           </p>
         </div>
 
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-          <div className="col-span-2 rounded-2xl bg-[#0B0E15] px-4 py-4 text-center sm:col-span-1">
-            <p className="text-xs uppercase tracking-[0.14em] text-[#667085]">
+          <div className="col-span-2 rounded-2xl bg-[var(--surface-secondary)] px-4 py-4 text-center sm:col-span-1">
+            <p className="text-xs uppercase tracking-[0.14em] text-[var(--text-subtle)]">
               Упражнений
             </p>
-            <p className="mt-2 text-2xl font-medium text-white">
+            <p className="mt-2 text-2xl font-medium text-[var(--text-primary)]">
               {exercises.length}
             </p>
           </div>
-          <div className="rounded-2xl bg-[#0B0E15] px-4 py-4 text-center">
-            <p className="text-xs uppercase tracking-[0.14em] text-[#667085]">
+          <div className="rounded-2xl bg-[var(--surface-secondary)] px-4 py-4 text-center">
+            <p className="text-xs uppercase tracking-[0.14em] text-[var(--text-subtle)]">
               Зон
             </p>
-            <p className="mt-2 text-2xl font-medium text-white">
+            <p className="mt-2 text-2xl font-medium text-[var(--text-primary)]">
               {uniqueBodyParts}
             </p>
           </div>
-          <div className="rounded-2xl bg-[#0B0E15] px-4 py-4 text-center">
-            <p className="text-xs uppercase tracking-[0.14em] text-[#667085]">
+          <div className="rounded-2xl bg-[var(--surface-secondary)] px-4 py-4 text-center">
+            <p className="text-xs uppercase tracking-[0.14em] text-[var(--text-subtle)]">
               Инвентарь
             </p>
-            <p className="mt-2 text-2xl font-medium text-white">
+            <p className="mt-2 text-2xl font-medium text-[var(--text-primary)]">
               {uniqueEquipment}
             </p>
           </div>

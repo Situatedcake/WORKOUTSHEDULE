@@ -42,7 +42,7 @@ export default function PageBackButton({
     <button
       type="button"
       onClick={handleBack}
-      className={`inline-flex h-11 w-11 items-center justify-center self-start rounded-2xl border border-[#2A3140] text-white ${className}`.trim()}
+      className={`inline-flex h-11 w-11 items-center justify-center self-start rounded-2xl border border-[var(--border-primary)] text-[var(--text-primary)] ${className}`.trim()}
       aria-label={label}
     >
       <BackIcon />

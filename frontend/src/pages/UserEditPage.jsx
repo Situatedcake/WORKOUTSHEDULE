@@ -129,7 +129,7 @@ export default function UserEditPage() {
   if (!isAuthReady) {
     return (
       <PageShell className="pt-5">
-        <section className="mx-auto w-full max-w-md rounded-[28px] border border-[#2A3140] bg-[#12151C] p-6 text-[#8E97A8]">
+        <section className="mx-auto w-full max-w-md rounded-[28px] border border-[var(--border-primary)] bg-[var(--surface-primary)] p-6 text-[var(--text-muted)]">
           Загрузка профиля...
         </section>
       </PageShell>
@@ -142,28 +142,28 @@ export default function UserEditPage() {
 
   return (
     <PageShell className="pt-5">
-      <section className="mx-auto flex w-full max-w-md flex-col gap-5 rounded-[28px] border border-[#2A3140] bg-[#12151C] p-6">
+      <section className="mx-auto flex w-full max-w-md flex-col gap-5 rounded-[28px] border border-[var(--border-primary)] bg-[var(--surface-primary)] p-6">
         <PageBackButton fallbackTo={ROUTES.USER} />
 
         <div className="space-y-2">
-          <p className="text-sm uppercase tracking-[0.2em] text-[#8E97A8]">
+          <p className="text-sm uppercase tracking-[0.2em] text-[var(--text-muted)]">
             Профиль
           </p>
-          <h1 className="text-3xl font-medium text-white">Редактирование</h1>
-          <p className="text-sm leading-6 text-[#8E97A8]">
+          <h1 className="text-3xl font-medium text-[var(--text-primary)]">Редактирование</h1>
+          <p className="text-sm leading-6 text-[var(--text-muted)]">
             Логин используется для входа. Здесь можно изменить имя, почту,
             пароль и фото профиля.
           </p>
         </div>
 
-        <div className="rounded-2xl bg-[#0B0E15] px-4 py-3 text-sm leading-6 text-[#8E97A8]">
+        <div className="rounded-2xl bg-[var(--surface-secondary)] px-4 py-3 text-sm leading-6 text-[var(--text-muted)]">
           Логин:{" "}
-          <span className="break-words text-white">
+          <span className="break-words text-[var(--text-primary)]">
             {currentUser.login ?? currentUser.name}
           </span>
         </div>
 
-        <div className="flex flex-col gap-4 rounded-2xl bg-[#0B0E15] px-4 py-4 sm:flex-row sm:items-center">
+        <div className="flex flex-col gap-4 rounded-2xl bg-[var(--surface-secondary)] px-4 py-4 sm:flex-row sm:items-center">
           <div className="h-20 w-20 overflow-hidden rounded-3xl bg-[#1D222D]">
             {profileForm.profilePhoto ? (
               <img
@@ -172,7 +172,7 @@ export default function UserEditPage() {
                 className="h-full w-full object-cover"
               />
             ) : (
-              <div className="flex h-full w-full items-center justify-center text-2xl font-medium text-white">
+              <div className="flex h-full w-full items-center justify-center text-2xl font-medium text-[var(--text-primary)]">
                 {(currentUser.name ?? currentUser.login ?? "Г")
                   .slice(0, 1)
                   .toUpperCase()}
@@ -180,7 +180,7 @@ export default function UserEditPage() {
             )}
           </div>
 
-          <label className="w-full cursor-pointer rounded-2xl border border-[#2A3140] px-4 py-3 text-center text-sm text-white sm:flex-1">
+          <label className="w-full cursor-pointer rounded-2xl border border-[var(--border-primary)] px-4 py-3 text-center text-sm text-[var(--text-primary)] sm:flex-1">
             Добавить фото
             <input
               type="file"
@@ -194,7 +194,7 @@ export default function UserEditPage() {
         <form onSubmit={handleProfileSubmit} className="flex flex-col gap-4">
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <label className="flex flex-col gap-2">
-              <span className="text-sm text-[#8E97A8]">Имя</span>
+              <span className="text-sm text-[var(--text-muted)]">Имя</span>
               <input
                 value={profileForm.name}
                 onChange={(event) =>
@@ -203,12 +203,12 @@ export default function UserEditPage() {
                     name: event.target.value,
                   }))
                 }
-                className="rounded-2xl border border-[#2A3140] bg-[#0B0E15] px-4 py-3 text-white outline-none"
+                className="rounded-2xl border border-[var(--border-primary)] bg-[var(--surface-secondary)] px-4 py-3 text-[var(--text-primary)] outline-none"
               />
             </label>
 
             <label className="flex flex-col gap-2">
-              <span className="text-sm text-[#8E97A8]">Почта</span>
+              <span className="text-sm text-[var(--text-muted)]">Почта</span>
               <input
                 type="email"
                 value={profileForm.email}
@@ -218,13 +218,13 @@ export default function UserEditPage() {
                     email: event.target.value,
                   }))
                 }
-                className="rounded-2xl border border-[#2A3140] bg-[#0B0E15] px-4 py-3 text-white outline-none"
+                className="rounded-2xl border border-[var(--border-primary)] bg-[var(--surface-secondary)] px-4 py-3 text-[var(--text-primary)] outline-none"
               />
             </label>
           </div>
 
           <label className="flex flex-col gap-2">
-            <span className="text-sm text-[#8E97A8]">Пол</span>
+            <span className="text-sm text-[var(--text-muted)]">Пол</span>
             <select
               value={profileForm.gender}
               onChange={(event) =>
@@ -233,7 +233,7 @@ export default function UserEditPage() {
                   gender: event.target.value,
                 }))
               }
-              className="rounded-2xl border border-[#2A3140] bg-[#0B0E15] px-4 py-3 text-white outline-none"
+              className="rounded-2xl border border-[var(--border-primary)] bg-[var(--surface-secondary)] px-4 py-3 text-[var(--text-primary)] outline-none"
             >
               <option value="not_specified">Не указан</option>
               <option value="female">Женский</option>
@@ -269,7 +269,7 @@ export default function UserEditPage() {
           <button
             type="submit"
             disabled={isSaving}
-            className="rounded-3xl bg-[#01BB96] px-5 py-4 text-base font-medium text-[#000214] disabled:opacity-60"
+            className="rounded-3xl bg-[var(--accent-primary)] px-5 py-4 text-base font-medium text-[var(--accent-contrast)] disabled:opacity-60"
           >
             {isSaving ? "Сохраняем..." : "Сохранить изменения"}
           </button>
@@ -279,7 +279,7 @@ export default function UserEditPage() {
           <button
             type="button"
             onClick={handleRetakeTest}
-            className="rounded-3xl border border-[#2A3140] px-5 py-4 text-base font-medium text-white"
+            className="rounded-3xl border border-[var(--border-primary)] px-5 py-4 text-base font-medium text-[var(--text-primary)]"
           >
             Повторно пройти тест
           </button>
@@ -294,7 +294,7 @@ export default function UserEditPage() {
               <button
                 type="button"
                 onClick={handleCancelLogout}
-                className="rounded-3xl border border-[#2A3140] px-5 py-4 text-base font-medium text-white"
+                className="rounded-3xl border border-[var(--border-primary)] px-5 py-4 text-base font-medium text-[var(--text-primary)]"
               >
                 Отмена
               </button>
@@ -311,7 +311,7 @@ export default function UserEditPage() {
           <button
             type="button"
             onClick={handleRequestLogout}
-            className="rounded-3xl border border-[#2A3140] px-5 py-4 text-base font-medium text-white"
+            className="rounded-3xl border border-[var(--border-primary)] px-5 py-4 text-base font-medium text-[var(--text-primary)]"
           >
             Выйти из профиля
           </button>

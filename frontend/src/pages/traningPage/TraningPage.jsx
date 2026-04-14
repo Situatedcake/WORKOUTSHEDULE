@@ -123,7 +123,7 @@ function CircularProgress({ progressPercent }) {
           cx="55"
           cy="55"
           r={radius}
-          stroke="#01BB96"
+          stroke="var(--accent-primary)"
           strokeWidth="8"
           strokeLinecap="round"
           fill="none"
@@ -132,7 +132,7 @@ function CircularProgress({ progressPercent }) {
         />
       </svg>
       <div className="absolute inset-0 flex items-center justify-center">
-        <span className="text-2xl font-medium text-white">
+        <span className="text-2xl font-medium text-[var(--text-primary)]">
           {Math.round(normalizedPercent)}%
         </span>
       </div>
@@ -1114,10 +1114,10 @@ export default function TraningPage() {
       <section className="mx-auto flex w-full max-w-md flex-col gap-4 pb-8">
         <div className="flex items-center justify-between gap-3">
           <div>
-            <p className="text-xs uppercase tracking-[0.18em] text-[#8E97A8]">
+            <p className="text-xs uppercase tracking-[0.18em] text-[var(--text-muted)]">
               Активная сессия
             </p>
-            <p className="mt-1 text-sm text-[#8E97A8]">
+            <p className="mt-1 text-sm text-[var(--text-muted)]">
               Прогресс сохраняется автоматически.
             </p>
           </div>
@@ -1126,7 +1126,7 @@ export default function TraningPage() {
             <button
               type="button"
               onClick={handleTogglePause}
-              className="flex h-11 w-11 items-center justify-center rounded-2xl border border-[#2A3140] bg-[#12151C] text-white"
+              className="flex h-11 w-11 items-center justify-center rounded-2xl border border-[var(--border-primary)] bg-[var(--surface-primary)] text-[var(--text-primary)]"
               aria-label={
                 isPaused ? "Продолжить тренировку" : "Поставить на паузу"
               }
@@ -1136,7 +1136,7 @@ export default function TraningPage() {
             <button
               type="button"
               onClick={() => setIsExitPromptOpen(true)}
-              className="flex h-11 w-11 items-center justify-center rounded-2xl border border-[#2A3140] bg-[#12151C] text-white"
+              className="flex h-11 w-11 items-center justify-center rounded-2xl border border-[var(--border-primary)] bg-[var(--surface-primary)] text-[var(--text-primary)]"
               aria-label="Выйти из тренировки"
             >
               <CloseIcon />
@@ -1144,21 +1144,21 @@ export default function TraningPage() {
           </div>
         </div>
 
-        <header className="rounded-[24px] border border-[#2A3140] bg-[#12151C] p-4">
+        <header className="rounded-[24px] border border-[var(--border-primary)] bg-[var(--surface-primary)] p-4">
           <div className="flex items-start justify-between gap-4">
             <div>
               <p
-                className="text-xs uppercase tracking-[0.18em] text-[#8E97A8]"
+                className="text-xs uppercase tracking-[0.18em] text-[var(--text-muted)]"
                 style={{ lineHeight: "15px" }}
               >
                 Тренировка
               </p>
-              <h1 className="mt-1 text-xl font-medium text-white">
+              <h1 className="mt-1 text-xl font-medium text-[var(--text-primary)]">
                 {workoutDraft.title}
               </h1>
 
               <div className="mt-3 flex items-end gap-2">
-                <span className="text-4xl font-medium text-white">
+                <span className="text-4xl font-medium text-[var(--text-primary)]">
                   {formatDuration(elapsedSeconds)}
                 </span>
                 <span className="pb-0.5 text-xs text-[#6F7A8D]">
@@ -1171,11 +1171,11 @@ export default function TraningPage() {
           </div>
         </header>
 
-        <section className="flex-1 rounded-[24px] border border-[#2A3140] bg-[#12151C] p-4">
+        <section className="flex-1 rounded-[24px] border border-[var(--border-primary)] bg-[var(--surface-primary)] p-4">
           <div className="flex flex-wrap gap-2">
             {phase === "rest" ? (
               <div
-                className="inline-flex rounded-full bg-[#2A3140] px-3 py-1 text-[11px] uppercase tracking-[0.16em] text-[#D8E0EE]"
+                className="inline-flex rounded-full bg-[var(--border-primary)] px-3 py-1 text-[11px] uppercase tracking-[0.16em] text-[var(--tooltip-text)]"
                 style={{ lineHeight: "15px" }}
               >
                 Отдых {formatDuration(restRemainingSeconds)}
@@ -1183,7 +1183,7 @@ export default function TraningPage() {
             ) : null}
 
             {isPaused ? (
-              <div className="inline-flex rounded-full bg-[#27303E] px-3 py-1 text-[11px] uppercase tracking-[0.16em] text-[#D8E0EE]">
+              <div className="inline-flex rounded-full bg-[#27303E] px-3 py-1 text-[11px] uppercase tracking-[0.16em] text-[var(--tooltip-text)]">
                 Пауза
               </div>
             ) : null}
@@ -1192,7 +1192,7 @@ export default function TraningPage() {
               <button
                 type="button"
                 onClick={handleForceContinue}
-                className="rounded-full border border-[#4C5A6A] px-3 py-1 text-[11px] font-medium uppercase tracking-[0.16em] text-white"
+                className="rounded-full border border-[#4C5A6A] px-3 py-1 text-[11px] font-medium uppercase tracking-[0.16em] text-[var(--text-primary)]"
               >
                 Принудительно продолжить
               </button>
@@ -1201,7 +1201,7 @@ export default function TraningPage() {
 
           {isPaused ? (
             <div className="mt-3 rounded-2xl border border-[#30425C] bg-[#102338] px-4 py-3">
-              <p className="text-sm font-medium text-white">Тренировка на паузе</p>
+              <p className="text-sm font-medium text-[var(--text-primary)]">Тренировка на паузе</p>
               <p className="mt-1 text-sm leading-6 text-[#BFD6F0]">
                 Таймер остановлен. Можно продолжить позже без потери прогресса.
               </p>
@@ -1209,73 +1209,73 @@ export default function TraningPage() {
           ) : null}
 
           <p
-            className="mt-4 text-xs uppercase tracking-[0.18em] text-[#8E97A8]"
+            className="mt-4 text-xs uppercase tracking-[0.18em] text-[var(--text-muted)]"
             style={{ lineHeight: "15px" }}
           >
             {phase === "rest" ? "Следующее действие" : "Текущее упражнение"}
           </p>
 
           <h2
-            className="mt-2 h-16 overflow-hidden text-xl font-medium text-white"
+            className="mt-2 h-16 overflow-hidden text-xl font-medium text-[var(--text-primary)]"
             style={{ ...clampTwoLinesStyle, lineHeight: "18px" }}
           >
             {currentExercise.name}
           </h2>
 
           <p
-            className="mt-2 h-10 overflow-hidden text-[11px] text-[#8E97A8]"
+            className="mt-2 h-10 overflow-hidden text-[11px] text-[var(--text-muted)]"
             style={{ ...clampTwoLinesStyle, lineHeight: "15px" }}
           >
             {currentExercise.prescription}
           </p>
 
           <div className="mt-4 grid grid-cols-3 gap-2">
-            <div className="min-w-0 rounded-2xl bg-[#0B0E15] px-2 py-3 text-center">
+            <div className="min-w-0 rounded-2xl bg-[var(--surface-secondary)] px-2 py-3 text-center">
               <p
-                className="overflow-hidden text-[10px] uppercase tracking-[0.14em] text-[#8E97A8] text-ellipsis whitespace-nowrap"
+                className="overflow-hidden text-[10px] uppercase tracking-[0.14em] text-[var(--text-muted)] text-ellipsis whitespace-nowrap"
                 style={{ lineHeight: "15px" }}
               >
                 Подход
               </p>
-              <p className="mt-1 overflow-hidden text-xl font-medium text-white text-ellipsis whitespace-nowrap">
+              <p className="mt-1 overflow-hidden text-xl font-medium text-[var(--text-primary)] text-ellipsis whitespace-nowrap">
                 {currentSetNumber}
               </p>
             </div>
 
-            <div className="min-w-0 rounded-2xl bg-[#0B0E15] px-2 py-3 text-center">
+            <div className="min-w-0 rounded-2xl bg-[var(--surface-secondary)] px-2 py-3 text-center">
               <p
-                className="overflow-hidden text-[10px] uppercase tracking-[0.14em] text-[#8E97A8] text-ellipsis whitespace-nowrap"
+                className="overflow-hidden text-[10px] uppercase tracking-[0.14em] text-[var(--text-muted)] text-ellipsis whitespace-nowrap"
                 style={{ lineHeight: "15px" }}
               >
                 Осталось
               </p>
-              <p className="mt-1 overflow-hidden text-xl font-medium text-white text-ellipsis whitespace-nowrap">
+              <p className="mt-1 overflow-hidden text-xl font-medium text-[var(--text-primary)] text-ellipsis whitespace-nowrap">
                 {remainingSetsInExercise}
               </p>
             </div>
 
-            <div className="min-w-0 rounded-2xl bg-[#0B0E15] px-2 py-3 text-center">
+            <div className="min-w-0 rounded-2xl bg-[var(--surface-secondary)] px-2 py-3 text-center">
               <p
-                className="overflow-hidden text-[10px] uppercase tracking-[0.14em] text-[#8E97A8] text-ellipsis whitespace-nowrap"
+                className="overflow-hidden text-[10px] uppercase tracking-[0.14em] text-[var(--text-muted)] text-ellipsis whitespace-nowrap"
                 style={{ lineHeight: "15px" }}
               >
                 На упражнении
               </p>
-              <p className="mt-1 overflow-hidden text-xl font-medium text-white text-ellipsis whitespace-nowrap">
+              <p className="mt-1 overflow-hidden text-xl font-medium text-[var(--text-primary)] text-ellipsis whitespace-nowrap">
                 {formatDuration(exerciseElapsedSeconds[currentExerciseIndex] ?? 0)}
               </p>
             </div>
           </div>
 
-          <div className="mt-4 rounded-2xl bg-[#0B0E15] px-3 py-3">
+          <div className="mt-4 rounded-2xl bg-[var(--surface-secondary)] px-3 py-3">
             <div className="flex items-center justify-between gap-3">
               <p
-                className="text-[10px] uppercase tracking-[0.14em] text-[#8E97A8]"
+                className="text-[10px] uppercase tracking-[0.14em] text-[var(--text-muted)]"
                 style={{ lineHeight: "15px" }}
               >
                 Вес текущего подхода
               </p>
-              <span className="text-sm font-medium text-white">
+              <span className="text-sm font-medium text-[var(--text-primary)]">
                 {currentSetNumber}
               </span>
             </div>
@@ -1288,7 +1288,7 @@ export default function TraningPage() {
               inputMode="decimal"
               placeholder="Например, 25"
               disabled={phase === "rest" || isPaused}
-              className="mt-3 w-full rounded-2xl border border-[#2A3140] bg-[#12151C] px-4 py-3 text-sm text-white outline-none placeholder:text-[#5D6677] disabled:opacity-60"
+              className="mt-3 w-full rounded-2xl border border-[var(--border-primary)] bg-[var(--surface-primary)] px-4 py-3 text-sm text-[var(--text-primary)] outline-none placeholder:text-[#5D6677] disabled:opacity-60"
             />
           </div>
 
@@ -1297,7 +1297,7 @@ export default function TraningPage() {
               type="button"
               onClick={handlePreviousExercise}
               disabled={currentExerciseIndex === 0 || phase === "rest" || isPaused}
-              className="flex h-14 w-14 items-center justify-center rounded-full border border-[#2A3140] bg-[#0B0E15] text-white disabled:opacity-35"
+              className="flex h-14 w-14 items-center justify-center rounded-full border border-[var(--border-primary)] bg-[var(--surface-secondary)] text-[var(--text-primary)] disabled:opacity-35"
               aria-label="Вернуться к прошлому упражнению"
             >
               <PreviousIcon />
@@ -1309,8 +1309,8 @@ export default function TraningPage() {
               disabled={isPaused}
               className={`flex h-[72px] w-[72px] items-center justify-center rounded-full ${
                 phase === "rest"
-                  ? "bg-[#4F5B63] text-[#D8E0EE] opacity-70"
-                  : "bg-[#01BB96] text-[#000214]"
+                  ? "bg-[#4F5B63] text-[var(--tooltip-text)] opacity-70"
+                  : "bg-[var(--accent-primary)] text-[var(--accent-contrast)]"
               } ${isPaused ? "opacity-40" : ""}`}
               aria-label={
                 phase === "rest" ? "Ожидание окончания отдыха" : "Закончить подход"
@@ -1323,7 +1323,7 @@ export default function TraningPage() {
               type="button"
               onClick={handleNextExercise}
               disabled={phase === "rest" || isPaused}
-              className="flex h-14 w-14 items-center justify-center rounded-full border border-[#2A3140] bg-[#0B0E15] text-white disabled:opacity-35"
+              className="flex h-14 w-14 items-center justify-center rounded-full border border-[var(--border-primary)] bg-[var(--surface-secondary)] text-[var(--text-primary)] disabled:opacity-35"
               aria-label="Перейти к следующему упражнению"
             >
               <NextIcon />
@@ -1331,11 +1331,11 @@ export default function TraningPage() {
           </div>
         </section>
 
-        <p className="px-1 text-lg font-medium text-white">Следующее упражнение</p>
+        <p className="px-1 text-lg font-medium text-[var(--text-primary)]">Следующее упражнение</p>
 
-        <section className="rounded-[22px] border border-[#2A3140] bg-[#12151C] px-4 py-3">
+        <section className="rounded-[22px] border border-[var(--border-primary)] bg-[var(--surface-primary)] px-4 py-3">
           <p
-            className="mt-1 h-5 overflow-hidden text-sm font-medium text-white"
+            className="mt-1 h-5 overflow-hidden text-sm font-medium text-[var(--text-primary)]"
             style={{
               overflow: "hidden",
               textOverflow: "ellipsis",
@@ -1346,7 +1346,7 @@ export default function TraningPage() {
             {nextExercise ? nextExercise.name : "Финиш тренировки"}
           </p>
           <p
-            className="mt-1 h-8 overflow-hidden text-[11px] text-[#8E97A8]"
+            className="mt-1 h-8 overflow-hidden text-[11px] text-[var(--text-muted)]"
             style={{ ...clampTwoLinesStyle, lineHeight: "15px" }}
           >
             {nextExercise
@@ -1360,14 +1360,14 @@ export default function TraningPage() {
 
       {isExitPromptOpen ? (
         <div className="fixed inset-0 z-50 flex items-end justify-center bg-[#030712]/80 px-5 pb-6 pt-20">
-          <div className="w-full max-w-md rounded-[28px] border border-[#2A3140] bg-[#12151C] p-5">
-            <p className="text-xs uppercase tracking-[0.18em] text-[#8E97A8]">
+          <div className="w-full max-w-md rounded-[28px] border border-[var(--border-primary)] bg-[var(--surface-primary)] p-5">
+            <p className="text-xs uppercase tracking-[0.18em] text-[var(--text-muted)]">
               Выход из тренировки
             </p>
-            <h2 className="mt-2 text-xl font-medium text-white">
+            <h2 className="mt-2 text-xl font-medium text-[var(--text-primary)]">
               Что сделать с текущей сессией?
             </h2>
-            <p className="mt-2 text-sm leading-6 text-[#8E97A8]">
+            <p className="mt-2 text-sm leading-6 text-[var(--text-muted)]">
               Можно выйти и продолжить позже, либо полностью сбросить текущий
               прогресс.
             </p>
@@ -1377,7 +1377,7 @@ export default function TraningPage() {
                 <button
                   type="button"
                   onClick={handleSavePartialWorkout}
-                  className="rounded-3xl bg-[#01BB96] px-5 py-4 text-base font-medium text-[#000214]"
+                  className="rounded-3xl bg-[var(--accent-primary)] px-5 py-4 text-base font-medium text-[var(--accent-contrast)]"
                 >
                   Сохранить как частично выполненную
                 </button>
@@ -1387,8 +1387,8 @@ export default function TraningPage() {
                 onClick={handleContinueLater}
                 className={`rounded-3xl px-5 py-4 text-base font-medium ${
                   canSavePartialWorkout
-                    ? "border border-[#2A3140] text-white"
-                    : "bg-[#01BB96] text-[#000214]"
+                    ? "border border-[var(--border-primary)] text-[var(--text-primary)]"
+                    : "bg-[var(--accent-primary)] text-[var(--accent-contrast)]"
                 }`}
               >
                 Продолжить позже
@@ -1403,7 +1403,7 @@ export default function TraningPage() {
               <button
                 type="button"
                 onClick={() => setIsExitPromptOpen(false)}
-                className="rounded-3xl border border-[#2A3140] px-5 py-4 text-base font-medium text-white"
+                className="rounded-3xl border border-[var(--border-primary)] px-5 py-4 text-base font-medium text-[var(--text-primary)]"
               >
                 Остаться
               </button>

@@ -1,3 +1,7 @@
+import {
+  ACHIEVEMENT_CATALOG,
+  ACHIEVEMENT_DIFFICULTIES,
+} from "../data/gamification/achievementCatalog.js";
 import { normalizeTrainingPlanAdaptationHistory } from "./trainingPlanAdaptationHistory.js";
 import {
   isProductiveWorkoutStatus,
@@ -52,6 +56,19 @@ function calculateDayDifference(leftDateKey, rightDateKey) {
 
 function clamp(value, minValue, maxValue) {
   return Math.min(Math.max(value, minValue), maxValue);
+}
+
+function getAchievementDifficulty(difficultyKey) {
+  return (
+    ACHIEVEMENT_DIFFICULTIES.find(
+      (difficulty) => difficulty.key === difficultyKey,
+    ) ?? ACHIEVEMENT_DIFFICULTIES[0]
+  );
+}
+
+function getAchievementMetricValue(metrics, metricKey) {
+  const numericValue = Number(metrics?.[metricKey]);
+  return Number.isFinite(numericValue) ? Math.max(numericValue, 0) : 0;
 }
 
 function getTrackedWeightValues(workout = {}) {
@@ -142,8 +159,11 @@ function buildAchievement({
   iconKey,
   title,
   description,
+  metricKey,
   rarityKey = "common",
   rarityLabel = "Обычное",
+  difficultyKey = "easy",
+  difficultyLabel = "Легкие",
   unlocked,
   current = 0,
   target = 1,
@@ -157,8 +177,11 @@ function buildAchievement({
     iconKey,
     title,
     description,
+    metricKey,
     rarityKey,
     rarityLabel,
+    difficultyKey,
+    difficultyLabel,
     unlocked: Boolean(unlocked),
     current: safeCurrent,
     target: safeTarget,
@@ -167,162 +190,22 @@ function buildAchievement({
   };
 }
 
-function buildAchievements(context) {
-  const items = [
-    buildAchievement({
-      id: "first_test",
-      iconKey: "spark",
-      title: "Первый уровень",
-      description:
-        "Пройти стартовый тест и получить исходный уровень подготовки.",
-      rarityKey: "common",
-      rarityLabel: "Обычное",
-      unlocked: context.hasCompletedTest,
-      current: context.hasCompletedTest ? 1 : 0,
-      target: 1,
-      accentColor: "#5EEAD4",
-    }),
-    buildAchievement({
-      id: "plan_builder",
-      iconKey: "blueprint",
-      title: "Архитектор плана",
-      description: "Сохранить первую персональную программу тренировок.",
-      rarityKey: "common",
-      rarityLabel: "Обычное",
-      unlocked: context.hasTrainingPlan,
-      current: context.hasTrainingPlan ? 1 : 0,
-      target: 1,
-      accentColor: "#60A5FA",
-    }),
-    buildAchievement({
-      id: "calendar_started",
-      iconKey: "calendar",
-      title: "В ритме недели",
-      description: "Запланировать 3 тренировки в календаре.",
-      rarityKey: "rare",
-      rarityLabel: "Редкое",
-      unlocked: context.totalScheduledCount >= 3,
-      current: context.totalScheduledCount,
-      target: 3,
-      accentColor: "#7DD3FC",
-    }),
-    buildAchievement({
-      id: "scheduled_7",
-      iconKey: "calendar",
-      title: "Неделя под контролем",
-      description:
-        "Набрать 7 тренировок в расписании и истории, чтобы ритм закрепился.",
-      rarityKey: "rare",
-      rarityLabel: "Редкое",
-      unlocked: context.totalScheduledCount >= 7,
-      current: context.totalScheduledCount,
-      target: 7,
-      accentColor: "#38BDF8",
-    }),
-    buildAchievement({
-      id: "first_workout",
-      iconKey: "flag",
-      title: "Первый финиш",
-      description: "Довести хотя бы одну тренировку до результата.",
-      rarityKey: "rare",
-      rarityLabel: "Редкое",
-      unlocked: context.productiveWorkoutsCount >= 1,
-      current: context.productiveWorkoutsCount,
-      target: 1,
-      accentColor: "#34D399",
-    }),
-    buildAchievement({
-      id: "partials_3",
-      iconKey: "flag",
-      title: "Не сдался",
-      description:
-        "Трижды завершить тренировку частично и всё равно сохранить прогресс.",
-      rarityKey: "rare",
-      rarityLabel: "Редкое",
-      unlocked: context.partialWorkoutsCount >= 3,
-      current: context.partialWorkoutsCount,
-      target: 3,
-      accentColor: "#F59E0B",
-    }),
-    buildAchievement({
-      id: "streak_3",
-      iconKey: "flame",
-      title: "Серия 3 дня",
-      description: "Собрать серию из 3 продуктивных дней подряд.",
-      rarityKey: "epic",
-      rarityLabel: "Эпичное",
-      unlocked: context.streakDays >= 3,
-      current: context.streakDays,
-      target: 3,
-      accentColor: "#F59E0B",
-    }),
-    buildAchievement({
-      id: "workouts_10",
-      iconKey: "trophy",
-      title: "10 тренировок",
-      description: "Набрать 10 продуктивных тренировок в истории.",
-      rarityKey: "epic",
-      rarityLabel: "Эпичное",
-      unlocked: context.productiveWorkoutsCount >= 10,
-      current: context.productiveWorkoutsCount,
-      target: 10,
-      accentColor: "#FACC15",
-    }),
-    buildAchievement({
-      id: "workouts_25",
-      iconKey: "trophy",
-      title: "25 тренировок",
-      description:
-        "Закрепить привычку и дойти до 25 продуктивных тренировок.",
-      rarityKey: "legendary",
-      rarityLabel: "Легендарное",
-      unlocked: context.productiveWorkoutsCount >= 25,
-      current: context.productiveWorkoutsCount,
-      target: 25,
-      accentColor: "#F97316",
-    }),
-    buildAchievement({
-      id: "tracked_sets_12",
-      iconKey: "dumbbell",
-      title: "Вес под контролем",
-      description: "Записать рабочий вес минимум в 12 подходах.",
-      rarityKey: "epic",
-      rarityLabel: "Эпичное",
-      unlocked: context.trackedSetsCount >= 12,
-      current: context.trackedSetsCount,
-      target: 12,
-      accentColor: "#C084FC",
-    }),
-    buildAchievement({
-      id: "best_weight_50",
-      iconKey: "dumbbell",
-      title: "Первая тяжёлая отметка",
-      description: "Дойти хотя бы до 50 кг в одном зафиксированном подходе.",
-      rarityKey: "legendary",
-      rarityLabel: "Легендарное",
-      unlocked: context.bestSetWeightKg >= 50,
-      current: context.bestSetWeightKg,
-      target: 50,
-      accentColor: "#FB7185",
-    }),
-    buildAchievement({
-      id: "adaptive_mindset",
-      iconKey: "brain",
-      title: "Адаптивный подход",
-      description:
-        "Получить первое обновление плана или накопить 3 сигнала поведения для модели.",
-      rarityKey: "legendary",
-      rarityLabel: "Легендарное",
-      unlocked:
-        context.adaptationEventsCount >= 1 || context.feedbackEventsCount >= 3,
-      current:
-        context.adaptationEventsCount >= 1
-          ? 3
-          : Math.max(context.feedbackEventsCount, 0),
-      target: 3,
-      accentColor: "#A78BFA",
-    }),
-  ];
+function buildAchievements(metrics) {
+  const items = ACHIEVEMENT_CATALOG.map((definition) => {
+    const difficulty = getAchievementDifficulty(definition.difficultyKey);
+    const current = getAchievementMetricValue(metrics, definition.metricKey);
+    const target = Math.max(Number(definition.target) || 1, 1);
+
+    return buildAchievement({
+      ...definition,
+      metricKey: definition.metricKey,
+      difficultyKey: difficulty.key,
+      difficultyLabel: difficulty.label,
+      current,
+      target,
+      unlocked: current >= target,
+    });
+  });
 
   const unlockedCount = items.filter((item) => item.unlocked).length;
   const featured = [...items]
@@ -355,6 +238,30 @@ function buildAchievements(context) {
           (RARITY_PRIORITY[left.rarityKey] ?? 0)
         );
       })[0] ?? null;
+  const groups = ACHIEVEMENT_DIFFICULTIES.map((difficulty) => {
+    const difficultyItems = items.filter(
+      (item) => item.difficultyKey === difficulty.key,
+    );
+    const unlockedCountByDifficulty = difficultyItems.filter(
+      (item) => item.unlocked,
+    ).length;
+
+    return {
+      key: difficulty.key,
+      label: difficulty.label,
+      shortLabel: difficulty.shortLabel,
+      order: difficulty.order ?? 0,
+      totalCount: difficultyItems.length,
+      unlockedCount: unlockedCountByDifficulty,
+      completionPercent:
+        difficultyItems.length > 0
+          ? Math.round(
+              (unlockedCountByDifficulty / difficultyItems.length) * 100,
+            )
+          : 0,
+      items: difficultyItems,
+    };
+  }).filter((group) => group.totalCount > 0);
 
   return {
     totalCount: items.length,
@@ -363,6 +270,7 @@ function buildAchievements(context) {
       items.length > 0 ? Math.round((unlockedCount / items.length) * 100) : 0,
     featured,
     nextUp,
+    groups,
     items,
   };
 }
@@ -387,7 +295,7 @@ function buildMomentum({
       key: "steady",
       label: "Стабильно",
       description:
-        "Прогресс уже выглядит устойчиво: есть регулярность и достаточно данных для мягкой адаптации.",
+        "Прогресс устойчив: есть регулярность и достаточно данных для мягкой адаптации.",
     };
   }
 
@@ -396,7 +304,7 @@ function buildMomentum({
       key: "building",
       label: "Набираешь ход",
       description:
-        "База собирается, привычка уже формируется, а модели начинает хватать сигнала для персонализации.",
+        "База уже формируется, и модели хватает сигнала для персонализации.",
     };
   }
 
@@ -404,7 +312,7 @@ function buildMomentum({
     key: "starting",
     label: "Старт",
     description:
-      "Пока это стартовый этап: чем больше завершённых тренировок и записанных весов, тем точнее будут рекомендации.",
+      "Пока это стартовый этап: чем больше завершенных тренировок и записанных весов, тем точнее рекомендации.",
   };
 }
 
@@ -450,18 +358,11 @@ function buildRating(score) {
   };
 }
 
-export function buildUserGamificationSnapshot(
-  user,
-  { todayDateKey = formatDateKey(new Date()) } = {},
-) {
-  if (!user) {
-    return null;
-  }
-
-  const workoutHistory = normalizeWorkoutHistory(user.workoutHistory ?? []);
-  const productiveWorkouts = workoutHistory.filter((workout) =>
+function buildGamificationMetrics(user, todayDateKey) {
+  const workoutHistory = normalizeWorkoutHistory(user?.workoutHistory ?? []);
+  const productiveWorkoutsCount = workoutHistory.filter((workout) =>
     isProductiveWorkoutStatus(workout.status),
-  );
+  ).length;
   const completedWorkoutsCount = workoutHistory.filter(
     (workout) => workout.status === "completed",
   ).length;
@@ -479,112 +380,136 @@ export function buildUserGamificationSnapshot(
     todayDateKey,
     14,
   );
-  const scheduledWorkouts = Array.isArray(user.scheduledWorkouts)
+  const scheduledWorkouts = Array.isArray(user?.scheduledWorkouts)
     ? user.scheduledWorkouts
     : [];
   const totalScheduledCount = scheduledWorkouts.length + workoutHistory.length;
   const adaptationEventsCount = normalizeTrainingPlanAdaptationHistory(
-    user.trainingPlanAdaptationHistory ?? [],
+    user?.trainingPlanAdaptationHistory ?? [],
   ).filter((event) => event.trigger !== "current_plan").length;
-  const feedbackEventsCount = Array.isArray(user.trainingMlFeedbackHistory)
+  const feedbackEventsCount = Array.isArray(user?.trainingMlFeedbackHistory)
     ? user.trainingMlFeedbackHistory.length
     : 0;
-  const hasCompletedTest = typeof user.lastTestScore === "number";
-  const hasTrainingPlan = Boolean(
-    user.trainingPlan &&
+  const completedTestCount = typeof user?.lastTestScore === "number" ? 1 : 0;
+  const trainingPlanCount = Boolean(
+    user?.trainingPlan &&
       Array.isArray(user.trainingPlan.sessions) &&
       user.trainingPlan.sessions.length > 0,
-  );
+  )
+    ? 1
+    : 0;
+  const adaptiveMindsetProgress =
+    adaptationEventsCount >= 1 ? 3 : Math.max(feedbackEventsCount, 0);
 
-  const achievements = buildAchievements({
-    hasCompletedTest,
-    hasTrainingPlan,
+  return {
+    completedTestCount,
+    trainingPlanCount,
     totalScheduledCount,
-    productiveWorkoutsCount: productiveWorkouts.length,
+    productiveWorkoutsCount,
+    completedWorkoutsCount,
     partialWorkoutsCount,
+    skippedWorkoutsCount,
     streakDays,
     trackedSetsCount,
     bestSetWeightKg,
     adaptationEventsCount,
     feedbackEventsCount,
-  });
-
-  const momentum = buildMomentum({
+    adaptiveMindsetProgress,
     recentProductiveWorkoutsCount,
-    streakDays,
-    skippedWorkoutsCount,
-    adaptationEventsCount,
-  });
+  };
+}
 
-  const ratingBreakdown = [
+function buildRatingBreakdown(metrics, unlockedAchievementsCount) {
+  const breakdown = [
     {
       key: "test",
       label: "Тест",
-      points: hasCompletedTest ? 80 : 0,
+      points: metrics.completedTestCount > 0 ? 80 : 0,
     },
     {
       key: "plan",
       label: "План",
-      points: hasTrainingPlan ? 120 : 0,
+      points: metrics.trainingPlanCount > 0 ? 120 : 0,
     },
     {
       key: "calendar",
       label: "Календарь",
-      points: Math.min(totalScheduledCount * 15, 120),
+      points: Math.min(metrics.totalScheduledCount * 15, 120),
     },
     {
       key: "workouts",
       label: "Тренировки",
-      points: Math.min(productiveWorkouts.length * 90, 900),
+      points: Math.min(metrics.productiveWorkoutsCount * 90, 900),
     },
     {
       key: "streak",
       label: "Серия",
-      points: Math.min(streakDays * 35, 245),
+      points: Math.min(metrics.streakDays * 35, 245),
     },
     {
       key: "weights",
       label: "Вес и подходы",
-      points: Math.min(trackedSetsCount * 4 + (bestSetWeightKg > 0 ? 25 : 0), 250),
+      points: Math.min(
+        metrics.trackedSetsCount * 4 + (metrics.bestSetWeightKg > 0 ? 25 : 0),
+        250,
+      ),
     },
     {
       key: "adaptation",
       label: "Адаптация",
-      points: Math.min(adaptationEventsCount * 35 + feedbackEventsCount * 8, 180),
+      points: Math.min(
+        metrics.adaptationEventsCount * 35 + metrics.feedbackEventsCount * 8,
+        180,
+      ),
     },
     {
       key: "achievements",
       label: "Достижения",
-      points: achievements.unlockedCount * 30,
+      points: unlockedAchievementsCount * 30,
     },
   ];
 
-  const score = ratingBreakdown.reduce(
+  const score = breakdown.reduce(
     (total, item) => total + Math.max(item.points, 0),
     0,
   );
+
+  return { score, breakdown };
+}
+
+export function buildUserGamificationSnapshot(
+  user,
+  { todayDateKey = formatDateKey(new Date()) } = {},
+) {
+  if (!user) {
+    return null;
+  }
+
+  const metrics = buildGamificationMetrics(user, todayDateKey);
+  const achievements = buildAchievements(metrics);
+  const momentum = buildMomentum({
+    recentProductiveWorkoutsCount: metrics.recentProductiveWorkoutsCount,
+    streakDays: metrics.streakDays,
+    skippedWorkoutsCount: metrics.skippedWorkoutsCount,
+    adaptationEventsCount: metrics.adaptationEventsCount,
+  });
+
+  const { score, breakdown } = buildRatingBreakdown(
+    metrics,
+    achievements.unlockedCount,
+  );
   const rating = {
     ...buildRating(score),
-    breakdown: ratingBreakdown,
+    breakdown,
   };
 
   return {
     rating,
     achievements,
     momentum,
-    summary: {
-      streakDays,
-      productiveWorkoutsCount: productiveWorkouts.length,
-      recentProductiveWorkoutsCount,
-      completedWorkoutsCount,
-      partialWorkoutsCount,
-      skippedWorkoutsCount,
-      trackedSetsCount,
-      bestSetWeightKg,
-      totalScheduledCount,
-      adaptationEventsCount,
-      feedbackEventsCount,
-    },
+    metrics,
+    // Backward compatibility for old frontend widgets
+    summary: metrics,
   };
 }
 

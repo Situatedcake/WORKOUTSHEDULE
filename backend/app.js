@@ -8,7 +8,7 @@ import { buildUserProfile } from "./modules/userProfile.js";
 import {
   evaluateTrainingLevel,
   validateTrainingLevelPayload,
-} from "./services/trainingLevelEvaluator.js";
+} from "./features/tasting/services/trainingLevelEvaluator.js";
 import {
   isProductiveWorkoutStatus,
   normalizeWorkoutHistory,
@@ -23,10 +23,14 @@ import { normalizeTrainingMlFeedbackHistory } from "./services/trainingMlFeedbac
 import { buildWorkoutStatsPayload } from "./services/workoutStats.js";
 import { buildUserGamificationSnapshot } from "./services/gamification.js";
 import {
+  ACHIEVEMENT_CATALOG,
+  ACHIEVEMENT_DIFFICULTIES,
+} from "./data/gamification/achievementCatalog.js";
+import {
   buildTastingQuestionsPayload,
   buildTrainingConfigPayload,
 } from "./services/trainingData.js";
-import { getTrainingLevelByTestScore } from "./services/tastingScore.js";
+import { getTrainingLevelByTestScore } from "./features/tasting/services/scoreModel.js";
 import { generateWorkoutAdvanced } from "./services/workoutGenerator.js";
 import { generateSmartTrainingPlan } from "./services/smartTrainingPlan.js";
 import { buildTrainingPlan } from "./shared/trainingPlanBuilder.js";
@@ -286,6 +290,14 @@ export function createServerApp({ userRepository, databaseProvider }) {
 
   app.get("/api/testing/questions", (_, response) => {
     response.json(buildTastingQuestionsPayload());
+  });
+
+  app.get("/api/gamification/catalog", (_, response) => {
+    response.json({
+      difficulties: ACHIEVEMENT_DIFFICULTIES,
+      achievements: ACHIEVEMENT_CATALOG,
+      total: ACHIEVEMENT_CATALOG.length,
+    });
   });
 
   app.get("/api/users/:id", async (request, response) => {

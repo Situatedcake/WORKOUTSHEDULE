@@ -1,13 +1,13 @@
 import { useEffect, useState } from "react";
 import { Navigate, useNavigate } from "react-router";
-import PageShell from "../../components/PageShell";
-import { ROUTES } from "../../constants/routes";
-import { DATABASE_CONFIG } from "../../services/database/databaseConfig";
+import PageShell from "../../../components/PageShell";
+import { ROUTES } from "../../../constants/routes";
+import { DATABASE_CONFIG } from "../../../services/database/databaseConfig";
 import {
   hasStartedTasting,
   saveTastingQuestionsMeta,
   saveTastingScore,
-} from "../../utils/tastingSession";
+} from "../utils/session";
 
 export default function TastingPage() {
   const navigate = useNavigate();
@@ -112,14 +112,14 @@ export default function TastingPage() {
   if (isLoadingQuestions) {
     return (
       <PageShell className="pt-4">
-        <section className="mx-auto flex w-full max-w-md flex-col gap-4 rounded-[28px] border border-[#2A3140] bg-[#12151C] p-6">
-          <p className="text-sm uppercase tracking-[0.2em] text-[#8E97A8]">
+        <section className="mx-auto flex w-full max-w-md flex-col gap-4 rounded-[28px] border border-[var(--border-primary)] bg-[var(--surface-primary)] p-6">
+          <p className="text-sm uppercase tracking-[0.2em] text-[var(--text-muted)]">
             Тест
           </p>
-          <h1 className="text-2xl font-medium text-white">
+          <h1 className="text-2xl font-medium text-[var(--text-primary)]">
             Загружаем вопросы
           </h1>
-          <p className="text-sm leading-6 text-[#8E97A8]">
+          <p className="text-sm leading-6 text-[var(--text-muted)]">
             Подготавливаем актуальную версию теста под текущую программу.
           </p>
         </section>
@@ -130,14 +130,14 @@ export default function TastingPage() {
   if (!questions.length) {
     return (
       <PageShell className="pt-4">
-        <section className="mx-auto flex w-full max-w-md flex-col gap-4 rounded-[28px] border border-[#2A3140] bg-[#12151C] p-6">
-          <p className="text-sm uppercase tracking-[0.2em] text-[#8E97A8]">
+        <section className="mx-auto flex w-full max-w-md flex-col gap-4 rounded-[28px] border border-[var(--border-primary)] bg-[var(--surface-primary)] p-6">
+          <p className="text-sm uppercase tracking-[0.2em] text-[var(--text-muted)]">
             Тест
           </p>
-          <h1 className="text-2xl font-medium text-white">
+          <h1 className="text-2xl font-medium text-[var(--text-primary)]">
             Вопросы недоступны
           </h1>
-          <p className="text-sm leading-6 text-[#8E97A8]">
+          <p className="text-sm leading-6 text-[var(--text-muted)]">
             {questionsError ||
               "Список вопросов пока не удалось получить с сервера."}
           </p>
@@ -153,18 +153,18 @@ export default function TastingPage() {
     <PageShell className="pt-4">
       <section className="mx-auto flex w-full max-w-md flex-col gap-6">
         <div className="space-y-3">
-          <p className="text-sm text-[#8E97A8]">
+          <p className="text-sm text-[var(--text-muted)]">
             Вопрос {currentQuestionIndex + 1} из {questions.length}
           </p>
 
-          <div className="h-1.5 rounded-full bg-[#12151C]">
+          <div className="h-1.5 rounded-full bg-[var(--surface-primary)]">
             <div
-              className="h-full rounded-full bg-[#01BB96] transition-all duration-300"
+              className="h-full rounded-full bg-[var(--accent-primary)] transition-all duration-300"
               style={{ width: `${progress}%` }}
             />
           </div>
 
-          <h1 className="text-3xl font-medium leading-tight text-white">
+          <h1 className="text-3xl font-medium leading-tight text-[var(--text-primary)]">
             {currentQuestion.text}
           </h1>
         </div>
@@ -175,7 +175,7 @@ export default function TastingPage() {
               key={answer.id}
               type="button"
               onClick={() => handleAnswerClick(answer.value)}
-              className="rounded-3xl border border-[#2A3140] bg-[#12151C] px-5 py-4 text-left text-base leading-6 text-white transition-colors duration-200 hover:border-[#01BB96] hover:bg-[#161C28]"
+              className="rounded-3xl border border-[var(--border-primary)] bg-[var(--surface-primary)] px-5 py-4 text-left text-base leading-6 text-[var(--text-primary)] transition-colors duration-200 hover:border-[var(--accent-primary)] hover:bg-[#161C28]"
             >
               {answer.text}
             </button>

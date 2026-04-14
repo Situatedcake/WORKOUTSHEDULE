@@ -15,10 +15,12 @@ const UserPage = lazy(() => import("./pages/UserPage"));
 const StatisticPage = lazy(() => import("./pages/StatisticPage"));
 const Calendare = lazy(() => import("./pages/Calendare"));
 const StartTastingPage = lazy(() =>
-  import("./pages/Tasting/StartTastingPage"),
+  import("./features/tasting/pages/StartTastingPage"),
 );
-const TastingPage = lazy(() => import("./pages/Tasting/TastingPage"));
-const FinishTasting = lazy(() => import("./pages/Tasting/FinishTasting"));
+const TastingPage = lazy(() => import("./features/tasting/pages/TastingPage"));
+const FinishTasting = lazy(() =>
+  import("./features/tasting/pages/FinishTastingPage"),
+);
 const LoginPage = lazy(() => import("./pages/Auth/LoginPage"));
 const RegisterPage = lazy(() => import("./pages/Auth/RegisterPage"));
 const LibraryPage = lazy(() => import("./pages/LibraryPage"));

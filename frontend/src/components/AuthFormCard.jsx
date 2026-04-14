@@ -48,21 +48,21 @@ export default function AuthFormCard({
 
   return (
     <PageShell className="pt-5">
-      <section className="mx-auto flex w-full max-w-md flex-col gap-5 rounded-[28px] border border-[#2A3140] bg-[#12151C] p-6">
+      <section className="mx-auto flex w-full max-w-md flex-col gap-5 rounded-[28px] border border-[var(--border-primary)] bg-[var(--surface-primary)] p-6">
         <PageBackButton />
 
         <div className="min-w-0 space-y-2">
-          <h1 className="text-3xl font-medium text-white">{title}</h1>
-          <p className="text-sm leading-6 text-[#8E97A8]">{subtitle}</p>
+          <h1 className="text-3xl font-medium text-[var(--text-primary)]">{title}</h1>
+          <p className="text-sm leading-6 text-[var(--text-muted)]">{subtitle}</p>
         </div>
 
         <form className="flex flex-col gap-4" onSubmit={handleSubmit}>
           <label className="flex flex-col gap-2">
-            <span className="text-sm text-[#8E97A8]">Логин</span>
+            <span className="text-sm text-[var(--text-muted)]">Логин</span>
             <input
               value={login}
               onChange={(event) => setLogin(event.target.value)}
-              className="rounded-2xl border border-[#2A3140] bg-[#0B0E15] px-4 py-3 text-white outline-none focus:border-[#01BB96]"
+              className="rounded-2xl border border-[var(--border-primary)] bg-[var(--surface-secondary)] px-4 py-3 text-[var(--text-primary)] outline-none focus:border-[var(--accent-primary)]"
               placeholder="Введите логин"
               autoComplete="username"
             />
@@ -89,7 +89,7 @@ export default function AuthFormCard({
           ) : null}
 
           {errorMessage ? (
-            <p className="rounded-2xl bg-[#2A1010] px-4 py-3 text-sm text-[#FF9F9F]">
+            <p className="rounded-2xl border border-[var(--danger-border)] bg-[var(--danger-surface)] px-4 py-3 text-sm text-[var(--danger-text)]">
               {errorMessage}
             </p>
           ) : null}
@@ -97,15 +97,15 @@ export default function AuthFormCard({
           <button
             type="submit"
             disabled={isSubmitting}
-            className="rounded-3xl bg-[#01BB96] px-5 py-4 text-base font-medium text-[#000214] shadow-[0_12px_28px_rgba(1,187,150,0.2)] disabled:opacity-60"
+            className="rounded-3xl bg-[var(--accent-primary)] px-5 py-4 text-base font-medium text-[var(--accent-contrast)] shadow-[0_12px_28px_rgba(1,187,150,0.2)] disabled:opacity-60"
           >
             {isSubmitting ? "Подождите..." : submitText}
           </button>
         </form>
 
-        <p className="text-sm leading-6 text-[#8E97A8]">
+        <p className="text-sm leading-6 text-[var(--text-muted)]">
           {footerText}{" "}
-          <Link to={footerTo} className="text-[#01BB96]">
+          <Link to={footerTo} className="text-[var(--accent-primary)]">
             {footerLinkText}
           </Link>
         </p>

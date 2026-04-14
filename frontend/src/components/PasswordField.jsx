@@ -77,20 +77,20 @@ export default function PasswordField({
 
   return (
     <label className="flex flex-col gap-2">
-      <span className="text-sm text-[#8E97A8]">{label}</span>
+      <span className="text-sm text-[var(--text-muted)]">{label}</span>
       <div className="relative">
         <input
           type={isPasswordVisible ? "text" : "password"}
           value={value}
           onChange={onChange}
-          className="w-full rounded-2xl border border-[#2A3140] bg-[#0B0E15] px-4 py-3 pr-14 text-white outline-none focus:border-[#01BB96] placeholder:text-[#5D6677]"
+          className="w-full rounded-2xl border border-[var(--border-primary)] bg-[var(--surface-secondary)] px-4 py-3 pr-14 text-[var(--text-primary)] outline-none focus:border-[var(--accent-primary)] placeholder:text-[#5D6677]"
           placeholder={placeholder}
           autoComplete={autoComplete}
         />
         <button
           type="button"
           onClick={() => setIsPasswordVisible((previousValue) => !previousValue)}
-          className="absolute right-3 top-1/2 inline-flex -translate-y-1/2 items-center justify-center rounded-xl p-2 text-[#8E97A8]"
+          className="absolute right-3 top-1/2 inline-flex -translate-y-1/2 items-center justify-center rounded-xl p-2 text-[var(--text-muted)]"
           aria-label={isPasswordVisible ? "Скрыть пароль" : "Показать пароль"}
           title={isPasswordVisible ? "Скрыть пароль" : "Показать пароль"}
         >
@@ -98,7 +98,7 @@ export default function PasswordField({
         </button>
       </div>
       {helperText ? (
-        <span className="text-xs leading-5 text-[#8E97A8]">{helperText}</span>
+        <span className="text-xs leading-5 text-[var(--text-muted)]">{helperText}</span>
       ) : null}
     </label>
   );
