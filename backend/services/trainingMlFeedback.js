@@ -97,7 +97,16 @@ export function buildWorkoutOutcomeFeedbackEvents(
   const status = normalizeString(workoutHistoryEntry.status);
   const exerciseSkippedEvents = Array.isArray(workoutHistoryEntry.exerciseSetWeights)
     ? workoutHistoryEntry.exerciseSetWeights
-        .filter((exerciseEntry) => exerciseEntry?.status === "skipped")
+        .filter((exerciseEntry) => {
+          const plannedSetsCount = Number(
+            exerciseEntry?.plannedSetsCount ?? exerciseEntry?.sets ?? 0,
+          );
+          const completedSetsCount = Number(exerciseEntry?.completedSetsCount ?? 0);
+          return (
+            exerciseEntry?.status === "skipped" ||
+            (plannedSetsCount > 0 && completedSetsCount < plannedSetsCount)
+          );
+        })
         .map((exerciseEntry) =>
           createTrainingMlFeedbackEntry({
             type: "exercise_skipped",
@@ -115,6 +124,11 @@ export function buildWorkoutOutcomeFeedbackEvents(
               date: workoutHistoryEntry.date ?? null,
               plannedSetsCount: exerciseEntry.plannedSetsCount ?? exerciseEntry.sets ?? 0,
               completedSetsCount: exerciseEntry.completedSetsCount ?? 0,
+              skippedSetsCount: Math.max(
+                Number(exerciseEntry.plannedSetsCount ?? exerciseEntry.sets ?? 0) -
+                  Number(exerciseEntry.completedSetsCount ?? 0),
+                0,
+              ),
             },
           }),
         )

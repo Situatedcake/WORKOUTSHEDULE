@@ -135,7 +135,7 @@ Backend поддерживает провайдеры:
 
 ### JSON fallback
 
-- Данные: `backend/src/data/mockDatabase.json`.
+- Данные: `src/data/mockDatabase.json`.
 - Репозиторий: `backend/repositories/jsonUserRepository.js`.
 
 ## 4. API (полный список актуальных роутов)
@@ -491,3 +491,16 @@ WORKOUTSHEDULE/
 ├─ .gitignore
 └─ README.md
 ```
+
+## 16. Документация
+
+Подробная документация вынесена в каталог `docs/`:
+
+- `docs/README.md`
+- `docs/ARCHITECTURE.md`
+- `docs/API.md`
+- `docs/DATA_MODEL.md`
+- `docs/ML_ADAPTATION.md`
+- `docs/BACKEND.md`
+- `docs/FRONTEND.md`
+- `docs/CODE_COMMENTING_POLICY.md`

@@ -73,6 +73,80 @@ function buildHistoryFeatures(workoutHistory = []) {
       return completedSetsCount / plannedSetsCount;
     })
     .filter((value) => value != null);
+  const exerciseSkipStatsMap = new Map();
+
+  normalizedHistory.forEach((workout) => {
+    (workout.exerciseSetWeights ?? []).forEach((exerciseEntry) => {
+      const exerciseKey = String(
+        exerciseEntry.sourceExerciseId ??
+          exerciseEntry.exerciseId ??
+          exerciseEntry.exerciseName ??
+          "",
+      ).trim();
+
+      if (!exerciseKey) {
+        return;
+      }
+
+      const plannedSetsCount = Math.max(
+        Number(exerciseEntry.plannedSetsCount) || 0,
+        Number(exerciseEntry.sets) || 0,
+      );
+      const completedSetsCount = Math.max(
+        Math.min(Number(exerciseEntry.completedSetsCount) || 0, plannedSetsCount),
+        0,
+      );
+      const missedSetsCount = Math.max(plannedSetsCount - completedSetsCount, 0);
+      const isExerciseSkipped =
+        exerciseEntry.status === "skipped" || exerciseEntry.isSkipped === true;
+      const previousStats = exerciseSkipStatsMap.get(exerciseKey) ?? {
+        exerciseKey,
+        exerciseName: exerciseEntry.exerciseName ?? exerciseKey,
+        appearancesCount: 0,
+        skippedExerciseCount: 0,
+        plannedSetsCount: 0,
+        missedSetsCount: 0,
+      };
+
+      exerciseSkipStatsMap.set(exerciseKey, {
+        ...previousStats,
+        appearancesCount: previousStats.appearancesCount + 1,
+        skippedExerciseCount:
+          previousStats.skippedExerciseCount + (isExerciseSkipped ? 1 : 0),
+        plannedSetsCount: previousStats.plannedSetsCount + plannedSetsCount,
+        missedSetsCount: previousStats.missedSetsCount + missedSetsCount,
+      });
+    });
+  });
+
+  const exerciseSkipProfiles = Array.from(exerciseSkipStatsMap.values())
+    .map((item) => {
+      const exerciseSkipRate =
+        item.appearancesCount > 0
+          ? item.skippedExerciseCount / item.appearancesCount
+          : 0;
+      const setMissRate =
+        item.plannedSetsCount > 0 ? item.missedSetsCount / item.plannedSetsCount : 0;
+
+      return {
+        ...item,
+        exerciseSkipRate,
+        setMissRate,
+        isSystematicallySkipped:
+          item.appearancesCount >= 3 &&
+          (exerciseSkipRate >= 0.6 || setMissRate >= 0.4),
+      };
+    })
+    .sort((left, right) => {
+      if (right.setMissRate !== left.setMissRate) {
+        return right.setMissRate - left.setMissRate;
+      }
+
+      return right.appearancesCount - left.appearancesCount;
+    });
+  const systematicallySkippedExerciseKeys = exerciseSkipProfiles
+    .filter((item) => item.isSystematicallySkipped)
+    .map((item) => item.exerciseKey);
 
   return {
     totalWorkoutsCount: normalizedHistory.length,
@@ -106,6 +180,8 @@ function buildHistoryFeatures(workoutHistory = []) {
     ),
     daysSinceLastProductiveWorkout,
     recentProductiveWorkoutCount: recentProductiveWorkouts.length,
+    exerciseSkipProfiles,
+    systematicallySkippedExerciseKeys,
   };
 }
 

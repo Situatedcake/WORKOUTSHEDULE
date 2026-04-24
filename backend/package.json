@@ -1,6 +1,6 @@
 {
   "name": "workoutschedule-server",
-  "version": "1.0.9",
+  "version": "1.0.9_1",
   "description": "Workout schedule server application",
   "main": "index.js",
   "type": "module",

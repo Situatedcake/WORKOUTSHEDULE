@@ -1,4 +1,4 @@
-import seedDatabase from "../../data/mockDatabase.json";
+import seedDatabase from "../../../../src/data/mockDatabase.json";
 import { buildTrainingPlan } from "./mockTrainingPlanBuilder";
 import { buildWorkoutStats } from "../../shared/workoutStats";
 import { getTrainingLevelByScore } from "../../utils/trainingLevel";

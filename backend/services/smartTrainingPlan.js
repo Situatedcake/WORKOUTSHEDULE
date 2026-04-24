@@ -251,6 +251,15 @@ function buildSessionAdaptationHints(
     );
   }
 
+  if (
+    Array.isArray(trainingFeatures.history.systematicallySkippedExerciseKeys) &&
+    trainingFeatures.history.systematicallySkippedExerciseKeys.length > 0
+  ) {
+    hints.push(
+      "Заменяем упражнения, которые регулярно пропускались, на более подходящие альтернативы.",
+    );
+  }
+
   return hints;
 }
 
@@ -282,6 +291,16 @@ function mergeAvailableExercises(primaryExercises, fallbackExercises) {
   return merged;
 }
 
+function buildSkippedExerciseKeySet(trainingFeatures) {
+  const skippedFromHistory = Array.isArray(
+    trainingFeatures?.history?.systematicallySkippedExerciseKeys,
+  )
+    ? trainingFeatures.history.systematicallySkippedExerciseKeys
+    : [];
+
+  return new Set(skippedFromHistory.map((value) => normalizeTag(value)).filter(Boolean));
+}
+
 function selectExerciseForSlot(
   exercises,
   user,
@@ -289,6 +308,7 @@ function selectExerciseForSlot(
   trainingFeatures,
   slot,
   selectedExercises,
+  skippedExerciseKeySet = new Set(),
 ) {
   const rankedExercises = generateWorkoutAdvanced(exercises, user, {
     slot,
@@ -296,6 +316,18 @@ function selectExerciseForSlot(
     workoutHistory,
     trainingFeatures,
   });
+  const preferredExercise = rankedExercises.find((exercise) => {
+    if (selectedExercises.some((item) => item.name === exercise.name)) {
+      return false;
+    }
+
+    const exerciseKey = normalizeTag(exercise.id || exercise.name);
+    return !skippedExerciseKeySet.has(exerciseKey);
+  });
+
+  if (preferredExercise) {
+    return preferredExercise;
+  }
 
   return (
     rankedExercises.find(
@@ -312,6 +344,7 @@ function buildSessionExercises(
   sessionBlueprint,
 ) {
   const selectedExercises = [];
+  const skippedExerciseKeySet = buildSkippedExerciseKeySet(trainingFeatures);
 
   sessionBlueprint.slots.forEach((slot) => {
     const slotContext = {
@@ -340,6 +373,7 @@ function buildSessionExercises(
       trainingFeatures,
       slotContext,
       selectedExercises,
+      skippedExerciseKeySet,
     );
 
     if (nextExercise) {
@@ -358,7 +392,16 @@ function buildSessionExercises(
       trainingFeatures,
     });
 
-    fallbackExercises.forEach((exercise) => {
+    const preferredFallbackExercises = fallbackExercises.filter((exercise) => {
+      const exerciseKey = normalizeTag(exercise.id || exercise.name);
+      return !skippedExerciseKeySet.has(exerciseKey);
+    });
+    const fallbackPoolToUse =
+      preferredFallbackExercises.length > 0
+        ? preferredFallbackExercises
+        : fallbackExercises;
+
+    fallbackPoolToUse.forEach((exercise) => {
       if (selectedExercises.length >= EXERCISES_PER_SESSION) {
         return;
       }

@@ -1,4 +1,11 @@
-import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useReducer,
+  useRef,
+  useState,
+} from "react";
 import { Navigate, useNavigate } from "react-router";
 import AchievementUnlockOverlay from "../../components/AchievementUnlockOverlay";
 import PageShell from "../../components/PageShell";
@@ -33,7 +40,13 @@ const clampTwoLinesStyle = {
 
 function PreviousIcon() {
   return (
-    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+    <svg
+      width="24"
+      height="24"
+      viewBox="0 0 24 24"
+      fill="none"
+      aria-hidden="true"
+    >
       <path d="M18 6L10 12L18 18V6Z" fill="currentColor" />
       <path
         d="M7 6V18"
@@ -47,7 +60,13 @@ function PreviousIcon() {
 
 function FinishSetIcon() {
   return (
-    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+    <svg
+      width="24"
+      height="24"
+      viewBox="0 0 24 24"
+      fill="none"
+      aria-hidden="true"
+    >
       <path
         d="M6 12.5L10 16.5L18 8.5"
         stroke="currentColor"
@@ -61,7 +80,13 @@ function FinishSetIcon() {
 
 function NextIcon() {
   return (
-    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+    <svg
+      width="24"
+      height="24"
+      viewBox="0 0 24 24"
+      fill="none"
+      aria-hidden="true"
+    >
       <path d="M6 6L14 12L6 18V6Z" fill="currentColor" />
       <path
         d="M17 6V18"
@@ -76,23 +101,55 @@ function NextIcon() {
 function PauseIcon({ paused = false }) {
   if (paused) {
     return (
-      <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+      <svg
+        width="20"
+        height="20"
+        viewBox="0 0 20 20"
+        fill="none"
+        aria-hidden="true"
+      >
         <path d="M7 5.5L13.5 10L7 14.5V5.5Z" fill="currentColor" />
       </svg>
     );
   }
 
   return (
-    <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
-      <rect x="5.5" y="4.5" width="3.2" height="11" rx="1.2" fill="currentColor" />
-      <rect x="11.3" y="4.5" width="3.2" height="11" rx="1.2" fill="currentColor" />
+    <svg
+      width="20"
+      height="20"
+      viewBox="0 0 20 20"
+      fill="none"
+      aria-hidden="true"
+    >
+      <rect
+        x="5.5"
+        y="4.5"
+        width="3.2"
+        height="11"
+        rx="1.2"
+        fill="currentColor"
+      />
+      <rect
+        x="11.3"
+        y="4.5"
+        width="3.2"
+        height="11"
+        rx="1.2"
+        fill="currentColor"
+      />
     </svg>
   );
 }
 
 function CloseIcon() {
   return (
-    <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+    <svg
+      width="20"
+      height="20"
+      viewBox="0 0 20 20"
+      fill="none"
+      aria-hidden="true"
+    >
       <path
         d="M5.5 5.5L14.5 14.5"
         stroke="currentColor"
@@ -118,7 +175,14 @@ function CircularProgress({ progressPercent }) {
   return (
     <div className="relative h-28 w-28 shrink-0">
       <svg viewBox="0 0 110 110" className="h-full w-full -rotate-90">
-        <circle cx="55" cy="55" r={radius} stroke="#252B38" strokeWidth="8" fill="none" />
+        <circle
+          cx="55"
+          cy="55"
+          r={radius}
+          stroke="#252B38"
+          strokeWidth="8"
+          fill="none"
+        />
         <circle
           cx="55"
           cy="55"
@@ -155,7 +219,9 @@ function createSkippedExerciseFlags(exercises = []) {
 }
 
 function normalizeWeightValue(value) {
-  const normalizedValue = String(value ?? "").trim().replace(",", ".");
+  const normalizedValue = String(value ?? "")
+    .trim()
+    .replace(",", ".");
 
   if (!normalizedValue) {
     return null;
@@ -183,6 +249,19 @@ function normalizeSkippedFlags(exercises = [], savedFlags = []) {
   return exercises.map((_, index) => Boolean(savedFlags?.[index]));
 }
 
+function buildSkippedSetIndexes(plannedSetsCount, completedSetsCount) {
+  const safePlannedSets = Math.max(Number(plannedSetsCount) || 0, 0);
+  const safeCompletedSets = Math.max(
+    Math.min(Number(completedSetsCount) || 0, safePlannedSets),
+    0,
+  );
+
+  return Array.from(
+    { length: Math.max(safePlannedSets - safeCompletedSets, 0) },
+    (_, index) => safeCompletedSets + index,
+  );
+}
+
 function buildInitialRuntimeState(workoutDraft, runtimeState) {
   const exerciseCount = workoutDraft?.exercises?.length ?? 0;
   const nowIso = new Date().toISOString();
@@ -202,7 +281,9 @@ function buildInitialRuntimeState(workoutDraft, runtimeState) {
       completedSetsByExercise: Array.from({ length: exerciseCount }, () => 0),
       exerciseElapsedSeconds: Array.from({ length: exerciseCount }, () => 0),
       setWeightsByExercise: createExerciseSetWeights(workoutDraft.exercises),
-      skippedExercisesByIndex: createSkippedExerciseFlags(workoutDraft.exercises),
+      skippedExercisesByIndex: createSkippedExerciseFlags(
+        workoutDraft.exercises,
+      ),
       phase: "exercise",
       restRemainingSeconds:
         workoutDraft.exercises[0]?.restSeconds ?? REST_DURATION_SECONDS,
@@ -261,13 +342,12 @@ function buildInitialRuntimeState(workoutDraft, runtimeState) {
       runtimeState.savedAt ??
       runtimeState.startedAt ??
       nowIso,
-    pausedAt:
-      runtimeState.isPaused
-        ? runtimeState.pausedAt ??
-          runtimeState.savedAt ??
-          runtimeState.lastTickAt ??
-          nowIso
-        : null,
+    pausedAt: runtimeState.isPaused
+      ? (runtimeState.pausedAt ??
+        runtimeState.savedAt ??
+        runtimeState.lastTickAt ??
+        nowIso)
+      : null,
   };
 }
 
@@ -276,12 +356,13 @@ function cloneRuntimeSnapshot(snapshot) {
     ...snapshot,
     completedSetsByExercise: [...(snapshot?.completedSetsByExercise ?? [])],
     exerciseElapsedSeconds: [...(snapshot?.exerciseElapsedSeconds ?? [])],
-    setWeightsByExercise: (snapshot?.setWeightsByExercise ?? []).map((weights) => [
-      ...(weights ?? []),
-    ]),
+    setWeightsByExercise: (snapshot?.setWeightsByExercise ?? []).map(
+      (weights) => [...(weights ?? [])],
+    ),
     skippedExercisesByIndex: [...(snapshot?.skippedExercisesByIndex ?? [])],
     pendingTransition:
-      snapshot?.pendingTransition && typeof snapshot.pendingTransition === "object"
+      snapshot?.pendingTransition &&
+      typeof snapshot.pendingTransition === "object"
         ? { ...snapshot.pendingTransition }
         : null,
   };
@@ -289,7 +370,8 @@ function cloneRuntimeSnapshot(snapshot) {
 
 function getExerciseRestSeconds(workoutDraft, exerciseIndex) {
   return (
-    workoutDraft?.exercises?.[exerciseIndex]?.restSeconds ?? REST_DURATION_SECONDS
+    workoutDraft?.exercises?.[exerciseIndex]?.restSeconds ??
+    REST_DURATION_SECONDS
   );
 }
 
@@ -331,7 +413,10 @@ function advanceRuntimeSnapshot(snapshot, workoutDraft, deltaSeconds) {
 
   while (remainingDelta > 0) {
     if (nextSnapshot.phase === "rest") {
-      const currentRestSeconds = Math.max(nextSnapshot.restRemainingSeconds ?? 0, 0);
+      const currentRestSeconds = Math.max(
+        nextSnapshot.restRemainingSeconds ?? 0,
+        0,
+      );
 
       if (currentRestSeconds <= 0) {
         if (nextSnapshot.pendingTransition?.type === "finish") {
@@ -349,7 +434,8 @@ function advanceRuntimeSnapshot(snapshot, workoutDraft, deltaSeconds) {
       }
 
       const consumedRestSeconds = Math.min(currentRestSeconds, remainingDelta);
-      nextSnapshot.restRemainingSeconds = currentRestSeconds - consumedRestSeconds;
+      nextSnapshot.restRemainingSeconds =
+        currentRestSeconds - consumedRestSeconds;
       remainingDelta -= consumedRestSeconds;
 
       if (nextSnapshot.restRemainingSeconds <= 0) {
@@ -548,7 +634,10 @@ export default function TraningPage() {
 
   const queueAchievementUnlocks = useCallback((achievementUnlocks = []) => {
     const nextUnlocks = achievementUnlocks.filter((achievement) => {
-      if (!achievement?.id || seenAchievementUnlockIdsRef.current.has(achievement.id)) {
+      if (
+        !achievement?.id ||
+        seenAchievementUnlockIdsRef.current.has(achievement.id)
+      ) {
         return false;
       }
 
@@ -582,10 +671,13 @@ export default function TraningPage() {
 
       const latestWorkoutMetrics = latestWorkoutMetricsRef.current;
       const completedSetsOverride =
-        completedSetsOverrideInput ?? latestWorkoutMetrics.completedSetsByExercise;
-      const effectiveSnapshot = runtimeSnapshotOverride ?? runtimeSnapshotRef.current;
+        completedSetsOverrideInput ??
+        latestWorkoutMetrics.completedSetsByExercise;
+      const effectiveSnapshot =
+        runtimeSnapshotOverride ?? runtimeSnapshotRef.current;
       const effectiveElapsedSeconds =
-        effectiveSnapshot?.elapsedSeconds ?? latestWorkoutMetrics.elapsedSeconds;
+        effectiveSnapshot?.elapsedSeconds ??
+        latestWorkoutMetrics.elapsedSeconds;
       const effectiveSetWeightsByExercise =
         effectiveSnapshot?.setWeightsByExercise ??
         latestWorkoutMetrics.setWeightsByExercise;
@@ -615,29 +707,48 @@ export default function TraningPage() {
         totalSets: workoutDraft.totalSets ?? 0,
         completedSetsCount: sumValues(
           completedSetsOverride.map((setsCount, index) =>
-            Math.min(setsCount, workoutDraft.exercises[index]?.sets ?? setsCount),
+            Math.min(
+              setsCount,
+              workoutDraft.exercises[index]?.sets ?? setsCount,
+            ),
           ),
         ),
         exerciseSetWeights: (workoutDraft.exercises ?? []).map(
-          (exercise, index) => ({
-            exerciseId: exercise.sourceExerciseId ?? exercise.id,
-            sourceExerciseId: exercise.sourceExerciseId ?? exercise.id,
-            exerciseName: exercise.name,
-            sets: exercise.sets,
-            plannedSetsCount: exercise.sets,
-            completedSetsCount: Math.min(
+          (exercise, index) => {
+            const plannedSetsCount = Math.max(Number(exercise.sets) || 0, 0);
+            const completedSetsCount = Math.min(
               completedSetsOverride[index] ?? 0,
-              exercise.sets,
-            ),
-            status:
-              skippedExercisesOverride?.[index] === true ? "skipped" : undefined,
-            isSkipped: skippedExercisesOverride?.[index] === true,
-            repRange: exercise.repRange,
-            restSeconds: exercise.restSeconds,
-            weightsKg: (effectiveSetWeightsByExercise[index] ?? [])
-              .slice(0, exercise.sets)
-              .map(normalizeWeightValue),
-          }),
+              plannedSetsCount,
+            );
+            const isExerciseSkipped =
+              skippedExercisesOverride?.[index] === true;
+
+            return {
+              exerciseId: exercise.sourceExerciseId ?? exercise.id,
+              sourceExerciseId: exercise.sourceExerciseId ?? exercise.id,
+              exerciseName: exercise.name,
+              sets: exercise.sets,
+              plannedSetsCount: exercise.sets,
+              completedSetsCount,
+              status: isExerciseSkipped
+                ? "skipped"
+                : completedSetsCount >= plannedSetsCount && plannedSetsCount > 0
+                  ? "completed"
+                  : completedSetsCount > 0
+                    ? "partial"
+                    : "planned",
+              isSkipped: isExerciseSkipped,
+              skippedSetIndexes: buildSkippedSetIndexes(
+                plannedSetsCount,
+                completedSetsCount,
+              ),
+              repRange: exercise.repRange,
+              restSeconds: exercise.restSeconds,
+              weightsKg: (effectiveSetWeightsByExercise[index] ?? [])
+                .slice(0, exercise.sets)
+                .map(normalizeWeightValue),
+            };
+          },
         ),
       });
       clearActiveWorkoutDraft();
@@ -664,7 +775,10 @@ export default function TraningPage() {
       setRestRemainingSeconds(
         workoutDraft.exercises[
           nextTransition.type === "nextExercise"
-            ? Math.min(currentExerciseIndex + 1, workoutDraft.exercises.length - 1)
+            ? Math.min(
+                currentExerciseIndex + 1,
+                workoutDraft.exercises.length - 1,
+              )
             : currentExerciseIndex
         ]?.restSeconds ?? REST_DURATION_SECONDS,
       );
@@ -735,37 +849,40 @@ export default function TraningPage() {
     workoutDraft,
   ]);
 
-  const flushRuntimeState = useCallback((snapshotOverride = null) => {
-    if (!workoutDraft) {
-      return;
-    }
+  const flushRuntimeState = useCallback(
+    (snapshotOverride = null) => {
+      if (!workoutDraft) {
+        return;
+      }
 
-    const runtimeSnapshot = snapshotOverride ?? runtimeSnapshotRef.current;
+      const runtimeSnapshot = snapshotOverride ?? runtimeSnapshotRef.current;
 
-    if (!runtimeSnapshot) {
-      return;
-    }
+      if (!runtimeSnapshot) {
+        return;
+      }
 
-    saveActiveWorkoutRuntime({
-      scheduledWorkoutId: workoutDraft.scheduledWorkoutId,
-      startedAt: runtimeSnapshot.startedAt,
-      elapsedSeconds: runtimeSnapshot.elapsedSeconds,
-      currentExerciseIndex: runtimeSnapshot.currentExerciseIndex,
-      completedSetsByExercise: runtimeSnapshot.completedSetsByExercise,
-      exerciseElapsedSeconds: runtimeSnapshot.exerciseElapsedSeconds,
-      setWeightsByExercise: runtimeSnapshot.setWeightsByExercise,
-      skippedExercisesByIndex: runtimeSnapshot.skippedExercisesByIndex,
-      phase: runtimeSnapshot.phase,
-      restRemainingSeconds: runtimeSnapshot.restRemainingSeconds,
-      pendingTransition: runtimeSnapshot.pendingTransition,
-      restContinuePressCount: runtimeSnapshot.restContinuePressCount,
-      hasUnlockedForceContinue: runtimeSnapshot.hasUnlockedForceContinue,
-      isPaused: runtimeSnapshot.isPaused,
-      lastTickAt: runtimeSnapshot.lastTickAt,
-      pausedAt: runtimeSnapshot.pausedAt,
-      savedAt: new Date().toISOString(),
-    });
-  }, [workoutDraft]);
+      saveActiveWorkoutRuntime({
+        scheduledWorkoutId: workoutDraft.scheduledWorkoutId,
+        startedAt: runtimeSnapshot.startedAt,
+        elapsedSeconds: runtimeSnapshot.elapsedSeconds,
+        currentExerciseIndex: runtimeSnapshot.currentExerciseIndex,
+        completedSetsByExercise: runtimeSnapshot.completedSetsByExercise,
+        exerciseElapsedSeconds: runtimeSnapshot.exerciseElapsedSeconds,
+        setWeightsByExercise: runtimeSnapshot.setWeightsByExercise,
+        skippedExercisesByIndex: runtimeSnapshot.skippedExercisesByIndex,
+        phase: runtimeSnapshot.phase,
+        restRemainingSeconds: runtimeSnapshot.restRemainingSeconds,
+        pendingTransition: runtimeSnapshot.pendingTransition,
+        restContinuePressCount: runtimeSnapshot.restContinuePressCount,
+        hasUnlockedForceContinue: runtimeSnapshot.hasUnlockedForceContinue,
+        isPaused: runtimeSnapshot.isPaused,
+        lastTickAt: runtimeSnapshot.lastTickAt,
+        pausedAt: runtimeSnapshot.pausedAt,
+        savedAt: new Date().toISOString(),
+      });
+    },
+    [workoutDraft],
+  );
 
   const syncRuntimeWithClock = useCallback(
     (referenceDate = new Date()) => {
@@ -800,11 +917,8 @@ export default function TraningPage() {
             0,
           )
         : 0;
-      const { snapshot: nextSnapshot, shouldFinishWorkout } = advanceRuntimeSnapshot(
-        currentSnapshot,
-        workoutDraft,
-        deltaSeconds,
-      );
+      const { snapshot: nextSnapshot, shouldFinishWorkout } =
+        advanceRuntimeSnapshot(currentSnapshot, workoutDraft, deltaSeconds);
       const normalizedSnapshot = {
         ...nextSnapshot,
         lastTickAt: nowIso,
@@ -912,7 +1026,10 @@ export default function TraningPage() {
     window.addEventListener("pagehide", handlePageHide);
 
     return () => {
-      document.removeEventListener("visibilitychange", handlePageVisibilityChange);
+      document.removeEventListener(
+        "visibilitychange",
+        handlePageVisibilityChange,
+      );
       window.removeEventListener("pagehide", handlePageHide);
     };
   }, [flushRuntimeState, syncRuntimeWithClock, workoutDraft]);
@@ -936,25 +1053,27 @@ export default function TraningPage() {
   function handleFinishSet() {
     const actionTimestamp = new Date();
     const actionTimestampIso = actionTimestamp.toISOString();
-    const nextSetWeightsByExercise = setWeightsByExercise.map((weights, index) => {
-      if (index !== currentExerciseIndex) {
-        return weights;
-      }
+    const nextSetWeightsByExercise = setWeightsByExercise.map(
+      (weights, index) => {
+        if (index !== currentExerciseIndex) {
+          return weights;
+        }
 
-      const nextWeights = [...weights];
-      const currentWeightIndex = Math.max(currentSetNumber - 1, 0);
-      const nextWeightIndex = currentWeightIndex + 1;
+        const nextWeights = [...weights];
+        const currentWeightIndex = Math.max(currentSetNumber - 1, 0);
+        const nextWeightIndex = currentWeightIndex + 1;
 
-      if (
-        nextWeightIndex < nextWeights.length &&
-        !nextWeights[nextWeightIndex] &&
-        nextWeights[currentWeightIndex]
-      ) {
-        nextWeights[nextWeightIndex] = nextWeights[currentWeightIndex];
-      }
+        if (
+          nextWeightIndex < nextWeights.length &&
+          !nextWeights[nextWeightIndex] &&
+          nextWeights[currentWeightIndex]
+        ) {
+          nextWeights[nextWeightIndex] = nextWeights[currentWeightIndex];
+        }
 
-      return nextWeights;
-    });
+        return nextWeights;
+      },
+    );
 
     setSetWeightsByExercise(nextSetWeightsByExercise);
 
@@ -976,7 +1095,8 @@ export default function TraningPage() {
       workoutStatus: "completed",
       referenceDate: actionTimestamp,
     });
-    const hasNewAchievementUnlocks = queueAchievementUnlocks(achievementUnlocks);
+    const hasNewAchievementUnlocks =
+      queueAchievementUnlocks(achievementUnlocks);
 
     setCompletedSetsByExercise(nextCompletedSetsByExercise);
     setSkippedExercisesByIndex((previousValue) =>
@@ -1040,7 +1160,8 @@ export default function TraningPage() {
     setRestContinuePressCount(0);
     setPendingTransition(null);
     setRestRemainingSeconds(
-      workoutDraft.exercises[previousIndex]?.restSeconds ?? REST_DURATION_SECONDS,
+      workoutDraft.exercises[previousIndex]?.restSeconds ??
+        REST_DURATION_SECONDS,
     );
     setLastTickAt(actionTimestamp);
     setPausedAt(null);
@@ -1052,53 +1173,22 @@ export default function TraningPage() {
     }
 
     const actionTimestamp = new Date().toISOString();
-
-    if (currentExerciseIndex >= workoutDraft.exercises.length - 1) {
-      const nextCompletedSetsByExercise = completedSetsByExercise.map(
-        (value, index) =>
-          index === currentExerciseIndex ? currentExercise.sets : value,
-      );
-      finishWorkout(nextCompletedSetsByExercise);
-      return;
-    }
-
-    setCompletedSetsByExercise((previousValue) =>
-      previousValue.map((value, index) =>
-        index === currentExerciseIndex ? currentExercise.sets : value,
-      ),
-    );
-    setCurrentExerciseIndex((previousIndex) => previousIndex + 1);
-    setPhase("exercise");
-    setRestContinuePressCount(0);
-    setPendingTransition(null);
-    setRestRemainingSeconds(
-      workoutDraft.exercises[currentExerciseIndex + 1]?.restSeconds ??
-        REST_DURATION_SECONDS,
-    );
-    setLastTickAt(actionTimestamp);
-    setPausedAt(null);
-  }
-
-  function handleSkipCurrentExercise() {
-    if (phase === "rest" || isPaused) {
-      return;
-    }
-
-    const actionTimestamp = new Date().toISOString();
+    const currentCompletedSets =
+      completedSetsByExercise[currentExerciseIndex] ?? 0;
+    const shouldMarkExerciseSkipped = currentCompletedSets <= 0;
     const nextSkippedExercisesByIndex = skippedExercisesByIndex.map(
-      (isSkipped, index) => (index === currentExerciseIndex ? true : isSkipped),
+      (isSkipped, index) =>
+        index === currentExerciseIndex ? shouldMarkExerciseSkipped : isSkipped,
     );
-    const isLastExercise =
-      currentExerciseIndex >= workoutDraft.exercises.length - 1;
 
     setSkippedExercisesByIndex(nextSkippedExercisesByIndex);
 
-    if (isLastExercise) {
+    if (currentExerciseIndex >= workoutDraft.exercises.length - 1) {
       finishWorkout(completedSetsByExercise, null, nextSkippedExercisesByIndex);
-      return;
+    } else {
+      setCurrentExerciseIndex((previousIndex) => previousIndex + 1);
     }
 
-    setCurrentExerciseIndex((previousIndex) => previousIndex + 1);
     setPhase("exercise");
     setRestContinuePressCount(0);
     setPendingTransition(null);
@@ -1282,14 +1372,22 @@ export default function TraningPage() {
 
             {isCurrentExerciseSkipped ? (
               <div className="inline-flex rounded-full border border-[#7B4F4F] bg-[#321C1C] px-3 py-1 text-[11px] uppercase tracking-[0.16em] text-[#FFB3B3]">
-                РџСЂРѕРїСѓС‰РµРЅРѕ
+                Пропущено
+              </div>
+            ) : null}
+
+            {isCurrentExerciseSkipped && currentExerciseIndex < -1 ? (
+              <div className="inline-flex rounded-full border border-[#7B4F4F] bg-[#321C1C] px-3 py-1 text-[11px] uppercase tracking-[0.16em] text-[#FFB3B3]">
+                Пропущено
               </div>
             ) : null}
           </div>
 
           {isPaused ? (
             <div className="mt-3 rounded-2xl border border-[#30425C] bg-[#102338] px-4 py-3">
-              <p className="text-sm font-medium text-[var(--text-primary)]">Тренировка на паузе</p>
+              <p className="text-sm font-medium text-[var(--text-primary)]">
+                Тренировка на паузе
+              </p>
               <p className="mt-1 text-sm leading-6 text-[#BFD6F0]">
                 Таймер остановлен. Можно продолжить позже без потери прогресса.
               </p>
@@ -1350,7 +1448,9 @@ export default function TraningPage() {
                 На упражнении
               </p>
               <p className="mt-1 overflow-hidden text-xl font-medium text-[var(--text-primary)] text-ellipsis whitespace-nowrap">
-                {formatDuration(exerciseElapsedSeconds[currentExerciseIndex] ?? 0)}
+                {formatDuration(
+                  exerciseElapsedSeconds[currentExerciseIndex] ?? 0,
+                )}
               </p>
             </div>
           </div>
@@ -1384,7 +1484,9 @@ export default function TraningPage() {
             <button
               type="button"
               onClick={handlePreviousExercise}
-              disabled={currentExerciseIndex === 0 || phase === "rest" || isPaused}
+              disabled={
+                currentExerciseIndex === 0 || phase === "rest" || isPaused
+              }
               className="flex h-14 w-14 items-center justify-center rounded-full border border-[var(--border-primary)] bg-[var(--surface-secondary)] text-[var(--text-primary)] disabled:opacity-35"
               aria-label="Вернуться к прошлому упражнению"
             >
@@ -1401,7 +1503,9 @@ export default function TraningPage() {
                   : "bg-[var(--accent-primary)] text-[var(--accent-contrast)]"
               } ${isPaused ? "opacity-40" : ""}`}
               aria-label={
-                phase === "rest" ? "Ожидание окончания отдыха" : "Закончить подход"
+                phase === "rest"
+                  ? "Ожидание окончания отдыха"
+                  : "Закончить подход"
               }
             >
               <FinishSetIcon />
@@ -1417,18 +1521,11 @@ export default function TraningPage() {
               <NextIcon />
             </button>
           </div>
-
-          <button
-            type="button"
-            onClick={handleSkipCurrentExercise}
-            disabled={phase === "rest" || isPaused}
-            className="mt-3 w-full rounded-2xl border border-[#7B4F4F] bg-[#321C1C] px-4 py-3 text-sm font-medium text-[#FFB3B3] disabled:opacity-40"
-          >
-            Skip exercise
-          </button>
         </section>
 
-        <p className="px-1 text-lg font-medium text-[var(--text-primary)]">Следующее упражнение</p>
+        <p className="px-1 text-lg font-medium text-[var(--text-primary)]">
+          Следующее упражнение
+        </p>
 
         <section className="rounded-[22px] border border-[var(--border-primary)] bg-[var(--surface-primary)] px-4 py-3">
           <p
@@ -1461,7 +1558,7 @@ export default function TraningPage() {
             <p className="text-xs uppercase tracking-[0.18em] text-[var(--text-muted)]">
               Выход из тренировки
             </p>
-            <h2 className="mt-2 text-xl font-medium text-[var(--text-primary)]">
+            <h2 className="mt-2 text-xl font-medium text-(--text-primary)">
               Что сделать с текущей сессией?
             </h2>
             <p className="mt-2 text-sm leading-6 text-[var(--text-muted)]">

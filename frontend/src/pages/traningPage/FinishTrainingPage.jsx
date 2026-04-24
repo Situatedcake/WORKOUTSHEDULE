@@ -22,6 +22,34 @@ function formatWeightValue(value) {
     : `${numericValue.toFixed(1)} кг`;
 }
 
+function getPlannedSetsCount(exercise) {
+  return Math.max(
+    Number(exercise?.plannedSetsCount) || 0,
+    Number(exercise?.sets) || 0,
+    Array.isArray(exercise?.weightsKg) ? exercise.weightsKg.length : 0,
+  );
+}
+
+function getCompletedSetsCount(exercise, plannedSetsCount) {
+  return Math.max(
+    Math.min(Number(exercise?.completedSetsCount) || 0, plannedSetsCount),
+    0,
+  );
+}
+
+function buildSkippedSetIndexes(exercise, plannedSetsCount, completedSetsCount) {
+  if (Array.isArray(exercise?.skippedSetIndexes) && exercise.skippedSetIndexes.length) {
+    return exercise.skippedSetIndexes
+      .map((index) => Number(index))
+      .filter((index) => Number.isInteger(index) && index >= 0 && index < plannedSetsCount);
+  }
+
+  return Array.from(
+    { length: Math.max(plannedSetsCount - completedSetsCount, 0) },
+    (_, index) => completedSetsCount + index,
+  );
+}
+
 function SummaryCard({ label, value, caption }) {
   return (
     <div className="rounded-2xl bg-[var(--surface-secondary)] px-4 py-4">
@@ -51,18 +79,45 @@ export default function FinishTrainingPage() {
   const exerciseStats = useMemo(
     () =>
       Array.isArray(resultDraft?.exerciseSetWeights)
-        ? resultDraft.exerciseSetWeights.map((exercise) => ({
-            ...exercise,
-            weightsKg: Array.isArray(exercise.weightsKg)
+        ? resultDraft.exerciseSetWeights.map((exercise) => {
+            const weightsKg = Array.isArray(exercise.weightsKg)
               ? exercise.weightsKg
-              : [],
-            status:
-              typeof exercise.status === "string" && exercise.status.trim()
-                ? exercise.status.trim()
-                : exercise.isSkipped
-                  ? "skipped"
-                  : "completed",
-          }))
+              : [];
+            const plannedSetsCount = getPlannedSetsCount(exercise);
+            const completedSetsCount = getCompletedSetsCount(
+              exercise,
+              plannedSetsCount,
+            );
+            const skippedSetIndexes = buildSkippedSetIndexes(
+              exercise,
+              plannedSetsCount,
+              completedSetsCount,
+            );
+            const skippedSetIndexSet = new Set(skippedSetIndexes);
+            const isFullySkippedExercise =
+              (typeof exercise.status === "string" &&
+                exercise.status.trim() === "skipped") ||
+              exercise.isSkipped === true ||
+              (plannedSetsCount > 0 &&
+                skippedSetIndexes.length >= plannedSetsCount &&
+                completedSetsCount === 0);
+
+            const sets = Array.from({ length: plannedSetsCount }, (_, setIndex) => ({
+              index: setIndex,
+              weightValue: weightsKg[setIndex] ?? null,
+              isSkipped: skippedSetIndexSet.has(setIndex),
+            }));
+
+            return {
+              ...exercise,
+              weightsKg,
+              plannedSetsCount,
+              completedSetsCount,
+              skippedSetIndexes,
+              isFullySkippedExercise,
+              sets,
+            };
+          })
         : [],
     [resultDraft?.exerciseSetWeights],
   );
@@ -199,23 +254,30 @@ export default function FinishTrainingPage() {
                   <h3 className="text-base font-medium text-[var(--text-primary)]">
                     {exercise.exerciseName}
                   </h3>
-                  {exercise.status === "skipped" ? (
+                  {exercise.isFullySkippedExercise ? (
                     <p className="mt-1 text-xs uppercase tracking-[0.14em] text-[#FFB3B3]">
-                      Skipped
+                      Пропущено
                     </p>
                   ) : null}
 
                   <div className="mt-3 flex flex-col gap-2">
-                    {exercise.weightsKg.map((weightValue, setIndex) => (
+                    {exercise.sets.map((setEntry) => (
                       <div
-                        key={`${exercise.exerciseId ?? exercise.exerciseName}_${setIndex + 1}`}
+                        key={`${exercise.exerciseId ?? exercise.exerciseName}_${setEntry.index + 1}`}
                         className="flex items-center justify-between rounded-xl border border-[var(--border-primary)] bg-[var(--surface-primary)] px-3 py-3"
                       >
-                        <span className="text-sm text-[var(--text-muted)]">
-                          Подход {setIndex + 1}
-                        </span>
+                        <div className="flex flex-col items-start gap-1">
+                          {setEntry.isSkipped && !exercise.isFullySkippedExercise ? (
+                            <span className="text-[10px] uppercase tracking-[0.14em] text-[#FFB3B3]">
+                              Пропущено
+                            </span>
+                          ) : null}
+                          <span className="text-sm text-[var(--text-muted)]">
+                            Подход {setEntry.index + 1}
+                          </span>
+                        </div>
                         <span className="text-sm font-medium text-[var(--text-primary)]">
-                          {formatWeightValue(weightValue)}
+                          {formatWeightValue(setEntry.weightValue)}
                         </span>
                       </div>
                     ))}
