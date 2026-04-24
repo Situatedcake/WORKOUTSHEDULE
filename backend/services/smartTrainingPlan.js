@@ -5,8 +5,9 @@ import { hasTagIntersection, normalizeTag, normalizeTagArray } from "./exerciseC
 import { buildTrainingFeatures } from "./trainingFeatureBuilder.js";
 import { generateWorkoutAdvanced } from "./workoutGenerator.js";
 import {
-  TRAINING_PLAN_BLUEPRINTS,
   TRAINING_PLAN_LIBRARY,
+  getPlanSessions,
+  normalizeWorkoutsPerWeekValue,
 } from "../data/trainingPlanCatalog.js";
 import {
   EXERCISES_PER_SESSION,
@@ -14,8 +15,6 @@ import {
   getLevelConfig,
   resolveTemplateExerciseType,
 } from "../shared/trainingPlanBuilder.js";
-
-const FOCUS_BLUEPRINTS = TRAINING_PLAN_BLUEPRINTS;
 
 function normalizeArray(value) {
   return Array.isArray(value) ? value : [];
@@ -28,7 +27,7 @@ function createPlanId(focusKey) {
 function getFocusMeta(focusKey) {
   return (
     TRAINING_GOALS.find((item) => item.key === focusKey) ??
-    TRAINING_GOALS.find((item) => item.key === "general-strength") ?? {
+    TRAINING_GOALS[0] ?? {
       key: focusKey,
       label: focusKey,
       description: "",
@@ -85,7 +84,7 @@ function buildBlueprintSlotsFromPool(sessionBlueprint, focusDefinition) {
 }
 
 function buildLibraryBlueprint(focusDefinition, workoutsPerWeek) {
-  const librarySessions = normalizeArray(focusDefinition?.sessions);
+  const librarySessions = getPlanSessions(focusDefinition, workoutsPerWeek);
 
   if (librarySessions.length === 0) {
     return [];
@@ -136,10 +135,19 @@ function buildLibraryBlueprint(focusDefinition, workoutsPerWeek) {
 function getFocusBlueprint(focusKey, workoutsPerWeek) {
   const focusDefinition = getLibraryFocusDefinition(focusKey);
   const derivedBlueprint = buildLibraryBlueprint(focusDefinition, workoutsPerWeek);
-  const blueprint =
-    FOCUS_BLUEPRINTS[focusKey] ??
-    (derivedBlueprint.length > 0 ? derivedBlueprint : null) ??
-    FOCUS_BLUEPRINTS["general-strength"];
+  const fallbackFocusDefinition =
+    focusDefinition?.key === "full-body-unified"
+      ? TRAINING_PLAN_LIBRARY[0] ?? null
+      : getLibraryFocusDefinition("full-body-unified");
+  const fallbackBlueprint =
+    derivedBlueprint.length > 0
+      ? derivedBlueprint
+      : buildLibraryBlueprint(fallbackFocusDefinition, workoutsPerWeek);
+  const blueprint = fallbackBlueprint.length > 0 ? fallbackBlueprint : [];
+
+  if (blueprint.length === 0) {
+    return [];
+  }
 
   return Array.from({ length: workoutsPerWeek }, (_, index) => {
     const sessionBlueprint = blueprint[index % blueprint.length];
@@ -412,7 +420,7 @@ export function generateSmartTrainingPlan({
   focusKey,
   workoutsPerWeek,
 }) {
-  const normalizedWorkoutsPerWeek = Math.min(Math.max(Number(workoutsPerWeek) || 3, 2), 5);
+  const normalizedWorkoutsPerWeek = normalizeWorkoutsPerWeekValue(workoutsPerWeek, 3);
   const trainingFeatures =
     prebuiltTrainingFeatures ??
     buildTrainingFeatures({

@@ -34,7 +34,7 @@ export default function NavMenu() {
   const { theme } = useTheme();
 
   return (
-    <nav className="fixed inset-x-0 bottom-0 z-50 flex justify-center px-4 pb-[calc(10px+env(safe-area-inset-bottom))]">
+    <nav className="fixed inset-x-0 bottom-0 z-50 flex justify-center px-4 pb-[calc(15px+env(safe-area-inset-bottom))]">
       <div className="flex w-full max-w-md items-center justify-evenly rounded-4xl border border-[var(--border-soft)] bg-[var(--surface-primary-92)] py-[1px] shadow-[0_12px_32px_rgba(0,0,0,0.28)] backdrop-blur-md">
         {navItems.map(({ to, iconKey, iconActiveKey, label }) => (
           <NavLink

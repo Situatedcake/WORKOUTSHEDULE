@@ -20,6 +20,11 @@ import {
   normalizeTrainingMlFeedbackHistory,
 } from "../services/trainingMlFeedback.js";
 import { createWorkoutHistoryEntry } from "../services/workoutHistory.js";
+import {
+  hashPassword,
+  isPasswordHash,
+  verifyPassword,
+} from "../services/passwordHash.js";
 
 function findUserByLogin(users, login) {
   const normalizedLogin = normalizeUserName(login);
@@ -122,9 +127,23 @@ export const jsonUserRepository = {
   async login({ login, password }) {
     const database = await readDatabase();
     const user = findUserByLogin(database.users, login);
+    const isPasswordValid = await verifyPassword(user?.password, password);
 
-    if (!user || user.password !== password) {
+    if (!user || !isPasswordValid) {
       return null;
+    }
+
+    if (!isPasswordHash(user.password)) {
+      const userIndex = database.users.findIndex((item) => item.id === user.id);
+
+      if (userIndex !== -1) {
+        database.users[userIndex] = {
+          ...database.users[userIndex],
+          password: await hashPassword(password),
+          updatedAt: new Date().toISOString(),
+        };
+        await writeDatabase(database);
+      }
     }
 
     return this.getById(user.id);
@@ -140,11 +159,12 @@ export const jsonUserRepository = {
     }
 
     const timestamp = new Date().toISOString();
+    const passwordHash = await hashPassword(password);
     const nextUser = {
       id: createUserId(),
       login: trimmedLogin,
       name: trimmedLogin,
-      password,
+      password: passwordHash,
       email: null,
       gender: "not_specified",
       profilePhoto: null,
@@ -192,7 +212,9 @@ export const jsonUserRepository = {
       name: trimmedName || currentUser.name,
       email: String(email ?? "").trim() || null,
       gender: normalizeGenderValue(gender ?? currentUser.gender),
-      password: String(password ?? "").trim() || currentUser.password,
+      password: String(password ?? "").trim()
+        ? await hashPassword(password)
+        : currentUser.password,
       profilePhoto: profilePhoto || currentUser.profilePhoto || null,
       updatedAt: new Date().toISOString(),
     };

@@ -106,12 +106,36 @@ function mergeTrainingFeedbackHistory(existingHistory = [], nextEvents = []) {
 
 function buildWorkoutOutcomeFeedbackEvents(workoutHistoryEntry, source = "workout_result") {
   const status = workoutHistoryEntry?.status;
+  const exerciseSkippedEvents = Array.isArray(workoutHistoryEntry?.exerciseSetWeights)
+    ? workoutHistoryEntry.exerciseSetWeights
+        .filter((exercise) => exercise?.status === "skipped")
+        .map((exercise) =>
+          normalizeTrainingFeedbackEvent({
+            type: "exercise_skipped",
+            source,
+            trainingPlanId: workoutHistoryEntry.trainingPlanId ?? null,
+            scheduledWorkoutId: workoutHistoryEntry.scheduledWorkoutId ?? null,
+            sessionId: workoutHistoryEntry.sessionId ?? null,
+            sessionIndex: workoutHistoryEntry.sessionIndex ?? null,
+            exerciseId: exercise.exerciseId ?? null,
+            sourceExerciseId: exercise.sourceExerciseId ?? exercise.exerciseId ?? null,
+            exerciseName: exercise.exerciseName ?? null,
+            metadata: {
+              title: workoutHistoryEntry.title ?? null,
+              date: workoutHistoryEntry.date ?? null,
+              plannedSetsCount: exercise.plannedSetsCount ?? exercise.sets ?? 0,
+              completedSetsCount: exercise.completedSetsCount ?? 0,
+            },
+          }),
+        )
+    : [];
 
   if (status !== "skipped" && status !== "partial") {
-    return [];
+    return exerciseSkippedEvents;
   }
 
   return [
+    ...exerciseSkippedEvents,
     normalizeTrainingFeedbackEvent({
       type: status === "skipped" ? "workout_skipped" : "workout_partial",
       source,
@@ -1066,6 +1090,12 @@ export const mockUserStorage = {
               weightsKg.length,
             ),
             completedSetsCount: weightsKg.filter((value) => value != null).length,
+            status:
+              exercise?.isSkipped === true || exercise?.status === "skipped"
+                ? "skipped"
+                : undefined,
+            isSkipped:
+              exercise?.isSkipped === true || exercise?.status === "skipped",
             weightsKg,
           };
         })

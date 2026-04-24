@@ -1,4 +1,8 @@
-import { TRAINING_PLAN_LIBRARY } from "../data/trainingPlanCatalog.js";
+import {
+  TRAINING_PLAN_LIBRARY,
+  getPlanSessions,
+  normalizeWorkoutsPerWeekValue,
+} from "../data/trainingPlanCatalog.js";
 import { normalizeTag, normalizeTagArray } from "./exerciseCatalogUtils.js";
 
 export { buildTastingQuestionsPayload } from "../features/tasting/services/questionsPayload.js";
@@ -93,7 +97,7 @@ function normalizeWorkoutsPerWeekList(plan = {}) {
     return explicitOptions;
   }
 
-  const sessionCount = Array.isArray(plan.sessions) ? plan.sessions.length : 0;
+  const sessionCount = getPlanSessions(plan, 3).length;
 
   if (WORKOUTS_PER_WEEK_OPTIONS.includes(sessionCount)) {
     return [sessionCount];
@@ -117,7 +121,7 @@ function hasPlanTag(plan, expectedTags = []) {
 }
 
 function getPlanAverageSessionDuration(plan = {}) {
-  const sessions = Array.isArray(plan.sessions) ? plan.sessions : [];
+  const sessions = getPlanSessions(plan, normalizeWorkoutsPerWeekValue(3));
   return average(sessions.map((session) => session.duration));
 }
 
@@ -148,7 +152,7 @@ function normalizeIntensityValue(value) {
 }
 
 function getPlanAverageIntensity(plan = {}) {
-  const sessions = Array.isArray(plan.sessions) ? plan.sessions : [];
+  const sessions = getPlanSessions(plan, normalizeWorkoutsPerWeekValue(3));
   return average(
     sessions
       .map((session) => normalizeIntensityValue(session.intensity))
@@ -157,7 +161,7 @@ function getPlanAverageIntensity(plan = {}) {
 }
 
 function getPlanAverageRecoveryDemand(plan = {}) {
-  const sessions = Array.isArray(plan.sessions) ? plan.sessions : [];
+  const sessions = getPlanSessions(plan, normalizeWorkoutsPerWeekValue(3));
   return average(
     sessions
       .map((session) => normalizeIntensityValue(session.recoveryDemand))

@@ -16,6 +16,11 @@ import {
   normalizeTrainingMlFeedbackHistory,
 } from "../services/trainingMlFeedback.js";
 import { createWorkoutHistoryEntry } from "../services/workoutHistory.js";
+import {
+  hashPassword,
+  isPasswordHash,
+  verifyPassword,
+} from "../services/passwordHash.js";
 
 function parseJsonField(value) {
   if (!value) {
@@ -166,6 +171,20 @@ async function findUserRowByName(name) {
   return rows[0] ?? null;
 }
 
+async function updateUserPasswordHash(userId, passwordHash) {
+  const pool = getMySqlPool();
+  const timestamp = new Date().toISOString().slice(0, 19).replace("T", " ");
+
+  await pool.execute(
+    `
+      UPDATE users
+      SET password = ?, updated_at = ?
+      WHERE id = ?
+    `,
+    [passwordHash, timestamp, userId],
+  );
+}
+
 export const mysqlUserRepository = {
   async getById(userId) {
     const userRow = await findUserRowById(userId);
@@ -185,9 +204,14 @@ export const mysqlUserRepository = {
 
   async login({ login, password }) {
     const userRow = await findUserRowByLogin(login);
+    const isPasswordValid = await verifyPassword(userRow?.password, password);
 
-    if (!userRow || userRow.password !== password) {
+    if (!userRow || !isPasswordValid) {
       return null;
+    }
+
+    if (!isPasswordHash(userRow.password)) {
+      await updateUserPasswordHash(userRow.id, await hashPassword(password));
     }
 
     return this.getById(userRow.id);
@@ -204,6 +228,7 @@ export const mysqlUserRepository = {
     const pool = getMySqlPool();
     const userId = `user_${randomUUID()}`;
     const timestamp = new Date().toISOString().slice(0, 19).replace("T", " ");
+    const passwordHash = await hashPassword(password);
 
     await pool.execute(
       `
@@ -230,7 +255,7 @@ export const mysqlUserRepository = {
         userId,
         trimmedLogin,
         trimmedLogin,
-        password,
+        passwordHash,
         null,
         "not_specified",
         null,
@@ -279,7 +304,9 @@ export const mysqlUserRepository = {
         trimmedName || currentUserRow.name,
         String(email ?? "").trim() || null,
         normalizeGenderValue(gender ?? currentUserRow.gender),
-        String(password ?? "").trim() || currentUserRow.password,
+        String(password ?? "").trim()
+          ? await hashPassword(password)
+          : currentUserRow.password,
         profilePhoto || currentUserRow.profile_photo || null,
         timestamp,
         userId,

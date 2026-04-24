@@ -1,4 +1,8 @@
-import { TRAINING_PLAN_LIBRARY } from "../data/trainingPlanCatalog.js";
+import {
+  TRAINING_PLAN_LIBRARY,
+  getPlanSessions,
+  normalizeWorkoutsPerWeekValue,
+} from "../data/trainingPlanCatalog.js";
 
 export const WORKOUTS_PER_WEEK_OPTIONS = [2, 3, 4, 5];
 export const EXERCISES_PER_SESSION = 6;
@@ -183,10 +187,6 @@ function getFocusDefinition(focusKey) {
   );
 }
 
-function normalizeWorkoutsPerWeek(workoutsPerWeek) {
-  return Math.min(Math.max(Number(workoutsPerWeek) || 3, 2), 5);
-}
-
 function createPlanId(focusKey) {
   return `plan_${Date.now()}_${focusKey}`;
 }
@@ -277,12 +277,10 @@ export function createTrainingPlanDraft({
   focusKey,
   trainingLevel,
 }) {
-  const normalizedWorkoutsPerWeek = normalizeWorkoutsPerWeek(workoutsPerWeek);
+  const normalizedWorkoutsPerWeek = normalizeWorkoutsPerWeekValue(workoutsPerWeek);
   const focusDefinition = getFocusDefinition(focusKey);
   const planId = createPlanId(focusDefinition.key);
-  const focusSessions = Array.isArray(focusDefinition.sessions)
-    ? focusDefinition.sessions
-    : [];
+  const focusSessions = getPlanSessions(focusDefinition, normalizedWorkoutsPerWeek);
 
   return Array.from({ length: normalizedWorkoutsPerWeek }, (_, index) => {
     const template = focusSessions[index % Math.max(focusSessions.length, 1)] ?? {};
@@ -310,9 +308,7 @@ export function buildTrainingPlan({
     focusKey: focusDefinition.key,
     trainingLevel: normalizedTrainingLevel,
   });
-  const focusSessions = Array.isArray(focusDefinition.sessions)
-    ? focusDefinition.sessions
-    : [];
+  const focusSessions = getPlanSessions(focusDefinition, draftSessions.length);
   const levelConfig = getLevelConfig(normalizedTrainingLevel);
 
   const sessions = draftSessions.map((draftSession, index) => {

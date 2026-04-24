@@ -10,11 +10,11 @@ import {
 
 const RATING_TIERS = [
   { key: "starter", label: "Старт", minScore: 0 },
-  { key: "bronze", label: "Бронза", minScore: 200 },
-  { key: "silver", label: "Серебро", minScore: 450 },
-  { key: "gold", label: "Золото", minScore: 800 },
-  { key: "platinum", label: "Платина", minScore: 1200 },
-  { key: "legend", label: "Легенда", minScore: 1700 },
+  { key: "bronze", label: "Бронза", minScore: 500 },
+  { key: "silver", label: "Серебро", minScore: 1000 },
+  { key: "gold", label: "Золото", minScore: 2000 },
+  { key: "platinum", label: "Платина", minScore: 4500 },
+  { key: "legend", label: "Легенда", minScore: 7000 },
 ];
 
 const RARITY_PRIORITY = {
@@ -23,6 +23,8 @@ const RARITY_PRIORITY = {
   epic: 2,
   legendary: 3,
 };
+
+const RATING_REWARD_DIVISOR = 4;
 
 function formatDateKey(date = new Date()) {
   const year = date.getFullYear();
@@ -185,7 +187,11 @@ function buildAchievement({
     unlocked: Boolean(unlocked),
     current: safeCurrent,
     target: safeTarget,
-    progressPercent: clamp(Math.round((safeCurrent / safeTarget) * 100), 0, 100),
+    progressPercent: clamp(
+      Math.round((safeCurrent / safeTarget) * 100),
+      0,
+      100,
+    ),
     accentColor,
   };
 }
@@ -393,8 +399,8 @@ function buildGamificationMetrics(user, todayDateKey) {
   const completedTestCount = typeof user?.lastTestScore === "number" ? 1 : 0;
   const trainingPlanCount = Boolean(
     user?.trainingPlan &&
-      Array.isArray(user.trainingPlan.sessions) &&
-      user.trainingPlan.sessions.length > 0,
+    Array.isArray(user.trainingPlan.sessions) &&
+    user.trainingPlan.sessions.length > 0,
   )
     ? 1
     : 0;
@@ -420,7 +426,7 @@ function buildGamificationMetrics(user, todayDateKey) {
 }
 
 function buildRatingBreakdown(metrics, unlockedAchievementsCount) {
-  const breakdown = [
+  const rawBreakdown = [
     {
       key: "test",
       label: "Тест",
@@ -468,6 +474,11 @@ function buildRatingBreakdown(metrics, unlockedAchievementsCount) {
       points: unlockedAchievementsCount * 30,
     },
   ];
+
+  const breakdown = rawBreakdown.map((entry) => ({
+    ...entry,
+    points: Math.round(Math.max(entry.points, 0) / RATING_REWARD_DIVISOR),
+  }));
 
   const score = breakdown.reduce(
     (total, item) => total + Math.max(item.points, 0),

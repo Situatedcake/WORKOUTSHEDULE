@@ -276,6 +276,55 @@ export function getTopExercisesByTrackedWeight(workoutHistory = [], limit = 3) {
     .slice(0, limit);
 }
 
+function getTopSkippedExercises(workoutHistory = [], limit = 6) {
+  const skippedMap = new Map();
+
+  workoutHistory.forEach((workout) => {
+    (workout.exerciseSetWeights ?? []).forEach((exercise) => {
+      const isSkipped =
+        exercise?.status === "skipped" || exercise?.isSkipped === true;
+
+      if (!isSkipped) {
+        return;
+      }
+
+      const exerciseName =
+        typeof exercise.exerciseName === "string" && exercise.exerciseName.trim()
+          ? exercise.exerciseName.trim()
+          : "Упражнение";
+      const currentEntry = skippedMap.get(exerciseName) ?? {
+        exerciseName,
+        skippedCount: 0,
+        lastSkippedAt: null,
+      };
+      const skippedAt = workout.completedAt ?? workout.date ?? null;
+
+      skippedMap.set(exerciseName, {
+        exerciseName,
+        skippedCount: currentEntry.skippedCount + 1,
+        lastSkippedAt: skippedAt,
+      });
+    });
+  });
+
+  return Array.from(skippedMap.values())
+    .sort((left, right) => {
+      if (right.skippedCount !== left.skippedCount) {
+        return right.skippedCount - left.skippedCount;
+      }
+
+      const leftDate = String(left.lastSkippedAt ?? "");
+      const rightDate = String(right.lastSkippedAt ?? "");
+      return rightDate.localeCompare(leftDate);
+    })
+    .slice(0, limit)
+    .map((item) => ({
+      ...item,
+      label: item.exerciseName,
+      value: item.skippedCount,
+    }));
+}
+
 function buildLoadTrend(workoutHistory = [], currentDateKey, bucketCount = 6) {
   const productiveWorkouts = workoutHistory.filter((workout) =>
     isProductiveWorkoutStatus(workout.status),
@@ -500,6 +549,7 @@ export function buildWorkoutStats(
       0,
     ),
     topExercises: getTopExercisesByTrackedWeight(productiveWorkouts),
+    topSkippedExercises: getTopSkippedExercises(filteredWorkoutHistory),
     recentWorkouts: filteredWorkoutHistory.slice(-6).reverse(),
     statusBreakdown,
     loadTrend: buildLoadTrend(productiveWorkouts, todayDateKey),

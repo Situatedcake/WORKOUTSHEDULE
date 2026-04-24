@@ -133,6 +133,7 @@ function buildFeedbackFeatures(trainingMlFeedbackHistory = []) {
   const countsByType = {
     exercise_removed: 0,
     exercise_replaced: 0,
+    exercise_skipped: 0,
     sets_decreased: 0,
     workout_skipped: 0,
     workout_partial: 0,
@@ -145,6 +146,7 @@ function buildFeedbackFeatures(trainingMlFeedbackHistory = []) {
   const recentBehaviorLoad = sum([
     countsByType.exercise_removed,
     countsByType.exercise_replaced,
+    countsByType.exercise_skipped,
     countsByType.sets_decreased,
   ]);
 

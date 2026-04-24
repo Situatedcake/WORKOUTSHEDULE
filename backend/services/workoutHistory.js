@@ -26,14 +26,25 @@ function normalizeExerciseSetWeightEntry(exerciseEntry = {}) {
     weightsKg.length,
   );
   const completedSetsCount = weightsKg.filter((value) => value != null).length;
+  const isSkippedFlag =
+    exerciseEntry?.isSkipped === true || exerciseEntry?.status === "skipped";
+  const status = isSkippedFlag
+    ? "skipped"
+    : completedSetsCount >= plannedSetsCount && plannedSetsCount > 0
+      ? "completed"
+      : completedSetsCount > 0
+        ? "partial"
+        : "planned";
 
   return {
     exerciseId: exerciseEntry.exerciseId ?? null,
     sourceExerciseId: exerciseEntry.sourceExerciseId ?? exerciseEntry.exerciseId ?? null,
-    exerciseName: normalizeString(exerciseEntry.exerciseName, "Упражнение"),
+    exerciseName: normalizeString(exerciseEntry.exerciseName, "РЈРїСЂР°Р¶РЅРµРЅРёРµ"),
     sets: normalizeNumber(exerciseEntry.sets, plannedSetsCount),
     plannedSetsCount,
     completedSetsCount,
+    status,
+    isSkipped: status === "skipped",
     repRange: normalizeString(exerciseEntry.repRange),
     restSeconds: normalizeNumber(exerciseEntry.restSeconds, 0),
     weightsKg,
@@ -116,7 +127,7 @@ export function normalizeWorkoutHistoryEntry(entry = {}) {
     trainingPlanId: entry.trainingPlanId ?? null,
     sessionId: entry.sessionId ?? null,
     sessionIndex: normalizeNullableNumber(entry.sessionIndex),
-    title: normalizeString(entry.title, "Тренировка"),
+    title: normalizeString(entry.title, "РўСЂРµРЅРёСЂРѕРІРєР°"),
     emphasis: normalizeString(entry.emphasis),
     date: normalizeString(entry.date),
     time: normalizeString(entry.time),
@@ -194,7 +205,7 @@ export function createWorkoutHistoryEntry({
     trainingPlanId: trainingPlan?.id ?? null,
     sessionId: scheduledWorkout?.sessionId ?? null,
     sessionIndex: scheduledWorkout?.sessionIndex ?? null,
-    title: scheduledWorkout?.title ?? "Тренировка",
+    title: scheduledWorkout?.title ?? "РўСЂРµРЅРёСЂРѕРІРєР°",
     emphasis: scheduledWorkout?.emphasis ?? "",
     date: scheduledWorkout?.date ?? "",
     time: scheduledWorkout?.time ?? "",

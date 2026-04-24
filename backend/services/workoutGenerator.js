@@ -404,6 +404,18 @@ function scoreReadinessAndFeedback(exercise, trainingFeatures) {
     score += exercise.compound ? -1 : 1;
   }
 
+  if (feedback.countsByType.exercise_skipped >= 3) {
+    if (exercise.difficulty >= 3) {
+      score -= 3;
+    } else if (exercise.difficulty === 1) {
+      score += 1;
+    }
+
+    if (exercise.compound) {
+      score -= 1;
+    }
+  }
+
   return score;
 }
 

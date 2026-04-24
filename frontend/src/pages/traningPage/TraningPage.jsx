@@ -150,6 +150,10 @@ function createExerciseSetWeights(exercises = []) {
   );
 }
 
+function createSkippedExerciseFlags(exercises = []) {
+  return Array.from({ length: exercises.length }, () => false);
+}
+
 function normalizeWeightValue(value) {
   const normalizedValue = String(value ?? "").trim().replace(",", ".");
 
@@ -175,6 +179,10 @@ function normalizeWeightMatrix(exercises = [], savedMatrix = []) {
   });
 }
 
+function normalizeSkippedFlags(exercises = [], savedFlags = []) {
+  return exercises.map((_, index) => Boolean(savedFlags?.[index]));
+}
+
 function buildInitialRuntimeState(workoutDraft, runtimeState) {
   const exerciseCount = workoutDraft?.exercises?.length ?? 0;
   const nowIso = new Date().toISOString();
@@ -194,6 +202,7 @@ function buildInitialRuntimeState(workoutDraft, runtimeState) {
       completedSetsByExercise: Array.from({ length: exerciseCount }, () => 0),
       exerciseElapsedSeconds: Array.from({ length: exerciseCount }, () => 0),
       setWeightsByExercise: createExerciseSetWeights(workoutDraft.exercises),
+      skippedExercisesByIndex: createSkippedExerciseFlags(workoutDraft.exercises),
       phase: "exercise",
       restRemainingSeconds:
         workoutDraft.exercises[0]?.restSeconds ?? REST_DURATION_SECONDS,
@@ -224,6 +233,10 @@ function buildInitialRuntimeState(workoutDraft, runtimeState) {
     setWeightsByExercise: normalizeWeightMatrix(
       workoutDraft.exercises,
       runtimeState.setWeightsByExercise,
+    ),
+    skippedExercisesByIndex: normalizeSkippedFlags(
+      workoutDraft.exercises,
+      runtimeState.skippedExercisesByIndex,
     ),
     phase: runtimeState.phase === "rest" ? "rest" : "exercise",
     restRemainingSeconds: Math.max(
@@ -266,6 +279,7 @@ function cloneRuntimeSnapshot(snapshot) {
     setWeightsByExercise: (snapshot?.setWeightsByExercise ?? []).map((weights) => [
       ...(weights ?? []),
     ]),
+    skippedExercisesByIndex: [...(snapshot?.skippedExercisesByIndex ?? [])],
     pendingTransition:
       snapshot?.pendingTransition && typeof snapshot.pendingTransition === "object"
         ? { ...snapshot.pendingTransition }
@@ -402,6 +416,9 @@ export default function TraningPage() {
   const [setWeightsByExercise, setSetWeightsByExercise] = useState(
     () => initialRuntimeState?.setWeightsByExercise ?? [],
   );
+  const [skippedExercisesByIndex, setSkippedExercisesByIndex] = useState(
+    () => initialRuntimeState?.skippedExercisesByIndex ?? [],
+  );
   const [phase, setPhase] = useState(
     () => initialRuntimeState?.phase ?? "exercise",
   );
@@ -450,6 +467,7 @@ export default function TraningPage() {
     elapsedSeconds: initialRuntimeState?.elapsedSeconds ?? 0,
     completedSetsByExercise: initialRuntimeState?.completedSetsByExercise ?? [],
     setWeightsByExercise: initialRuntimeState?.setWeightsByExercise ?? [],
+    skippedExercisesByIndex: initialRuntimeState?.skippedExercisesByIndex ?? [],
     trainingPlanId: currentUser?.trainingPlan?.id ?? null,
   });
   const activeAchievementUnlock = achievementUnlockQueue[0] ?? null;
@@ -485,6 +503,8 @@ export default function TraningPage() {
     setWeightsByExercise[currentExerciseIndex]?.[
       Math.max(currentSetNumber - 1, 0)
     ] ?? "";
+  const isCurrentExerciseSkipped =
+    skippedExercisesByIndex[currentExerciseIndex] === true;
 
   useEffect(() => {
     const unlockedIds = getUnlockedAchievementIds(currentUser?.gamification);
@@ -500,12 +520,14 @@ export default function TraningPage() {
       elapsedSeconds,
       completedSetsByExercise,
       setWeightsByExercise,
+      skippedExercisesByIndex,
       trainingPlanId: currentUser?.trainingPlan?.id ?? null,
     };
   }, [
     completedSetsByExercise,
     currentUser?.trainingPlan?.id,
     elapsedSeconds,
+    skippedExercisesByIndex,
     setWeightsByExercise,
     startedAt,
   ]);
@@ -544,7 +566,11 @@ export default function TraningPage() {
   }, []);
 
   const finishWorkout = useCallback(
-    (completedSetsOverrideInput = null, runtimeSnapshotOverride = null) => {
+    (
+      completedSetsOverrideInput = null,
+      runtimeSnapshotOverride = null,
+      skippedExercisesOverrideInput = null,
+    ) => {
       if (!workoutDraft) {
         return;
       }
@@ -563,6 +589,10 @@ export default function TraningPage() {
       const effectiveSetWeightsByExercise =
         effectiveSnapshot?.setWeightsByExercise ??
         latestWorkoutMetrics.setWeightsByExercise;
+      const skippedExercisesOverride =
+        skippedExercisesOverrideInput ??
+        effectiveSnapshot?.skippedExercisesByIndex ??
+        latestWorkoutMetrics.skippedExercisesByIndex;
       const effectiveStartedAt =
         effectiveSnapshot?.startedAt ?? latestWorkoutMetrics.startedAt;
 
@@ -595,6 +625,13 @@ export default function TraningPage() {
             exerciseName: exercise.name,
             sets: exercise.sets,
             plannedSetsCount: exercise.sets,
+            completedSetsCount: Math.min(
+              completedSetsOverride[index] ?? 0,
+              exercise.sets,
+            ),
+            status:
+              skippedExercisesOverride?.[index] === true ? "skipped" : undefined,
+            isSkipped: skippedExercisesOverride?.[index] === true,
             repRange: exercise.repRange,
             restSeconds: exercise.restSeconds,
             weightsKg: (effectiveSetWeightsByExercise[index] ?? [])
@@ -644,6 +681,7 @@ export default function TraningPage() {
     setCompletedSetsByExercise(snapshot.completedSetsByExercise);
     setExerciseElapsedSeconds(snapshot.exerciseElapsedSeconds);
     setSetWeightsByExercise(snapshot.setWeightsByExercise);
+    setSkippedExercisesByIndex(snapshot.skippedExercisesByIndex ?? []);
     setPhase(snapshot.phase);
     setRestRemainingSeconds(snapshot.restRemainingSeconds);
     setPendingTransition(snapshot.pendingTransition);
@@ -668,6 +706,7 @@ export default function TraningPage() {
       completedSetsByExercise,
       exerciseElapsedSeconds,
       setWeightsByExercise,
+      skippedExercisesByIndex,
       phase,
       restRemainingSeconds,
       pendingTransition,
@@ -690,6 +729,7 @@ export default function TraningPage() {
     phase,
     restContinuePressCount,
     restRemainingSeconds,
+    skippedExercisesByIndex,
     setWeightsByExercise,
     startedAt,
     workoutDraft,
@@ -714,6 +754,7 @@ export default function TraningPage() {
       completedSetsByExercise: runtimeSnapshot.completedSetsByExercise,
       exerciseElapsedSeconds: runtimeSnapshot.exerciseElapsedSeconds,
       setWeightsByExercise: runtimeSnapshot.setWeightsByExercise,
+      skippedExercisesByIndex: runtimeSnapshot.skippedExercisesByIndex,
       phase: runtimeSnapshot.phase,
       restRemainingSeconds: runtimeSnapshot.restRemainingSeconds,
       pendingTransition: runtimeSnapshot.pendingTransition,
@@ -938,6 +979,11 @@ export default function TraningPage() {
     const hasNewAchievementUnlocks = queueAchievementUnlocks(achievementUnlocks);
 
     setCompletedSetsByExercise(nextCompletedSetsByExercise);
+    setSkippedExercisesByIndex((previousValue) =>
+      previousValue.map((isSkipped, index) =>
+        index === currentExerciseIndex ? false : isSkipped,
+      ),
+    );
 
     if (isExerciseCompleted && isLastExercise) {
       if (hasNewAchievementUnlocks) {
@@ -984,6 +1030,11 @@ export default function TraningPage() {
           : weights,
       ),
     );
+    setSkippedExercisesByIndex((previousValue) =>
+      previousValue.map((isSkipped, index) =>
+        index >= previousIndex ? false : isSkipped,
+      ),
+    );
     setCurrentExerciseIndex(previousIndex);
     setPhase("exercise");
     setRestContinuePressCount(0);
@@ -1016,6 +1067,37 @@ export default function TraningPage() {
         index === currentExerciseIndex ? currentExercise.sets : value,
       ),
     );
+    setCurrentExerciseIndex((previousIndex) => previousIndex + 1);
+    setPhase("exercise");
+    setRestContinuePressCount(0);
+    setPendingTransition(null);
+    setRestRemainingSeconds(
+      workoutDraft.exercises[currentExerciseIndex + 1]?.restSeconds ??
+        REST_DURATION_SECONDS,
+    );
+    setLastTickAt(actionTimestamp);
+    setPausedAt(null);
+  }
+
+  function handleSkipCurrentExercise() {
+    if (phase === "rest" || isPaused) {
+      return;
+    }
+
+    const actionTimestamp = new Date().toISOString();
+    const nextSkippedExercisesByIndex = skippedExercisesByIndex.map(
+      (isSkipped, index) => (index === currentExerciseIndex ? true : isSkipped),
+    );
+    const isLastExercise =
+      currentExerciseIndex >= workoutDraft.exercises.length - 1;
+
+    setSkippedExercisesByIndex(nextSkippedExercisesByIndex);
+
+    if (isLastExercise) {
+      finishWorkout(completedSetsByExercise, null, nextSkippedExercisesByIndex);
+      return;
+    }
+
     setCurrentExerciseIndex((previousIndex) => previousIndex + 1);
     setPhase("exercise");
     setRestContinuePressCount(0);
@@ -1197,6 +1279,12 @@ export default function TraningPage() {
                 Принудительно продолжить
               </button>
             ) : null}
+
+            {isCurrentExerciseSkipped ? (
+              <div className="inline-flex rounded-full border border-[#7B4F4F] bg-[#321C1C] px-3 py-1 text-[11px] uppercase tracking-[0.16em] text-[#FFB3B3]">
+                РџСЂРѕРїСѓС‰РµРЅРѕ
+              </div>
+            ) : null}
           </div>
 
           {isPaused ? (
@@ -1329,6 +1417,15 @@ export default function TraningPage() {
               <NextIcon />
             </button>
           </div>
+
+          <button
+            type="button"
+            onClick={handleSkipCurrentExercise}
+            disabled={phase === "rest" || isPaused}
+            className="mt-3 w-full rounded-2xl border border-[#7B4F4F] bg-[#321C1C] px-4 py-3 text-sm font-medium text-[#FFB3B3] disabled:opacity-40"
+          >
+            Skip exercise
+          </button>
         </section>
 
         <p className="px-1 text-lg font-medium text-[var(--text-primary)]">Следующее упражнение</p>

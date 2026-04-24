@@ -3,6 +3,7 @@ import { randomUUID } from "node:crypto";
 const TRAINING_ML_FEEDBACK_TYPES = new Set([
   "exercise_removed",
   "exercise_replaced",
+  "exercise_skipped",
   "sets_decreased",
   "workout_skipped",
   "workout_partial",
@@ -94,12 +95,37 @@ export function buildWorkoutOutcomeFeedbackEvents(
   source = "workout_result",
 ) {
   const status = normalizeString(workoutHistoryEntry.status);
+  const exerciseSkippedEvents = Array.isArray(workoutHistoryEntry.exerciseSetWeights)
+    ? workoutHistoryEntry.exerciseSetWeights
+        .filter((exerciseEntry) => exerciseEntry?.status === "skipped")
+        .map((exerciseEntry) =>
+          createTrainingMlFeedbackEntry({
+            type: "exercise_skipped",
+            source,
+            trainingPlanId: workoutHistoryEntry.trainingPlanId ?? null,
+            scheduledWorkoutId: workoutHistoryEntry.scheduledWorkoutId ?? null,
+            sessionId: workoutHistoryEntry.sessionId ?? null,
+            sessionIndex: workoutHistoryEntry.sessionIndex ?? null,
+            exerciseId: exerciseEntry.exerciseId ?? null,
+            sourceExerciseId:
+              exerciseEntry.sourceExerciseId ?? exerciseEntry.exerciseId ?? null,
+            exerciseName: exerciseEntry.exerciseName ?? null,
+            metadata: {
+              title: workoutHistoryEntry.title ?? null,
+              date: workoutHistoryEntry.date ?? null,
+              plannedSetsCount: exerciseEntry.plannedSetsCount ?? exerciseEntry.sets ?? 0,
+              completedSetsCount: exerciseEntry.completedSetsCount ?? 0,
+            },
+          }),
+        )
+    : [];
 
   if (status !== "skipped" && status !== "partial") {
-    return [];
+    return exerciseSkippedEvents;
   }
 
   return [
+    ...exerciseSkippedEvents,
     createTrainingMlFeedbackEntry({
       type: status === "skipped" ? "workout_skipped" : "workout_partial",
       source,

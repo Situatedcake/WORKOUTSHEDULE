@@ -56,6 +56,12 @@ export default function FinishTrainingPage() {
             weightsKg: Array.isArray(exercise.weightsKg)
               ? exercise.weightsKg
               : [],
+            status:
+              typeof exercise.status === "string" && exercise.status.trim()
+                ? exercise.status.trim()
+                : exercise.isSkipped
+                  ? "skipped"
+                  : "completed",
           }))
         : [],
     [resultDraft?.exerciseSetWeights],
@@ -193,6 +199,11 @@ export default function FinishTrainingPage() {
                   <h3 className="text-base font-medium text-[var(--text-primary)]">
                     {exercise.exerciseName}
                   </h3>
+                  {exercise.status === "skipped" ? (
+                    <p className="mt-1 text-xs uppercase tracking-[0.14em] text-[#FFB3B3]">
+                      Skipped
+                    </p>
+                  ) : null}
 
                   <div className="mt-3 flex flex-col gap-2">
                     {exercise.weightsKg.map((weightValue, setIndex) => (

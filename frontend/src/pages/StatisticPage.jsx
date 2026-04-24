@@ -263,6 +263,7 @@ export default function StatisticPage() {
   const adaptationGraphItems = stats.adaptationTrend ?? [];
   const loadGraphItems = stats.loadTrend ?? [];
   const progressGraphItems = stats.progressTrend ?? [];
+  const topSkippedExercises = stats.topSkippedExercises ?? [];
   const latestAdaptationPoint = adaptationGraphItems.at(-1) ?? null;
   const latestLoadPoint = loadGraphItems.at(-1) ?? null;
   const latestProgressPoint = progressGraphItems.at(-1) ?? null;
@@ -776,6 +777,41 @@ export default function StatisticPage() {
             value={currentUser?.trainingLevel ?? "Не определен"}
           />
         </div>
+
+        <GraphPanel
+          eyebrow="Стабильность"
+          title="Пропуски по упражнениям"
+          description={`Какие упражнения чаще всего пропускаются ${selectedRange.scopeLabel}. Эти сигналы влияют на адаптацию следующего плана.`}
+          footer={
+            topSkippedExercises.length > 0 ? (
+              <div className="flex flex-col gap-2">
+                {topSkippedExercises.slice(0, 5).map((item, index) => (
+                  <div
+                    key={`${item.exerciseName}_${index + 1}`}
+                    className="flex items-center justify-between rounded-2xl bg-[var(--surface-primary)] px-4 py-3"
+                  >
+                    <p className="truncate text-sm text-[var(--text-primary)]">
+                      {item.exerciseName}
+                    </p>
+                    <span className="shrink-0 rounded-full bg-[#321C1C] px-2.5 py-1 text-xs text-[#FFB3B3]">
+                      {item.skippedCount}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="break-words text-sm leading-6 text-[var(--text-muted)]">
+                В выбранном периоде пропущенных упражнений нет.
+              </p>
+            )
+          }
+        >
+          <BarTrendChart
+            items={topSkippedExercises}
+            getValue={(item) => item.skippedCount}
+            colorClassName="bg-[#FF7A7A]"
+          />
+        </GraphPanel>
 
         <div className="rounded-[24px] bg-[var(--surface-secondary)] px-5 py-5">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">

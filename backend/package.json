@@ -1,6 +1,6 @@
 {
   "name": "workoutschedule-server",
-  "version": "1.0.7",
+  "version": "1.0.9",
   "description": "Workout schedule server application",
   "main": "index.js",
   "type": "module",
@@ -9,6 +9,7 @@
     "dev": "nodemon index.js"
   },
   "dependencies": {
+    "bcryptjs": "^3.0.3",
     "body-parser": "^2.2.2",
     "dotenv": "^17.3.1",
     "express": "^5.2.1",
